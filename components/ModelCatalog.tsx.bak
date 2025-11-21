@@ -39,7 +39,6 @@ export default function ModelCatalog() {
 
   const handleDownload = (model: FeaturedModel) => {
     // In production, this would handle payment and then provide download
-    console.log('Downloading:', model.name);
     // Simulate download
     const link = document.createElement('a');
     link.href = model.stlUrl;
@@ -60,21 +59,10 @@ export default function ModelCatalog() {
           <h2 className="text-5xl md:text-7xl font-thin tracking-tight mb-4">
             3D Print Catalog
           </h2>
-          <p className="text-sm font-extralight text-gray-400 max-w-2xl mb-4">
+          <p className="text-sm font-extralight text-gray-400 max-w-2xl mb-8">
             Curated collection of the finest car models ready for 3D printing. 
             Each model is optimized for quality and ease of printing.
           </p>
-          
-          {/* Real Models Loaded! */}
-          <div className="p-4 border border-green-500/30 bg-green-500/5 rounded-sm max-w-2xl">
-            <p className="text-xs font-light text-green-200 mb-2">✅ Real STL Models Loaded!</p>
-            <div className="text-[10px] font-extralight text-green-200/70 space-y-1">
-              <p>• 10 GTA Online cars ready to view and print</p>
-              <p>• Click any GTA model to see the actual 3D car</p>
-              <p>• All models are FREE and ready to download</p>
-              <p className="text-green-200/50 mt-2">Featuring: Progen T20, Zentorno, Elegy Retro, Turismo R, and more!</p>
-            </div>
-          </div>
         </div>
 
         {/* Filters */}

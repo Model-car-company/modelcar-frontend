@@ -35,7 +35,7 @@ export default function CTASection() {
               Start Your Collection Today
             </h2>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join thousands of collectors who trust Model Masters for their premium miniature automotive art
+              Join thousands of collectors who trust Offense for their premium miniature automotive art
             </p>
 
             <motion.div

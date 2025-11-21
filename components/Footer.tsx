@@ -12,7 +12,7 @@ export default function Footer() {
               <div className="w-8 h-8 bg-gradient-to-br from-accent to-purple-500 rounded-lg flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold">Model Masters</span>
+              <span className="text-xl font-bold">Offense</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Crafting miniature masterpieces since 2009
@@ -45,13 +45,12 @@ export default function Footer() {
               <li><a href="#" className="hover:text-foreground transition-colors">Instagram</a></li>
               <li><a href="#" className="hover:text-foreground transition-colors">YouTube</a></li>
               <li><a href="#" className="hover:text-foreground transition-colors">Twitter</a></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Newsletter</a></li>
             </ul>
           </div>
         </div>
 
         <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between text-sm text-muted-foreground">
-          <p>&copy; 2024 Model Masters. All rights reserved.</p>
+          <p>&copy; 2024 Offense. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>

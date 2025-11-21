@@ -5,10 +5,10 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Model Masters - Premium Model Car Creation',
+  title: 'Offense - Premium Model Car Creation',
   description: 'Crafting perfection in miniature. Experience the art of precision model car creation.',
   keywords: 'model cars, miniature cars, custom models, car replicas, precision crafting',
-  authors: [{ name: 'Model Masters' }],
+  authors: [{ name: 'Offense' }],
   viewport: 'width=device-width, initial-scale=1',
   themeColor: '#0a0a0a',
 }
@@ -20,6 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
+      <head>
+        <script async src="https://tally.so/widgets/embed.js"></script>
+      </head>
       <body className={`${inter.className} bg-background text-foreground antialiased min-h-screen overflow-x-hidden`}>
         {children}
       </body>
