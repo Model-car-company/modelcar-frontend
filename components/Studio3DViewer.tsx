@@ -93,18 +93,47 @@ function ReferenceCube() {
 function Lighting() {
   return (
     <>
-      <ambientLight intensity={0.4} />
+      {/* Ambient light - moderate to keep background dark */}
+      <ambientLight intensity={0.8} />
+      
+      {/* Hemisphere light - simulates sky/ground bounce */}
+      <hemisphereLight args={['#ffffff', '#444444', 1]} />
+      
+      {/* Main key light - top front right */}
       <directionalLight
         position={[10, 10, 5]}
-        intensity={1}
+        intensity={2}
         castShadow
       />
-      <pointLight position={[-10, -10, -5]} intensity={0.5} color="#ef4444" />
+      
+      {/* Fill light - top front left */}
+      <directionalLight
+        position={[-10, 10, -5]}
+        intensity={1.5}
+      />
+      
+      {/* Back light - rim lighting */}
+      <directionalLight
+        position={[0, 8, -10]}
+        intensity={1.2}
+      />
+      
+      {/* Side accent lights */}
+      <pointLight position={[-8, 3, 0]} intensity={1.2} color="#ffffff" />
+      <pointLight position={[8, 3, 0]} intensity={1.2} color="#ffffff" />
+      
+      {/* Front fill */}
+      <pointLight position={[0, 2, 8]} intensity={1} color="#ffffff" />
+      
+      {/* Bottom fill - lights undercarriage */}
+      <pointLight position={[0, -2, 0]} intensity={0.8} color="#ffffff" />
+      
+      {/* Top spotlight */}
       <spotLight
-        position={[0, 10, 0]}
-        angle={0.3}
+        position={[0, 15, 0]}
+        angle={0.5}
         penumbra={1}
-        intensity={0.5}
+        intensity={1.5}
         castShadow
       />
     </>
