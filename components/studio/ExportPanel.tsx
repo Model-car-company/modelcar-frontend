@@ -46,17 +46,32 @@ export default function ExportPanel({ modelUrl }: ExportPanelProps) {
     }
   ]
 
-  const handleExport = (format: string) => {
-    console.log(`Exporting as ${format}...`)
-    // Implementation for export
-    if (modelUrl) {
-      // Create download link
+  const handleExport = async (format: string) => {
+    if (!modelUrl) {
+      alert('No model loaded. Please generate or upload a model first.')
+      return
+    }
+
+    try {
+      // For now, download directly if format matches
+      // In production, convert through API if needed
       const link = document.createElement('a')
       link.href = modelUrl
-      link.download = `model.${format.toLowerCase()}`
+      link.download = `model-${Date.now()}.${format.toLowerCase()}`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+
+      // TODO: If format conversion needed, call API
+      // const response = await fetch('/api/convert-model', {
+      //   method: 'POST',
+      //   body: JSON.stringify({ modelUrl, targetFormat: format }),
+      // })
+      
+      console.log(`Exported as ${format}`)
+    } catch (error) {
+      console.error('Export error:', error)
+      alert('Failed to export model. Please try again.')
     }
   }
 

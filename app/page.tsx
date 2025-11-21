@@ -87,11 +87,11 @@ export default function Home() {
           <div className="flex justify-between items-center">
             <div className="text-xl font-thin tracking-[0.2em]">OFFENSE</div>
             <div className="hidden md:flex gap-12 text-[11px] font-extralight tracking-[0.2em] uppercase">
-              {/* <Link href="/studio" className="hover:opacity-60 transition-opacity flex items-center gap-1">
+              <Link href="/studio" className="hover:opacity-60 transition-opacity flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
                 3D STUDIO
-              </Link> */}
-              <Link href="/pricing" className="hover:opacity-60 transition-opacity">PRICING</Link>
+              </Link>
+              {/* <Link href="/pricing" className="hover:opacity-60 transition-opacity">PRICING</Link> */}
             </div>
           </div>
         </div>
@@ -279,7 +279,7 @@ export default function Home() {
               { 
                 num: '02', 
                 title: 'Download', 
-                desc: 'Get instant access to weekly drops + vault of past designs',
+                desc: 'Get instant access to monthly drops + vault of past designs',
                 Icon: Download
               },
               { 
@@ -318,7 +318,7 @@ export default function Home() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/5">
             {[
-              { title: 'Weekly Drops', desc: 'New exclusive concept car every week - cyberpunk, retro-futuristic, and sci-fi designs' },
+              { title: 'Monthly Drops', desc: 'New exclusive concept car every week - cyberpunk, retro-futuristic, and sci-fi designs' },
               { title: 'Custom AI Models', desc: 'Upload photos of your real car and download a custom 3D-printable replica (AI-powered)' },
               { title: 'Unlimited Downloads', desc: 'Print as many copies as you want - keep your favorites, gift them, or sell them' },
               { title: 'Member Perks', desc: 'Vote on next drops, early access to limited editions, exclusive colorways' },
@@ -448,7 +448,7 @@ export default function Home() {
               },
               {
                 q: 'How do I customize cars?',
-                a: 'Our AI custom car creator launches Q2 2025. Upload photos of YOUR car and get a printable 3D model.'
+                a: 'Our AI custom car creator launches Q2 2026. Upload photos of YOUR car and get a printable 3D model.'
               },
               {
                 q: 'Can I request specific cars?',
@@ -545,7 +545,7 @@ export default function Home() {
               <ul className="space-y-2 text-xs font-extralight text-gray-500">
                 <li><a href="#collection" className="hover:text-white transition-colors">Collection</a></li>
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                {/* <li><Link href="/studio" className="hover:text-white transition-colors">3D Studio</Link></li> */}
+                <li><Link href="/studio" className="hover:text-white transition-colors">3D Studio</Link></li>
                 <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
               </ul>
             </div>

@@ -15,6 +15,7 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
   const [model, setModel] = useState('standard')
   const [style, setStyle] = useState('realistic')
   const [resolution, setResolution] = useState('high')
+  const [mode, setMode] = useState<'text' | 'image'>('text')
 
   const handleGenerate = async () => {
     if (!prompt) return
@@ -22,26 +23,93 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
     setIsGenerating(true)
     setProgress(0)
     
-    // Simulate generation
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsGenerating(false)
-          // Use an actual model from your collection
-          onGenerate('/models/gta-progen-t20.stl')
-          return 100
-        }
-        return prev + 10
+    try {
+      // Update progress incrementally
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90))
+      }, 300)
+
+      // Call the real API
+      const formData = new FormData()
+      formData.append('prompt', prompt)
+      formData.append('quality', resolution)
+
+      const response = await fetch('/api/generate-3d', {
+        method: 'POST',
+        body: formData,
       })
-    }, 300)
+
+      clearInterval(progressInterval)
+      
+      if (!response.ok) {
+        throw new Error('Generation failed')
+      }
+
+      const data = await response.json()
+      setProgress(100)
+      
+      // Pass the generated model URL to parent
+      if (data.modelUrl) {
+        onGenerate(data.modelUrl)
+      }
+      
+      setTimeout(() => {
+        setIsGenerating(false)
+        setProgress(0)
+      }, 1000)
+
+    } catch (error) {
+      console.error('Generation error:', error)
+      setIsGenerating(false)
+      setProgress(0)
+      alert('Failed to generate 3D model. Please try again.')
+    }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      // Handle image upload
-      console.log('Uploading:', file.name)
+    if (!file) return
+
+    setIsGenerating(true)
+    setProgress(0)
+
+    try {
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90))
+      }, 300)
+
+      const formData = new FormData()
+      formData.append('image', file)
+      formData.append('quality', resolution)
+
+      const response = await fetch('/api/generate-3d', {
+        method: 'POST',
+        body: formData,
+      })
+
+      clearInterval(progressInterval)
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await response.json()
+      setProgress(100)
+
+      if (data.modelUrl) {
+        onGenerate(data.modelUrl)
+      }
+
+      setTimeout(() => {
+        setIsGenerating(false)
+        setProgress(0)
+      }, 1000)
+
+    } catch (error) {
+      console.error('Upload error:', error)
+      setIsGenerating(false)
+      setProgress(0)
+      alert('Failed to process image. Please try again.')
     }
   }
 
@@ -53,51 +121,92 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
     >
       {/* Generation Mode Tabs */}
       <div className="flex gap-2 p-1 bg-white/5 rounded-lg">
-        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-purple-500/20 text-purple-400 rounded text-xs">
+        <button 
+          onClick={() => setMode('text')}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
+            mode === 'text' 
+              ? 'bg-red-500/20 text-red-400' 
+              : 'hover:bg-white/5 text-gray-400'
+          }`}
+        >
           <Wand2 className="w-3 h-3" />
           Text to 3D
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 hover:bg-white/5 text-gray-400 rounded text-xs">
+        <button 
+          onClick={() => setMode('image')}
+          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
+            mode === 'image' 
+              ? 'bg-red-500/20 text-red-400' 
+              : 'hover:bg-white/5 text-gray-400'
+          }`}
+        >
           <Image className="w-3 h-3" />
           Image to 3D
         </button>
       </div>
 
-      {/* Text Prompt */}
-      <div>
-        <label className="text-xs font-light text-gray-400 mb-2 block">
-          Describe your car model
-        </label>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="A futuristic sports car with aerodynamic design, carbon fiber body, and glowing LED accents..."
-          className="w-full h-24 px-3 py-2 bg-white/5 border border-white/10 rounded text-sm font-light resize-none focus:outline-none focus:border-purple-500/50"
-        />
-      </div>
+      {/* Text Mode Content */}
+      {mode === 'text' && (
+        <>
+          {/* Text Prompt */}
+          <div>
+            <label className="text-xs font-light text-gray-400 mb-2 block">
+              Describe your car model
+            </label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="A futuristic sports car with aerodynamic design, carbon fiber body, and glowing LED accents..."
+              className="w-full h-24 px-3 py-2 bg-white/5 border border-white/10 rounded text-sm font-light resize-none focus:outline-none focus:border-white/30"
+            />
+          </div>
 
-      {/* Quick Prompts */}
-      <div>
-        <label className="text-xs font-light text-gray-400 mb-2 block">
-          Quick Prompts
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            'Cyberpunk Car',
-            'Classic Muscle',
-            'F1 Racing',
-            'Luxury SUV'
-          ].map(quick => (
-            <button
-              key={quick}
-              onClick={() => setPrompt(quick)}
-              className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs hover:bg-white/10"
-            >
-              {quick}
-            </button>
-          ))}
+          {/* Quick Prompts */}
+          <div>
+            <label className="text-xs font-light text-gray-400 mb-2 block">
+              Quick Prompts
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                'Cyberpunk Car',
+                'Classic Muscle',
+                'F1 Racing',
+                'Luxury SUV'
+              ].map(quick => (
+                <button
+                  key={quick}
+                  onClick={() => setPrompt(quick)}
+                  className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs hover:bg-white/10"
+                >
+                  {quick}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Image Mode Content */}
+      {mode === 'image' && (
+        <div>
+          <label className="text-xs font-light text-gray-400 mb-3 block">
+            Upload car image
+          </label>
+          <label className="block">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <div className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center cursor-pointer hover:border-white/30 transition-colors">
+              <Upload className="w-12 h-12 mx-auto mb-3 text-gray-500" />
+              <p className="text-sm text-gray-300 mb-1">Click or drag image here</p>
+              <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+            </div>
+          </label>
         </div>
-      </div>
+      )}
 
       {/* Model Settings */}
       <div className="grid grid-cols-2 gap-3">
@@ -144,7 +253,7 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
               onClick={() => setResolution(res)}
               className={`flex-1 py-2 text-xs font-light rounded ${
                 resolution === res
-                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/50'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/50'
                   : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
               }`}
             >
@@ -157,22 +266,22 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
       {/* Generate Button */}
       <button
         onClick={handleGenerate}
-        disabled={!prompt || isGenerating}
+        disabled={(mode === 'text' && !prompt) || isGenerating}
         className={`w-full py-3 rounded font-light text-sm flex items-center justify-center gap-2 ${
-          isGenerating
-            ? 'bg-purple-500/10 text-purple-400 cursor-not-allowed'
-            : 'bg-purple-500 text-white hover:bg-purple-600'
+          isGenerating || (mode === 'text' && !prompt)
+            ? 'bg-white/10 text-gray-400 cursor-not-allowed'
+            : 'bg-white text-black hover:bg-gray-100'
         }`}
       >
         {isGenerating ? (
           <>
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
             Generating... {progress}%
           </>
         ) : (
           <>
             <Sparkles className="w-4 h-4" />
-            Generate 3D Model
+            {mode === 'text' ? 'Generate 3D Model' : 'Upload & Generate'}
           </>
         )}
       </button>
@@ -183,30 +292,10 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+            className="h-full bg-white"
           />
         </div>
       )}
-
-      {/* Upload Section */}
-      <div className="pt-4 border-t border-white/10">
-        <label className="text-xs font-light text-gray-400 mb-3 block">
-          Or upload an image
-        </label>
-        <label className="block">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-          />
-          <div className="border-2 border-dashed border-white/10 rounded-lg p-6 text-center cursor-pointer hover:border-purple-500/50 transition-colors">
-            <Upload className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-            <p className="text-xs text-gray-400">Click or drag image here</p>
-            <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</p>
-          </div>
-        </label>
-      </div>
 
       {/* Recent Generations */}
       <div className="pt-4 border-t border-white/10">

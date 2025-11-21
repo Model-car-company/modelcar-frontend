@@ -45,7 +45,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            Download <span className="font-light text-white">3D-Printable Concept Cars</span> Every Week
+            Build the <span className="font-light text-white">Dream Garage</span> You Can't Afford
           </motion.h1>
 
           {/* Subtitle */}
@@ -55,7 +55,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.4, duration: 0.8 }}
           >
-            Exclusive cyberpunk and futuristic car designs. Print them at home, build your dream garage.
+            Can't drop $44K on a Mustang GT? Own it as a detailed 3D model. Print it. Display it. Build your entire collection without the car payment.
           </motion.p>
 
           {/* Social Proof */}

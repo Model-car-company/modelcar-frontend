@@ -10,10 +10,14 @@ interface MaterialPanelProps {
     color: string;
     wireframe: boolean;
   };
-  onChange: (material: any) => void;
+  viewMode?: 'solid' | 'wireframe' | 'normal' | 'uv';
+  showGrid?: boolean;
+  onMaterialChange: (material: any) => void;
+  onViewModeChange?: (mode: 'solid' | 'wireframe' | 'normal' | 'uv') => void;
+  onGridToggle?: (show: boolean) => void;
 }
 
-export default function MaterialPanel({ material, onChange }: MaterialPanelProps) {
+export default function MaterialPanel({ material, onMaterialChange, viewMode, showGrid, onViewModeChange, onGridToggle }: MaterialPanelProps) {
   const presets = [
     { name: 'Chrome', metalness: 1, roughness: 0, color: '#ffffff' },
     { name: 'Matte Black', metalness: 0, roughness: 0.8, color: '#1a1a1a' },
@@ -38,13 +42,13 @@ export default function MaterialPanel({ material, onChange }: MaterialPanelProps
           <input
             type="color"
             value={material.color}
-            onChange={(e) => onChange({ ...material, color: e.target.value })}
+            onChange={(e) => onMaterialChange({ ...material, color: e.target.value })}
             className="w-12 h-10 bg-transparent border border-white/10 rounded cursor-pointer"
           />
           <input
             type="text"
             value={material.color}
-            onChange={(e) => onChange({ ...material, color: e.target.value })}
+            onChange={(e) => onMaterialChange({ ...material, color: e.target.value })}
             className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light"
           />
         </div>
@@ -54,17 +58,17 @@ export default function MaterialPanel({ material, onChange }: MaterialPanelProps
       <div>
         <div className="flex justify-between items-center mb-2">
           <label className="text-xs font-light text-gray-400">Metalness</label>
-          <span className="text-xs text-purple-400">{Math.round(material.metalness * 100)}%</span>
+          <span className="text-xs text-red-400">{Math.round(material.metalness * 100)}%</span>
         </div>
         <input
           type="range"
           min="0"
           max="100"
           value={material.metalness * 100}
-          onChange={(e) => onChange({ ...material, metalness: parseInt(e.target.value) / 100 })}
+          onChange={(e) => onMaterialChange({ ...material, metalness: parseInt(e.target.value) / 100 })}
           className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
           style={{
-            background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${material.metalness * 100}%, rgba(255,255,255,0.1) ${material.metalness * 100}%, rgba(255,255,255,0.1) 100%)`
+            background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${material.metalness * 100}%, rgba(255,255,255,0.1) ${material.metalness * 100}%, rgba(255,255,255,0.1) 100%)`
           }}
         />
       </div>
@@ -73,17 +77,17 @@ export default function MaterialPanel({ material, onChange }: MaterialPanelProps
       <div>
         <div className="flex justify-between items-center mb-2">
           <label className="text-xs font-light text-gray-400">Roughness</label>
-          <span className="text-xs text-purple-400">{Math.round(material.roughness * 100)}%</span>
+          <span className="text-xs text-red-400">{Math.round(material.roughness * 100)}%</span>
         </div>
         <input
           type="range"
           min="0"
           max="100"
           value={material.roughness * 100}
-          onChange={(e) => onChange({ ...material, roughness: parseInt(e.target.value) / 100 })}
+          onChange={(e) => onMaterialChange({ ...material, roughness: parseInt(e.target.value) / 100 })}
           className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer"
           style={{
-            background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${material.roughness * 100}%, rgba(255,255,255,0.1) ${material.roughness * 100}%, rgba(255,255,255,0.1) 100%)`
+            background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${material.roughness * 100}%, rgba(255,255,255,0.1) ${material.roughness * 100}%, rgba(255,255,255,0.1) 100%)`
           }}
         />
       </div>
@@ -95,7 +99,7 @@ export default function MaterialPanel({ material, onChange }: MaterialPanelProps
           {presets.map((preset) => (
             <button
               key={preset.name}
-              onClick={() => onChange({
+              onClick={() => onMaterialChange({
                 ...material,
                 metalness: preset.metalness,
                 roughness: preset.roughness,
@@ -126,8 +130,8 @@ export default function MaterialPanel({ material, onChange }: MaterialPanelProps
             <input
               type="checkbox"
               checked={material.wireframe}
-              onChange={(e) => onChange({ ...material, wireframe: e.target.checked })}
-              className="rounded border-gray-600 text-purple-500 focus:ring-purple-500 focus:ring-offset-0"
+              onChange={(e) => onMaterialChange({ ...material, wireframe: e.target.checked })}
+              className="rounded border-gray-600 text-red-500 focus:ring-red-500 focus:ring-offset-0"
             />
             <span className="text-xs text-gray-400">Wireframe Mode</span>
           </label>
