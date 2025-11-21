@@ -1,0 +1,156 @@
+// Prisma Schema for 3D Model Platform
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  credits       Int       @default(100) // Free credits
+  role          Role      @default(USER)
+  
+  // Relations
+  models        Model[]
+  generations   Generation[]
+  downloads     Download[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([email])
+}
+
+enum Role {
+  USER
+  PREMIUM
+  ADMIN
+}
+
+// 3D Model
+model Model {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  
+  // File URLs
+  stlUrl        String    // S3/Cloudflare R2 URL
+  glbUrl        String?
+  objUrl        String?
+  thumbnailUrl  String?
+  
+  // Metadata
+  fileSize      Int       // bytes
+  vertices      Int?
+  polygons      Int?
+  dimensions    Json?     // {x, y, z, unit}
+  
+  // Categories & Tags
+  category      String    @default("general")
+  tags          String[]
+  
+  // Visibility
+  isPublic      Boolean   @default(true)
+  isPremium     Boolean   @default(false)
+  price         Float?    // USD
+  
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  downloads     Download[]
+  
+  // Generation info
+  generatedFrom String?   // "upload" | "text-to-3d" | "image-to-3d"
+  generationId  String?
+  generation    Generation? @relation(fields: [generationId], references: [id])
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([category])
+  @@index([isPublic])
+}
+
+// AI Generation History
+model Generation {
+  id            String    @id @default(cuid())
+  
+  // Input
+  prompt        String?
+  imageUrl      String?
+  type          GenType   // "text" | "image"
+  
+  // Output
+  status        GenStatus @default(PROCESSING)
+  resultUrl     String?   // Final STL URL
+  errorMessage  String?
+  
+  // AI Service
+  provider      String    @default("tripo3d") // "tripo3d" | "meshy" | "local"
+  taskId        String?   // External API task ID
+  
+  // Credits used
+  creditsUsed   Int       @default(10)
+  
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  models        Model[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum GenType {
+  TEXT
+  IMAGE
+}
+
+enum GenStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// Download tracking
+model Download {
+  id            String    @id @default(cuid())
+  
+  modelId       String
+  model         Model     @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  format        String    // "stl" | "obj" | "glb"
+  ipAddress     String?
+  
+  createdAt     DateTime  @default(now())
+  
+  @@index([modelId])
+  @@index([userId])
+}
+
+// API Keys (for services)
+model ApiKey {
+  id            String    @id @default(cuid())
+  service       String    // "tripo3d" | "meshy" | "openai"
+  key           String    @db.Text
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
