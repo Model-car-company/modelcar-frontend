@@ -37,7 +37,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             className="inline-flex items-center space-x-2 px-4 py-2 glass rounded-sm mb-8"
           >
             <Sparkles className="w-3 h-3 text-red-400" />
-            <span className="text-xs font-extralight tracking-wider text-gray-300 uppercase">Coming Soon</span>
+            <span className="text-xs font-extralight tracking-wider text-gray-300 uppercase">Beta</span>
           </motion.div>
           <motion.h1
             className="text-4xl md:text-5xl lg:text-6xl font-extralight mb-8 leading-tight tracking-wide"
@@ -68,32 +68,24 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             Join 247 collectors on the waitlist
           </motion.p>
 
-          {/* Join Waitlist Button */}
+          {/* Get Early Access Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.6, duration: 0.8 }}
             className="max-w-md mx-auto"
           >
-            <motion.button
-              onClick={() => {
-                if (typeof window !== 'undefined' && (window as any).Tally) {
-                  (window as any).Tally.openPopup('688ydk', {
-                    layout: 'modal',
-                    width: 500,
-                    autoClose: 3000
-                  })
-                }
-              }}
+            <motion.a
+              href="/dashboard"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-6 py-3 bg-red-500/20 border border-red-500/50 text-red-400 text-sm font-light rounded-sm transition-all hover:bg-red-500/30 backdrop-blur-sm"
+              className="inline-block px-6 py-3 bg-red-500/20 border border-red-500/50 text-red-400 text-sm font-light rounded-sm transition-all hover:bg-red-500/30 backdrop-blur-sm"
             >
-              Join Waitlist
-            </motion.button>
+              Get Early Access
+            </motion.a>
             
             <p className="text-xs font-extralight text-gray-500 mt-4">
-              Get notified when we launch + exclusive founder benefits
+              Start creating your dream garage today + exclusive founder benefits
             </p>
           </motion.div>
         </motion.div>

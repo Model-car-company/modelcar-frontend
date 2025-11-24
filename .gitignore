@@ -24,9 +24,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# Environment files - NEVER commit these!
 .env
+.env.development
+.env.production
+.env*.local
 
 # vercel
 .vercel
@@ -42,3 +44,8 @@ prisma/dev.db-journal
 # IDE
 .vscode/
 .idea/
+
+# Ignore oversized binaries (>50MB)
+public/3d-models/steering/steering-wheel-1-backup.glb
+public/3d-models/steering/steering-wheel-1.glb
+public/3d-models/rims/a03fad0e-32fb-4408-af46-5c328c7320e8_white_mesh.glb

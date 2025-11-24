@@ -27,7 +27,7 @@ export default function AdminModelsPage() {
       const data = await response.json()
       setModels(data.models || [])
     } catch (error) {
-      console.error('Failed to fetch models:', error)
+      // Failed to fetch models
     } finally {
       setLoading(false)
     }
@@ -60,7 +60,6 @@ export default function AdminModelsPage() {
         alert(`Upload failed: ${error.error}`)
       }
     } catch (error) {
-      console.error('Upload error:', error)
       alert('Upload failed')
     } finally {
       setUploading(false)
@@ -80,8 +79,7 @@ export default function AdminModelsPage() {
         alert('Model deleted successfully!')
       }
     } catch (error) {
-      console.error('Delete error:', error)
-      alert('Delete failed')
+      alert('Failed to delete model')
     }
   }
 

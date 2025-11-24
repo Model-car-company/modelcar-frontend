@@ -98,7 +98,7 @@ export default function AIGenerationChat() {
           ))
         }
       } catch (error) {
-        console.error('Polling error:', error)
+        // Polling error
       }
     }, 1000) // Poll every second
   }

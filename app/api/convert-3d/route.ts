@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(mockResult);
 
   } catch (error) {
-    console.error('3D conversion error:', error);
     return NextResponse.json(
       { error: 'Failed to convert image to 3D model' },
       { status: 500 }

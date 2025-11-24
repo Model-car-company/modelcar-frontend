@@ -215,7 +215,6 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Get parts error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch parts' },
       { status: 500 }

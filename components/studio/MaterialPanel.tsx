@@ -18,6 +18,17 @@ interface MaterialPanelProps {
 }
 
 export default function MaterialPanel({ material, onMaterialChange, viewMode, showGrid, onViewModeChange, onGridToggle }: MaterialPanelProps) {
+  const popularColors = [
+    { name: 'Matte Black', color: '#1a1a1a', metalness: 0, roughness: 0.8 },
+    { name: 'Gloss Black', color: '#0a0a0a', metalness: 0.8, roughness: 0.1 },
+    { name: 'Racing Red', color: '#cc0000', metalness: 0.7, roughness: 0.2 },
+    { name: 'Electric Blue', color: '#0066ff', metalness: 0.8, roughness: 0.3 },
+    { name: 'Lime Green', color: '#39ff14', metalness: 0.6, roughness: 0.3 },
+    { name: 'Pearl White', color: '#f5f5f5', metalness: 0.4, roughness: 0.2 },
+    { name: 'Chrome', color: '#e8e8e8', metalness: 1, roughness: 0 },
+    { name: 'Gold', color: '#FFD700', metalness: 1, roughness: 0.2 },
+  ]
+  
   const presets = [
     { name: 'Chrome', metalness: 1, roughness: 0, color: '#ffffff' },
     { name: 'Matte Black', metalness: 0, roughness: 0.8, color: '#1a1a1a' },
@@ -33,6 +44,17 @@ export default function MaterialPanel({ material, onMaterialChange, viewMode, sh
       animate={{ opacity: 1, x: 0 }}
       className="space-y-4"
     >
+      {/* Guidance Banner */}
+      <div className="p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg">
+        <div className="flex items-start gap-2 mb-1">
+          <Palette className="w-3 h-3 text-purple-400 mt-0.5" />
+          <div>
+            <p className="text-xs font-medium text-purple-400">Instant Material Changes</p>
+            <p className="text-xs text-gray-400 mt-1">Change colors and finishes in real-time. No API costs, unlimited tries!</p>
+          </div>
+        </div>
+      </div>
+
       {/* Color Picker */}
       <div>
         <label className="text-xs font-light text-gray-400 mb-2 block">
@@ -92,9 +114,37 @@ export default function MaterialPanel({ material, onMaterialChange, viewMode, sh
         />
       </div>
 
+      {/* Popular Car Colors */}
+      <div className="pt-4 border-t border-white/10">
+        <h3 className="text-xs font-light text-gray-400 mb-3">Popular Car Colors</h3>
+        <div className="grid grid-cols-4 gap-2">
+          {popularColors.map((color) => (
+            <button
+              key={color.name}
+              onClick={() => onMaterialChange({
+                ...material,
+                color: color.color,
+                metalness: color.metalness,
+                roughness: color.roughness
+              })}
+              className="relative group"
+              title={color.name}
+            >
+              <div 
+                className="w-full aspect-square rounded-lg border-2 border-white/10 hover:border-white/40 transition-all hover:scale-110"
+                style={{ backgroundColor: color.color }}
+              />
+              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-gray-500 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                {color.name.split(' ')[0]}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Material Presets */}
       <div className="pt-4 border-t border-white/10">
-        <h3 className="text-xs font-light text-gray-400 mb-3">Material Presets</h3>
+        <h3 className="text-xs font-light text-gray-400 mb-3">Material Finishes</h3>
         <div className="grid grid-cols-2 gap-2">
           {presets.map((preset) => (
             <button
@@ -119,55 +169,29 @@ export default function MaterialPanel({ material, onMaterialChange, viewMode, sh
         </div>
       </div>
 
-      {/* Advanced Settings */}
+      {/* Quick Actions */}
       <div className="pt-4 border-t border-white/10">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-light text-gray-400">Advanced Settings</h3>
-          <ChevronRight className="w-3 h-3 text-gray-500" />
-        </div>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => onMaterialChange({
+              metalness: 0.7,
+              roughness: 0.3,
+              color: '#808080',
+              wireframe: false
+            })}
+            className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors"
+          >
+            Reset to Default
+          </button>
+          <label className="flex items-center justify-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors cursor-pointer">
             <input
               type="checkbox"
               checked={material.wireframe}
               onChange={(e) => onMaterialChange({ ...material, wireframe: e.target.checked })}
               className="rounded border-gray-600 text-red-500 focus:ring-red-500 focus:ring-offset-0"
             />
-            <span className="text-xs text-gray-400">Wireframe Mode</span>
+            <span>Wireframe</span>
           </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer opacity-50">
-            <input
-              type="checkbox"
-              disabled
-              className="rounded border-gray-600"
-            />
-            <span className="text-xs text-gray-400">Double Sided</span>
-          </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer opacity-50">
-            <input
-              type="checkbox"
-              disabled
-              className="rounded border-gray-600"
-            />
-            <span className="text-xs text-gray-400">Cast Shadows</span>
-          </label>
-        </div>
-      </div>
-
-      {/* Environment Maps */}
-      <div className="pt-4 border-t border-white/10">
-        <h3 className="text-xs font-light text-gray-400 mb-3">Environment</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {['Studio', 'Sunset', 'City', 'Forest', 'Night', 'Dawn'].map((env) => (
-            <button
-              key={env}
-              className="px-2 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors"
-            >
-              {env}
-            </button>
-          ))}
         </div>
       </div>
     </motion.div>

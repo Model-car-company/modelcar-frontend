@@ -3,14 +3,21 @@
 import { motion } from 'framer-motion'
 import { Check, Sparkles, Zap, Building2, Factory } from 'lucide-react'
 import Link from 'next/link'
+import { useState } from 'react'
+import SubscribeButton from '../../components/SubscribeButton'
+import { Toaster } from 'react-hot-toast'
+import { SubscriptionTier } from '../../lib/subscription-config'
 
 export default function PricingPage() {
+  const [isYearly, setIsYearly] = useState(false)
+  
   const tiers = [
     {
       name: 'Garage Parking',
+      tierKey: 'garage' as SubscriptionTier,
       icon: Zap,
       price: 9,
-      description: 'Perfect for hobbyists and individual creators',
+      description: 'CPU-based generations for hobbyists and individual creators',
       features: [
         '50 AI generations/month',
         '10 GB cloud storage',
@@ -24,9 +31,10 @@ export default function PricingPage() {
     },
     {
       name: 'Showroom Floor',
+      tierKey: 'showroom' as SubscriptionTier,
       icon: Building2,
       price: 29,
-      description: 'For serious creators and small studios',
+      description: 'GPU-based generations for serious creators and small studios',
       features: [
         '200 AI generations/month',
         '100 GB cloud storage',
@@ -42,9 +50,10 @@ export default function PricingPage() {
     },
     {
       name: 'Dealership',
+      tierKey: 'dealership' as SubscriptionTier,
       icon: Building2,
-      price: 149,
-      description: 'Commercial teams and design agencies',
+      price: 49,
+      description: 'GPU-based generations for commercial teams and design agencies',
       features: [
         'Unlimited AI generations',
         '1 TB cloud storage',
@@ -62,9 +71,11 @@ export default function PricingPage() {
     },
     {
       name: 'Factory Owner',
+      tierKey: 'dealership' as SubscriptionTier, // Use dealership tier or handle as custom/contact sales
       icon: Factory,
-      price: 299,
-      description: 'Enterprise-grade AI customization',
+      price: 199,
+      description: 'GPU-based generations with enterprise-grade AI customization',
+      isEnterprise: true,
       features: [
         'Everything in Dealership',
         'Custom AI model training',
@@ -84,6 +95,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      <Toaster position="top-right" />
       {/* Sophisticated Gradient Background */}
       <div className="fixed inset-0 z-0">
         {/* Main gradient orb - top right */}
@@ -106,13 +118,13 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-8 md:px-16 py-6">
           <div className="flex justify-between items-center">
             <Link href="/" className="text-xl font-thin tracking-[0.2em]">
-              OFFENSE
+              DREAMFORGE
             </Link>
             <Link
-              href="/"
+              href="/dashboard"
               className="text-[11px] font-extralight tracking-[0.2em] hover:opacity-60 transition-opacity uppercase"
             >
-              Back to Home
+              Back to Dashboard
             </Link>
           </div>
         </div>
@@ -129,15 +141,46 @@ export default function PricingPage() {
             <p className="text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-6">
               Pricing Plans
             </p>
-            <h1 className="text-[80px] md:text-[120px] lg:text-[140px] leading-[0.8] font-thin tracking-tighter mb-8">
-              CHOOSE YOUR
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-thin tracking-tight mb-8">
+              CHOOSE YOUR WORKSPACE
             </h1>
-            <h2 className="text-[60px] md:text-[100px] lg:text-[120px] leading-[0.8] font-thin tracking-tighter opacity-40 mb-12">
-              WORKSPACE
-            </h2>
             <p className="text-sm font-extralight tracking-[0.2em] text-gray-400 max-w-2xl mx-auto">
               From individual creators to enterprise studios, find the perfect plan to bring your 3D visions to life
             </p>
+          </motion.div>
+
+          {/* Billing Toggle */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex justify-center items-center gap-4 mt-12"
+          >
+            <span className={`text-sm font-extralight tracking-wide ${!isYearly ? 'text-white' : 'text-gray-500'}`}>
+              Monthly
+            </span>
+            <button
+              onClick={() => setIsYearly(!isYearly)}
+              className="relative w-16 h-8 bg-white/10 rounded-full border border-white/10 transition-all hover:bg-white/15"
+            >
+              <motion.div
+                className="absolute top-1 left-1 w-6 h-6 bg-white rounded-full"
+                animate={{ x: isYearly ? 32 : 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              />
+            </button>
+            <span className={`text-sm font-extralight tracking-wide ${isYearly ? 'text-white' : 'text-gray-500'}`}>
+              Yearly
+            </span>
+            {isYearly && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-xs font-light text-green-400 tracking-wide"
+              >
+                Save 20%
+              </motion.span>
+            )}
           </motion.div>
         </div>
       </section>
@@ -186,24 +229,28 @@ export default function PricingPage() {
                 <div className="mb-8">
                   <div className="flex items-baseline gap-1">
                     <span className="text-5xl font-thin tracking-tight">
-                      ${tier.price}
+                      ${isYearly ? Math.floor(tier.price * 12 * 0.8) : tier.price}
                     </span>
                     <span className="text-sm font-extralight text-gray-500 tracking-wider">
-                      /month
+                      /{isYearly ? 'year' : 'month'}
                     </span>
                   </div>
+                  {isYearly && (
+                    <p className="text-xs font-extralight text-gray-500 mt-2">
+                      ${tier.price}/month billed annually
+                    </p>
+                  )}
                 </div>
 
                 {/* CTA Button */}
-                <button
-                  className={`w-full py-3 rounded border text-sm font-light tracking-[0.1em] transition-all mb-8 ${
-                    tier.popular
-                      ? 'bg-white text-black border-white hover:bg-white/90'
-                      : 'border-white/10 hover:border-white/30 hover:bg-white/5'
-                  }`}
-                >
-                  {tier.cta}
-                </button>
+                <div className="mb-8">
+                  <SubscribeButton
+                    tier={tier.tierKey}
+                    billingInterval={isYearly ? 'year' : 'month'}
+                    label={tier.cta}
+                    popular={tier.popular}
+                  />
+                </div>
 
                 {/* Features */}
                 <div className="space-y-3">
@@ -302,7 +349,7 @@ export default function PricingPage() {
       <footer className="border-t border-white/5 py-12 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-[10px] font-extralight tracking-[0.3em] text-gray-600 uppercase">
-            © 2024 Offense • All Rights Reserved
+            © 2024 Atelier • All Rights Reserved
           </p>
         </div>
       </footer>

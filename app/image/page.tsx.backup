@@ -1,0 +1,398 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { createClient } from '../../lib/supabase/client'
+import { Sparkles, Image as ImageIcon, Download, Loader } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
+
+export default function ImagePage() {
+  const router = useRouter()
+  const supabase = createClient()
+  
+  const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  
+  // Form states
+  const [prompt, setPrompt] = useState('')
+  const [referenceImage, setReferenceImage] = useState<File | null>(null)
+  const [referencePreview, setReferencePreview] = useState<string | null>(null)
+  const [generatedImages, setGeneratedImages] = useState<any[]>([
+    // Example images to show users what's possible
+    {
+      id: 'example-1',
+      prompt: 'A matte black hypercar with aggressive aerodynamic styling, dramatic lighting, studio setting',
+      url: '/image/_m9z719mqsvg3fznyh33l_0.webp',
+      created_at: new Date().toISOString(),
+      isExample: true
+    },
+    {
+      id: 'example-2',
+      prompt: 'Sleek silver sports car with LED headlights, low angle shot, sunset background',
+      url: '/image/_rflke8qieluposl2cjot_0.webp',
+      created_at: new Date().toISOString(),
+      isExample: true
+    },
+    {
+      id: 'example-3',
+      prompt: 'Beautiful aesthetically pleasing cinematic car image with perfect composition',
+      url: '/image/create_a_very_very_beautiful_aesthetically_pleasing_image_that_looks_exactly_like_this_where_its_ci_2vhr50z6s676wi5g7f13_1.webp',
+      created_at: new Date().toISOString(),
+      isExample: true
+    }
+  ])
+
+  useEffect(() => {
+    loadUserData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const loadUserData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        router.push('/sign-in')
+        return
+      }
+
+      setUser(user)
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (profileData) {
+        setProfile(profileData)
+      }
+    } catch (error: any) {
+      toast.error('Error loading profile', {
+        style: {
+          background: '#0a0a0a',
+          color: '#ef4444',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          fontSize: '12px',
+          fontWeight: '300',
+        },
+      })
+      router.push('/sign-in')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      toast.error('Please enter a prompt', {
+        style: {
+          background: '#0a0a0a',
+          color: '#ef4444',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          fontSize: '12px',
+          fontWeight: '300',
+        },
+      })
+      return
+    }
+
+    if (profile?.credits_remaining < 1) {
+      toast.error('Not enough credits', {
+        style: {
+          background: '#0a0a0a',
+          color: '#ef4444',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          fontSize: '12px',
+          fontWeight: '300',
+        },
+      })
+      return
+    }
+
+    setGenerating(true)
+    try {
+      // TODO: Call your AI image generation API here
+      // For now, showing placeholder
+      toast.success('Image generation will be implemented with your AI API', {
+        style: {
+          background: '#0a0a0a',
+          color: '#fff',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          fontSize: '12px',
+          fontWeight: '300',
+        },
+      })
+
+      // Simulate generation
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      // Add to generated images at the TOP (newest first)
+      const newImage = {
+        id: Date.now(),
+        prompt: prompt,
+        url: '/dashboard/_dg4x39w0egf4bg8of1ss_0.webp', // Replace with actual generated image
+        created_at: new Date().toISOString(),
+        isExample: false
+      }
+
+      // Prepend new image to the beginning of array
+      setGeneratedImages([newImage, ...generatedImages])
+      setPrompt('')
+
+    } catch (error: any) {
+      toast.error('Failed to generate image', {
+        style: {
+          background: '#0a0a0a',
+          color: '#ef4444',
+          border: '1px solid rgba(239, 68, 68, 0.2)',
+          fontSize: '12px',
+          fontWeight: '300',
+        },
+      })
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-xs text-gray-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Toast Notifications */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#0a0a0a',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            fontSize: '12px',
+            fontWeight: '300',
+          },
+        }}
+      />
+
+      {/* Main Studio Layout */}
+      <div className="h-screen flex">
+        {/* Left Control Panel */}
+        <div className="w-80 border-r border-white/5 bg-gradient-to-b from-black/50 via-black/30 to-black/50 backdrop-blur-sm p-6 overflow-y-auto flex flex-col">
+          {/* Header with Credits */}
+          <div className="mb-6 pb-6 border-b border-white/5">
+            <Link href="/dashboard" className="flex items-center gap-2 text-xs font-light text-gray-400 hover:text-white transition-colors mb-4">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Dashboard
+            </Link>
+            <div className="flex items-center justify-between px-3 py-2 bg-white/5 rounded">
+              <span className="text-[10px] font-light text-gray-500 uppercase tracking-wide">Credits</span>
+              <span className="text-sm font-thin text-white">{profile?.credits_remaining || 0}</span>
+            </div>
+          </div>
+
+          {/* Prompt Section */}
+          <div className="mb-8">
+            <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Prompt</h3>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe your car in detail..."
+              className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors resize-none h-32"
+              disabled={generating}
+            />
+            <p className="text-[10px] text-gray-500 mt-2">Be specific about style, color, angle, and details</p>
+          </div>
+
+          {/* Reference Image Upload */}
+          <div className="mb-8">
+            <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Reference Image (Optional)</h3>
+            
+            {!referencePreview ? (
+              <label className="block cursor-pointer">
+                <div className="w-full h-32 bg-white/5 border border-white/10 border-dashed rounded flex flex-col items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all">
+                  <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-xs font-light text-gray-400">Click to upload reference image</p>
+                  <p className="text-[10px] text-gray-500 mt-1">JPG, PNG up to 10MB</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setReferenceImage(file)
+                      const reader = new FileReader()
+                      reader.onload = (e) => setReferencePreview(e.target?.result as string)
+                      reader.readAsDataURL(file)
+                    }
+                  }}
+                  className="hidden"
+                  disabled={generating}
+                />
+              </label>
+            ) : (
+              <div className="relative">
+                <div className="w-full h-32 bg-black rounded overflow-hidden border border-white/10">
+                  <img
+                    src={referencePreview}
+                    alt="Reference"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setReferenceImage(null)
+                    setReferencePreview(null)
+                  }}
+                  className="absolute top-2 right-2 p-1.5 bg-black/80 backdrop-blur-sm border border-white/10 rounded text-white hover:bg-red-500/20 hover:border-red-500/30 transition-all"
+                  disabled={generating}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            <p className="text-[10px] text-gray-500 mt-2">Upload a car image as reference for AI generation</p>
+          </div>
+
+          {/* Style Presets */
+          <div className="mb-8">
+            <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Style</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button className="group px-3 py-3 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-gradient-to-br hover:from-blue-500/20 hover:to-blue-600/10 hover:border-blue-500/30 transition-all">
+                <span className="group-hover:text-blue-400 transition-colors">Realistic</span>
+              </button>
+              <button className="group px-3 py-3 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-gradient-to-br hover:from-purple-500/20 hover:to-purple-600/10 hover:border-purple-500/30 transition-all">
+                <span className="group-hover:text-purple-400 transition-colors">Cinematic</span>
+              </button>
+              <button className="group px-3 py-3 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-gradient-to-br hover:from-green-500/20 hover:to-green-600/10 hover:border-green-500/30 transition-all">
+                <span className="group-hover:text-green-400 transition-colors">Studio</span>
+              </button>
+              <button className="group px-3 py-3 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-gradient-to-br hover:from-orange-500/20 hover:to-orange-600/10 hover:border-orange-500/30 transition-all">
+                <span className="group-hover:text-orange-400 transition-colors">Artistic</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Generate Button */}
+          <button
+            onClick={handleGenerate}
+            disabled={generating || !prompt.trim()}
+            className="w-full py-3.5 bg-gradient-to-br from-red-500 via-red-600 to-red-500 text-white rounded text-sm font-light hover:from-red-600 hover:via-red-700 hover:to-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/20"
+          >
+            {generating ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Generate (1 credit)
+              </>
+            )}
+          </button>
+
+          {/* History Section - Shows most recent non-example images */}
+          {generatedImages.filter(img => !img.isExample).length > 0 && (
+            <div className="mt-8 pt-8 border-t border-white/5">
+              <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Recent</h3>
+              <div className="space-y-2">
+                {generatedImages.filter(img => !img.isExample).slice(0, 4).map((image) => (
+                  <div key={image.id} className="group bg-white/5 border border-white/10 rounded p-3 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                      <p className="text-[9px] font-light text-gray-500 uppercase">New</p>
+                    </div>
+                    <p className="text-[10px] font-light text-gray-400 group-hover:text-gray-300 line-clamp-2 transition-colors">{image.prompt}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Canvas Area - Gallery Grid */}
+        <div className="flex-1 bg-[#0a0a0a] p-8 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-thin tracking-tight mb-2">Generated Images</h2>
+              <p className="text-xs font-light text-gray-500">
+                {generatedImages.filter(img => !img.isExample).length} generations • {generatedImages.filter(img => img.isExample).length} examples
+              </p>
+            </div>
+
+            {/* Image Stack - Single Column */}
+            <div className="space-y-6">
+              {generatedImages.map((image) => (
+                <div 
+                  key={image.id} 
+                  className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded overflow-hidden hover:border-white/20 transition-all"
+                >
+                  {/* Image */}
+                  <div className="relative w-full h-96 bg-black overflow-hidden">
+                    {image.isExample && (
+                      <div className="absolute top-4 left-4 z-10 px-3 py-1.5 bg-blue-500/80 backdrop-blur-sm rounded text-[10px] font-light uppercase tracking-wide">
+                        Example
+                      </div>
+                    )}
+                    {!image.isExample && (
+                      <div className="absolute top-4 left-4 z-10 px-3 py-1.5 bg-green-500/80 backdrop-blur-sm rounded text-[10px] font-light uppercase tracking-wide">
+                        New
+                      </div>
+                    )}
+                    <img 
+                      src={image.url} 
+                      alt={image.prompt}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+
+                  {/* Details */}
+                  <div className="p-5 flex items-center justify-between">
+                    <p className="text-sm font-light text-gray-300 flex-1 mr-6">
+                      {image.prompt}
+                    </p>
+                    
+                    {/* Actions */}
+                    <div className="flex gap-3 flex-shrink-0">
+                      <button className="px-4 py-2.5 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors flex items-center gap-2">
+                        <Download className="w-4 h-4" />
+                        Download
+                      </button>
+                      <Link 
+                        href="/studio"
+                        className="px-4 py-2.5 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 rounded text-xs font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Convert to 3D
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -74,7 +74,6 @@ export default function STLUploader({ onFileUploaded }: STLUploaderProps) {
       }
 
     } catch (error) {
-      console.error('Upload error:', error)
       setFiles(prev => prev.map(f => 
         f.id === fileId 
           ? { ...f, status: 'failed', progress: 0 }

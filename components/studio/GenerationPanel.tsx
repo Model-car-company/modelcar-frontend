@@ -12,10 +12,9 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [model, setModel] = useState('standard')
-  const [style, setStyle] = useState('realistic')
-  const [resolution, setResolution] = useState('high')
   const [mode, setMode] = useState<'text' | 'image'>('text')
+  const [generatedImage, setGeneratedImage] = useState<string>('')
+  const [chatHistory, setChatHistory] = useState<Array<{role: string, content: string}>>([])  
 
   const handleGenerate = async () => {
     if (!prompt) return
@@ -24,45 +23,84 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
     setProgress(0)
     
     try {
+      // Add to chat history
+      setChatHistory(prev => [...prev, { role: 'user', content: prompt }])
+      
       // Update progress incrementally
       const progressInterval = setInterval(() => {
         setProgress(prev => Math.min(prev + 10, 90))
-      }, 300)
+      }, 500)
 
-      // Call the real API
-      const formData = new FormData()
-      formData.append('prompt', prompt)
-      formData.append('quality', resolution)
+      if (mode === 'text') {
+        // Text to Image via Gemini Nano Banana
+        const response = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            prompt,
+            previousImage: generatedImage,
+            chatHistory 
+          }),
+        })
 
-      const response = await fetch('/api/generate-3d', {
-        method: 'POST',
-        body: formData,
-      })
+        clearInterval(progressInterval)
+        
+        if (!response.ok) {
+          throw new Error('Image generation failed')
+        }
 
-      clearInterval(progressInterval)
-      
-      if (!response.ok) {
-        throw new Error('Generation failed')
+        const data = await response.json()
+        setProgress(100)
+        
+        // Display generated image
+        if (data.imageUrl) {
+          setGeneratedImage(data.imageUrl)
+          setChatHistory(prev => [...prev, { 
+            role: 'assistant', 
+            content: generatedImage ? 'Image updated!' : 'Image generated! Click "Convert to 3D" or refine it further.' 
+          }])
+        }
+        
+        setTimeout(() => {
+          setIsGenerating(false)
+          setProgress(0)
+          setPrompt('')
+        }, 1000)
+        
+      } else {
+        // Image to 3D (existing flow)
+        const formData = new FormData()
+        formData.append('prompt', prompt)
+        formData.append('quality', 'high')
+
+        const response = await fetch('/api/generate-3d', {
+          method: 'POST',
+          body: formData,
+        })
+
+        clearInterval(progressInterval)
+        
+        if (!response.ok) {
+          throw new Error('3D generation failed')
+        }
+
+        const data = await response.json()
+        setProgress(100)
+        
+        if (data.modelUrl) {
+          onGenerate(data.modelUrl)
+        }
+        
+        setTimeout(() => {
+          setIsGenerating(false)
+          setProgress(0)
+        }, 1000)
       }
-
-      const data = await response.json()
-      setProgress(100)
-      
-      // Pass the generated model URL to parent
-      if (data.modelUrl) {
-        onGenerate(data.modelUrl)
-      }
-      
-      setTimeout(() => {
-        setIsGenerating(false)
-        setProgress(0)
-      }, 1000)
 
     } catch (error) {
-      console.error('Generation error:', error)
       setIsGenerating(false)
       setProgress(0)
-      alert('Failed to generate 3D model. Please try again.')
+      alert(`Failed to generate. Please try again. ${error}`)
     }
   }
 
@@ -80,7 +118,7 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
 
       const formData = new FormData()
       formData.append('image', file)
-      formData.append('quality', resolution)
+      formData.append('quality', 'high')
 
       const response = await fetch('/api/generate-3d', {
         method: 'POST',
@@ -106,7 +144,6 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
       }, 1000)
 
     } catch (error) {
-      console.error('Upload error:', error)
       setIsGenerating(false)
       setProgress(0)
       alert('Failed to process image. Please try again.')
@@ -119,24 +156,23 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
       animate={{ opacity: 1, x: 0 }}
       className="space-y-4"
     >
-      {/* Generation Mode Tabs */}
       <div className="flex gap-2 p-1 bg-white/5 rounded-lg">
         <button 
           onClick={() => setMode('text')}
           className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
             mode === 'text' 
-              ? 'bg-red-500/20 text-red-400' 
+              ? 'bg-white text-black' 
               : 'hover:bg-white/5 text-gray-400'
           }`}
         >
           <Wand2 className="w-3 h-3" />
-          Text to 3D
+          Text to Image
         </button>
         <button 
           onClick={() => setMode('image')}
           className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
             mode === 'image' 
-              ? 'bg-red-500/20 text-red-400' 
+              ? 'bg-white text-black' 
               : 'hover:bg-white/5 text-gray-400'
           }`}
         >
@@ -145,123 +181,134 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
         </button>
       </div>
 
-      {/* Text Mode Content */}
+      {/* Text to Image Mode */}
       {mode === 'text' && (
         <>
+          {/* Generated Image Display */}
+          {generatedImage && (
+            <div className="relative">
+              <img src={generatedImage} alt="Generated" className="w-full rounded-lg border border-white/10" />
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button
+                  onClick={() => setMode('image')}
+                  className="px-3 py-1.5 bg-green-500 text-white text-xs rounded hover:bg-green-600 font-medium"
+                >
+                  Convert to 3D →
+                </button>
+                <button
+                  onClick={() => {
+                    setGeneratedImage('')
+                    setChatHistory([])
+                    setPrompt('')
+                  }}
+                  className="px-3 py-1.5 bg-red-500/20 text-red-400 text-xs rounded hover:bg-red-500/30"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Chat History */}
+          {chatHistory.length > 0 && (
+            <div className="max-h-32 overflow-y-auto space-y-2 p-2 bg-white/5 rounded">
+              {chatHistory.map((msg, i) => (
+                <div key={i} className={`text-xs ${msg.role === 'user' ? 'text-gray-300' : 'text-blue-400'}`}>
+                  <span className="font-medium">{msg.role === 'user' ? 'You' : 'Gemini'}:</span> {msg.content}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Text Prompt */}
           <div>
             <label className="text-xs font-light text-gray-400 mb-2 block">
-              Describe your car model
+              {generatedImage ? 'Refine your car ("make it red", "add spoiler")' : 'Describe your dream car'}
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="A futuristic sports car with aerodynamic design, carbon fiber body, and glowing LED accents..."
-              className="w-full h-24 px-3 py-2 bg-white/5 border border-white/10 rounded text-sm font-light resize-none focus:outline-none focus:border-white/30"
+              placeholder={generatedImage 
+                ? "Make the wheels bigger, change color to matte black, add carbon fiber hood..."
+                : "A futuristic cyberpunk sports car with neon underglow, aggressive stance,"}
+              className="w-full h-20 px-3 py-2 bg-white/5 border border-white/10 rounded text-sm font-light resize-none focus:outline-none focus:border-white/30"
             />
           </div>
 
           {/* Quick Prompts */}
-          <div>
-            <label className="text-xs font-light text-gray-400 mb-2 block">
-              Quick Prompts
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                'Cyberpunk Car',
-                'Classic Muscle',
-                'F1 Racing',
-                'Luxury SUV'
-              ].map(quick => (
-                <button
-                  key={quick}
-                  onClick={() => setPrompt(quick)}
-                  className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs hover:bg-white/10"
-                >
-                  {quick}
-                </button>
-              ))}
+          {!generatedImage && (
+            <div>
+              <label className="text-xs font-light text-gray-400 mb-2 block">
+                Quick Prompts
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  'Cyberpunk muscle car',
+                  'Matte black supercar',
+                  'Vintage racing car',
+                  'Electric concept'
+                ].map((quick) => (
+                  <button
+                    key={quick}
+                    onClick={() => setPrompt(quick)}
+                    className="px-2 py-1.5 bg-white/5 border border-white/10 text-[10px] font-light text-white hover:bg-white/10 transition-colors text-center"
+                  >
+                    {quick}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
 
       {/* Image Mode Content */}
       {mode === 'image' && (
-        <div>
-          <label className="text-xs font-light text-gray-400 mb-3 block">
-            Upload car image
-          </label>
-          <label className="block">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-            <div className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center cursor-pointer hover:border-white/30 transition-colors">
-              <Upload className="w-12 h-12 mx-auto mb-3 text-gray-500" />
-              <p className="text-sm text-gray-300 mb-1">Click or drag image here</p>
-              <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+        <>
+
+          {/* Show Generated Image if exists */}
+          {generatedImage && (
+            <div className="p-3 bg-white/5 border border-white/10 rounded">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-3 h-3 text-blue-400" />
+                <span className="text-xs text-blue-400">Using your generated image</span>
+              </div>
+              <img src={generatedImage} alt="Generated" className="w-full rounded border border-white/10 mb-2" />
+              <button
+                onClick={async () => {
+                  // Convert generated image to 3D
+                  setIsGenerating(true)
+                  // Trigger conversion with the generated image
+                  // You would send generatedImage to Meshy.ai here
+                }}
+                className="w-full px-3 py-2 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+              >
+                Convert This to 3D Model
+              </button>
             </div>
-          </label>
-        </div>
+          )}
+
+          <div>
+            <label className="text-xs font-light text-gray-400 mb-3 block">
+              Or upload a different car image
+            </label>
+            <label className="block">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <div className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center cursor-pointer hover:border-white/30 transition-colors">
+                <Upload className="w-12 h-12 mx-auto mb-3 text-gray-500" />
+                <p className="text-sm text-gray-300 mb-1">Click or drag image here</p>
+                <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+              </div>
+            </label>
+          </div>
+        </>
       )}
 
-      {/* Model Settings */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-light text-gray-400 mb-2 block">
-            AI Model
-          </label>
-          <select 
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light focus:outline-none"
-          >
-            <option value="fast">Fast (30s)</option>
-            <option value="standard">Standard (1m)</option>
-            <option value="ultra">Ultra (3m)</option>
-          </select>
-        </div>
-        
-        <div>
-          <label className="text-xs font-light text-gray-400 mb-2 block">
-            Style
-          </label>
-          <select 
-            value={style}
-            onChange={(e) => setStyle(e.target.value)}
-            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light focus:outline-none"
-          >
-            <option value="realistic">Realistic</option>
-            <option value="stylized">Stylized</option>
-            <option value="lowpoly">Low Poly</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Resolution */}
-      <div>
-        <label className="text-xs font-light text-gray-400 mb-2 block">
-          Mesh Resolution
-        </label>
-        <div className="flex gap-2">
-          {['draft', 'standard', 'high', 'ultra'].map(res => (
-            <button
-              key={res}
-              onClick={() => setResolution(res)}
-              className={`flex-1 py-2 text-xs font-light rounded ${
-                resolution === res
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/50'
-                  : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
-              }`}
-            >
-              {res}
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Generate Button */}
       <button
@@ -276,12 +323,14 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
         {isGenerating ? (
           <>
             <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-            Generating... {progress}%
+            {mode === 'text' ? `Generating Image... ${progress}%` : `Converting... ${progress}%`}
           </>
         ) : (
           <>
             <Sparkles className="w-4 h-4" />
-            {mode === 'text' ? 'Generate 3D Model' : 'Upload & Generate'}
+            {mode === 'text' 
+              ? (generatedImage ? 'Refine Image' : 'Generate Image')
+              : 'Upload & Generate'}
           </>
         )}
       </button>
@@ -297,28 +346,6 @@ export default function GenerationPanel({ onGenerate }: GenerationPanelProps) {
         </div>
       )}
 
-      {/* Recent Generations */}
-      <div className="pt-4 border-t border-white/10">
-        <h3 className="text-xs font-light text-gray-400 mb-3">Recent</h3>
-        <div className="space-y-2">
-          {[
-            { name: 'Cybertruck', time: '2m' },
-            { name: 'McLaren P1', time: '15m' },
-            { name: 'Vintage GT', time: '1h' }
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between p-2 bg-white/5 rounded hover:bg-white/10 cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <Box className="w-4 h-4 text-gray-500" />
-                <span className="text-xs">{item.name}</span>
-              </div>
-              <span className="text-xs text-gray-500">{item.time}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </motion.div>
   )
 }

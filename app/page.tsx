@@ -2,79 +2,39 @@
 
 import { useState, useEffect } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { useInView } from 'react-intersection-observer'
-import { ArrowRight, ChevronLeft, ChevronRight, Sparkles, Store, X, DollarSign, Ticket, Download, Printer, MessageCircle, Trophy, Image as ImageIcon, Instagram, Music, Bot } from 'lucide-react'
+import { ArrowRight, Sparkles, Box, Download, Zap, Image as ImageIcon, Check, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
+import SimpleFooter from '../components/SimpleFooter'
 import Image from 'next/image'
-// import Model3DUploader from '../components/Model3DUploader'
-// import ModelCatalog from '../components/ModelCatalog'
+import { useRouter } from 'next/navigation'
+import { createClient } from '../lib/supabase/client'
 import HeroSection from '../components/HeroSection'
 
 export default function Home() {
-  const [currentModel, setCurrentModel] = useState(0)
+  const router = useRouter()
+  const supabase = createClient()
   const { scrollYProgress } = useScroll()
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', '30%'])
   const y1 = useTransform(scrollYProgress, [0, 0.5], ['0%', '20%'])
   const y2 = useTransform(scrollYProgress, [0, 0.5], ['0%', '10%'])
   const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0])
-  
-  const models = [
-    {
-      id: '01',
-      name: 'GRANBEAT',
-      subtitle: 'Ultimate Precision Masterpiece',
-      year: '2024',
-      scale: '1:18',
-      edition: 'Limited Edition',
-      description: 'Meticulously crafted with obsessive attention to detail. Every curve, every line, every surface finish replicated to perfection.',
-      image: '/features/i_want_you_to_create_a_card_design_very_similar_to_this_car_design_09wtxux3n4byspgmqcwp_3.png',
-    },
-    {
-      id: '02', 
-      name: 'SILHOUETTE',
-      subtitle: 'Racing Heritage Refined',
-      year: '2024',
-      scale: '1:24',
-      edition: 'Signature Series',
-      description: 'A celebration of motorsport excellence. Hand-assembled components with authentic racing livery and carbon fiber detailing.',
-      image: '/features/i_want_you_to_create_a_card_design_very_similar_to_this_car_design_e7pg03fe7u5etxxshcsc_3.png',
-    },
-    {
-      id: '03',
-      name: 'ETHEREAL',
-      subtitle: 'Future Classic Collection',
-      year: '2024',
-      scale: '1:12',
-      edition: 'Artist Edition',
-      description: 'Where art meets engineering. Each model individually numbered and signed by our master craftsmen.',
-      image: '/features/i_want_you_to_create_a_card_design_very_similar_to_this_car_design_ior5ussxvs42nyv0z40a_3.png',
-    },
-    {
-      id: '04',
-      name: 'VELOCITY',
-      subtitle: 'Performance Art Edition',
-      year: '2024',
-      scale: '1:18',
-      edition: 'Exclusive Series',
-      description: 'The perfect fusion of speed and elegance. Premium materials and authentic detailing bring this masterpiece to life.',
-      image: '/features/i_want_you_to_create_a_card_design_very_similar_to_this_car_design_ok0d3nxo93vw6h0boaqe_1.png',
-    },
-  ]
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        router.push('/dashboard')
+      }
+    }
+    checkAuth()
+  }, [router, supabase])
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden relative">
       {/* Sophisticated Gradient Background */}
       <div className="fixed inset-0 z-0">
-        {/* Main gradient orb - top right */}
         <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-gradient-radial from-gray-100/15 via-gray-300/8 to-transparent blur-3xl" />
-        
-        {/* Secondary gradient orb - center left */}
         <div className="absolute top-1/3 left-0 w-[800px] h-[800px] bg-gradient-radial from-white/12 via-gray-200/6 to-transparent blur-3xl" />
-        
-        {/* Tertiary gradient orb - bottom right */}
         <div className="absolute bottom-0 right-1/4 w-[900px] h-[900px] bg-gradient-radial from-gray-50/10 via-gray-400/5 to-transparent blur-3xl" />
-        
-        {/* Overlay gradient for depth */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
       </div>
       
@@ -83,15 +43,24 @@ export default function Home() {
 
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-sm border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-4 sm:py-6">
           <div className="flex justify-between items-center">
-            <div className="text-xl font-thin tracking-[0.2em]">OFFENSE</div>
-            <div className="hidden md:flex gap-12 text-[11px] font-extralight tracking-[0.2em] uppercase">
-              <Link href="/studio" className="hover:opacity-60 transition-opacity flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                3D STUDIO
+            <Link href="/" className="text-lg sm:text-xl font-thin tracking-[0.3em] hover:opacity-60 transition-opacity">
+              ATELIER
+            </Link>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Link 
+                href="/sign-in"
+                className="text-[10px] sm:text-[11px] font-extralight tracking-[0.2em] uppercase hover:opacity-60 transition-opacity"
+              >
+                SIGN IN
               </Link>
-              {/* <Link href="/pricing" className="hover:opacity-60 transition-opacity">PRICING</Link> */}
+              <Link 
+                href="/sign-up"
+                className="px-3 sm:px-6 py-1.5 sm:py-2 bg-white text-black text-[10px] sm:text-[11px] font-light tracking-[0.2em] uppercase hover:bg-gray-100 transition-colors"
+              >
+                START FREE
+              </Link>
             </div>
           </div>
         </div>
@@ -100,29 +69,709 @@ export default function Home() {
       {/* Hero Section */}
       <HeroSection y1={y1} y2={y2} opacity={opacity} />
 
-      {/* THE PROBLEM Section */}
-      <section className="py-32 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 text-center">
-          <h2 className="text-4xl md:text-6xl font-thin tracking-tight mb-20">
-            You Can't Find These Cars <span className="text-red-400">Anywhere Else</span>
-          </h2>
-          
-          <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
+      {/* Before/After - Personalize Your Car Section */}
+      <section className="min-h-screen relative py-16 sm:py-24 lg:py-32 border-t border-white/5">
+        <div className="border-l border-r border-white/5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+            {/* Header */}
+            <div className="text-center mb-12 sm:mb-20">
+              <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+                YOUR CAR, YOUR WAY
+              </p>
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight mb-6">
+                Turn Your Car Into a 3D Masterpiece
+              </h2>
+              <p className="text-sm sm:text-base font-extralight text-gray-400 max-w-2xl mx-auto">
+                Upload a photo of your actual car and watch AI transform it into a fully customizable 3D model
+              </p>
+            </div>
+
+            {/* Before/After Comparison */}
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 mb-16">
+              {/* BEFORE - Photo */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+                className="relative"
+              >
+                <div className="absolute -top-6 left-0 z-10">
+                  <span className="text-[10px] font-light tracking-[0.3em] uppercase text-gray-400 bg-black px-3 py-1 border border-white/10">
+                    BEFORE
+                  </span>
+                </div>
+                
+                <div className="aspect-[4/3] bg-white/5 border border-white/10 rounded-sm overflow-hidden relative group">
+                  <Image
+                    src="/landing/Gemini_Generated_Image_5v80oa5v80oa5v80.png"
+                    alt="Your car photo"
+                    fill
+                    className="object-cover opacity-90"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="absolute bottom-6 left-6 right-6">
+                    <p className="text-xs font-extralight text-gray-300">Regular Photo</p>
+                    <p className="text-lg font-light text-white mt-1">Upload any car image</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-2">
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Any angle, any lighting</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>JPG, PNG, or HEIC</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Multiple photos for better results</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Arrow */}
+              <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                <div className="w-12 h-12 bg-white rounded flex items-center justify-center">
+                  <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* AFTER - 3D Model */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="relative"
+              >
+                <div className="absolute -top-6 left-0 z-10">
+                  <span className="text-[10px] font-light tracking-[0.3em] uppercase text-gray-400 bg-black px-3 py-1 border border-white/10">
+                    AFTER
+                  </span>
+                </div>
+                
+                <div className="aspect-[4/3] bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-sm overflow-hidden relative group">
+                  <Image
+                    src="/landing/Gemini_Generated_Image_wsgn3cwsgn3cwsgn.png"
+                    alt="3D model result"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="absolute bottom-6 left-6 right-6">
+                    <p className="text-xs font-extralight text-gray-300">Interactive 3D Model</p>
+                    <p className="text-lg font-light text-white mt-1">Ready to customize & print</p>
+                  </div>
+                  
+                  {/* 3D Badge */}
+                  <div className="absolute top-6 right-6 bg-white/10 backdrop-blur-sm px-3 py-1 border border-white/20 rounded">
+                    <span className="text-xs font-light text-white">3D</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-2">
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Rotate & zoom in real-time</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Customize colors, wheels, parts</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Export as STL for 3D printing</span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* CTA */}
+            <div className="text-center">
+              <Link 
+                href="/studio"
+                className="inline-flex items-center gap-3 px-8 py-4 bg-white text-black text-sm font-light tracking-wide hover:bg-gray-100 transition-all"
+              >
+                TRY IT NOW
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+              <p className="text-xs text-gray-500 mt-4">
+                Get early access now
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-16 sm:py-24 lg:py-32 border-t border-white/5">
+        <div className="border-l border-r border-white/5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+            <div className="text-center mb-12 sm:mb-20">
+              <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+                COMPLETE CREATIVE WORKFLOW
+              </p>
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight mb-4 sm:mb-6">
+                Everything You Need
+              </h2>
+              <p className="text-sm sm:text-base font-extralight text-gray-400 max-w-2xl mx-auto">
+                From concept to 3D-printable model in minutes, not hours
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 border-t border-l border-white/10">
+            {/* Feature 1: AI Image Generation */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0 }}
+              className="group border-r border-b border-white/10 p-8 sm:p-12 hover:bg-white/5 transition-all"
+            >
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 border border-white/20 rounded flex items-center justify-center mb-6">
+                <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" strokeWidth={1.5} />
+              </div>
+              
+              <h3 className="text-lg sm:text-xl font-light mb-3">AI Image Generation</h3>
+              <p className="text-sm font-extralight text-gray-400 mb-6 leading-relaxed">
+                Describe your dream car and watch AI bring it to life with photorealistic detail. Perfect lighting, angles, and composition every time.
+              </p>
+              
+              <ul className="space-y-2 text-xs font-light text-gray-500">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Photorealistic AI rendering</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Upload reference images</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Multiple style presets</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Feature 2: 3D Model Creation */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="group border-r border-b border-white/10 p-8 sm:p-12 hover:bg-white/5 transition-all"
+            >
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 border border-white/20 rounded flex items-center justify-center mb-6">
+                <Box className="w-6 h-6 sm:w-8 sm:h-8 text-white" strokeWidth={1.5} />
+              </div>
+              
+              <h3 className="text-lg sm:text-xl font-light mb-3">3D Model Conversion</h3>
+              <p className="text-sm font-extralight text-gray-400 mb-6 leading-relaxed">
+                Transform any image into a fully-realized 3D model. Our AI understands depth, form, and structure to create accurate models.
+              </p>
+              
+              <ul className="space-y-2 text-xs font-light text-gray-500">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Image-to-3D in minutes</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Interactive 3D viewer</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Real-time preview</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Feature 3: STL Export */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="group border-r border-b border-white/10 p-8 sm:p-12 hover:bg-white/5 transition-all"
+            >
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-white/20 to-white/10 border border-white/30 rounded flex items-center justify-center mb-6">
+                <Download className="w-6 h-6 sm:w-8 sm:h-8 text-white" strokeWidth={1.5} />
+              </div>
+              
+              <h3 className="text-lg sm:text-xl font-light mb-3">Print-Ready STL Files</h3>
+              <p className="text-sm font-extralight text-gray-400 mb-6 leading-relaxed">
+                Download optimized STL, OBJ, or GLB files ready for 3D printing. Perfect topology and scaling for professional results.
+              </p>
+              
+              <ul className="space-y-2 text-xs font-light text-gray-500">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Multiple export formats</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Optimized for 3D printing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Commercial license included</span>
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Feature 4: Model Library */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="group border-r border-b border-white/10 p-8 sm:p-12 hover:bg-white/5 transition-all"
+            >
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/5 border border-white/20 rounded flex items-center justify-center mb-6">
+                <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" strokeWidth={1.5} />
+              </div>
+              
+              <h3 className="text-lg sm:text-xl font-light mb-3">Premium Model Library</h3>
+              <p className="text-sm font-extralight text-gray-400 mb-6 leading-relaxed">
+                Access a curated collection of premium car models. Supercars, classics, JDM legends — all optimized for 3D printing.
+              </p>
+              
+              <ul className="space-y-2 text-xs font-light text-gray-500">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>10+ premium models</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Print-ready with specs</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
+                  <span>Instant downloads</span>
+                </li>
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+        </div>
+      </section>
+
+      {/* Bento Grid Features Section */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-20">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              POWERFUL FEATURES
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight">
+              Build Every Detail To Desire
+            </h2>
+          </div>
+
+          {/* Bento Grid Layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[180px]">
+            {/* Row 1 - Left: Large Feature Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="lg:col-span-2 lg:row-span-2 rounded-lg overflow-hidden relative group hover:scale-[1.02] transition-transform"
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <img 
+                  src="/landing/Gemini_Generated_Image_hbumkohbumkohbum.png" 
+                  alt="Industry-leading speed"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-all" />
+            </motion.div>
+
+            {/* Row 1 - Right Top: 22K */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="rounded-lg overflow-hidden relative hover:scale-[1.02] transition-transform border border-white/10"
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <img 
+                  src="/landing/a7e8e6c3a8557775b1f555920359ade4.jpg" 
+                  alt="22K Upscaling"
+                  className="w-full h-full object-contain object-center"
+                />
+              </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/30 hover:bg-black/20 transition-all" />
+            </motion.div>
+
+            {/* Row 1 - Right Top: Custom Frames */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.15 }}
+              className="bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden relative hover:bg-white/10 transition-all border border-white/10"
+            >
+              <div className="h-full flex flex-col justify-center p-6">
+                <h3 className="text-xl font-thin mb-2">Custom Frames</h3>
+                <p className="text-xs font-light text-gray-400">Design roll cages, chassis, structural parts</p>
+              </div>
+            </motion.div>
+
+            {/* Row 1 - Right Bottom: Interior Design */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="lg:col-span-2 rounded-lg overflow-hidden relative group hover:scale-[1.02] transition-transform"
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <img
+                  src="/landing/Gemini_Generated_Image_7jqtwo7jqtwo7jqt.png"
+                  alt="Interior Design"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all" />
+              {/* Content */}
+              <div className="relative h-full flex flex-col items-center justify-center p-6 text-center">
+                <h3 className="text-3xl sm:text-4xl font-thin">Interior Design</h3>
+              </div>
+            </motion.div>
+
+            {/* Row 2 - Left: Image Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.25 }}
+              className="rounded-lg overflow-hidden relative hover:scale-[1.02] transition-transform"
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <img
+                  src="/landing/Gemini_Generated_Image_qfqaf0qfqaf0qfqa.png"
+                  alt="Design showcase"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/30 hover:bg-black/20 transition-all" />
+            </motion.div>
+
+            {/* Row 2 - Center Right: KREA 1 (Large 2x2) */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="lg:col-span-2 lg:row-span-2 rounded-lg overflow-hidden relative group hover:scale-[1.02] transition-transform"
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <img
+                  src="/landing/_ynh4ozrhtumukeoscbge_0.png"
+                  alt="Krea 1"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all" />
+              {/* Content */}
+              <div className="relative h-full flex flex-col items-center justify-center p-8 text-center">
+              </div>
+            </motion.div>
+
+            {/* Row 2 - Right: Rim Design */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.35 }}
+              className="bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden relative hover:bg-white/10 transition-all border border-white/10"
+            >
+              <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+                <h3 className="text-2xl font-thin mb-2">Rim Design</h3>
+                <p className="text-xs font-light text-gray-400">Create custom wheels and rim styles</p>
+              </div>
+            </motion.div>
+
+            {/* Row 3 - Left: Asset Manager */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              className="bg-gradient-to-br from-purple-500/10 to-pink-600/10 rounded-lg overflow-hidden relative group hover:scale-[1.02] transition-transform"
+            >
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all" />
+              <div className="relative h-full flex flex-col justify-center p-6">
+                <h3 className="text-2xl font-thin mb-2">Fast Prototype</h3>
+                <p className="text-xs font-light text-gray-400">Rapid iteration from concept to 3D model</p>
+              </div>
+            </motion.div>
+
+            {/* Row 3 - Right: Image Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.45 }}
+              className="rounded-lg overflow-hidden relative hover:scale-[1.02] transition-transform"
+            >
+              {/* Background Image */}
+              <div className="absolute inset-0">
+                <img
+                  src="/landing/Gemini_Generated_Image_85a2af85a2af85a2.png"
+                  alt="Latest models"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/30 hover:bg-black/20 transition-all" />
+            </motion.div>
+
+            {/* Row 4 - Left: 1000+ Styles */}
+            {/* <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5 }}
+              className="bg-gradient-to-br from-green-500/10 to-teal-600/10 rounded-lg overflow-hidden relative group hover:scale-[1.02] transition-transform"
+            >
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all" />
+              <div className="relative h-full flex flex-col justify-center p-6">
+                <h3 className="text-2xl font-thin mb-1">1000+</h3>
+                <p className="text-sm font-light">styles</p>
+              </div>
+            </motion.div> */}
+
+            {/* Row 4 - Center: Image Editor */}
+            {/* <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.55 }}
+              className="bg-gradient-to-br from-yellow-500/10 to-orange-600/10 rounded-lg overflow-hidden relative group hover:scale-[1.02] transition-transform"
+            >
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-all" />
+              <div className="relative h-full flex flex-col items-center justify-center p-6 text-center">
+                <h3 className="text-2xl font-light">Image</h3>
+                <p className="text-2xl font-light">Editor</p>
+              </div>
+            </motion.div> */}
+
+            {/* Row 4 - Right: Lipsync */}
+            {/* <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.6 }}
+              className="bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden relative hover:bg-white/10 transition-all border border-white/10"
+            >
+              <div className="h-full flex flex-col items-center justify-center p-6">
+                <div className="mb-3">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+                <h3 className="text-sm font-light">Lipsync</h3>
+              </div>
+            </motion.div> */}
+          </div>
+        </div>
+      </section>
+
+      {/* Membership Benefits Section */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-20">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              WHAT YOU GET
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight">
+            Unlock the Digital Garage
+            </h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 border-t border-l border-white/10">
+            {/* Benefit 1 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-base sm:text-lg font-light mb-2">Monthly Drops</h3>
+              <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
+                New exclusive concept car every week. Open access, zero downtime, and edit in Blender.
+              </p>
+            </motion.div>
+
+            {/* Benefit 2 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.05 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-base sm:text-lg font-light mb-2">Custom AI Models</h3>
+              <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
+                Upload an idea of your own car and download a custom 3D-printable (STL) AI-generated.
+              </p>
+            </motion.div>
+
+            {/* Benefit 3 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-base sm:text-lg font-light mb-2">Unlimited Downloads</h3>
+              <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
+                Print as many copies as you want. Keep your favorites, gift them, or sell them.
+              </p>
+            </motion.div>
+
+            {/* Benefit 4 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.15 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-base sm:text-lg font-light mb-2">Member Perks</h3>
+              <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
+                Vote on new drops, early access to limited editions, exclusive colorways.
+              </p>
+            </motion.div>
+
+            {/* Benefit 5 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-base sm:text-lg font-light mb-2">Print Anywhere</h3>
+              <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
+                Works with ender, Prusa, Bambu, or any FDM/resin printer.
+              </p>
+            </motion.div>
+
+            {/* Benefit 6 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.25 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-base sm:text-lg font-light mb-2">Multiple Formats</h3>
+              <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
+                STL, OBJ, and pre-sliced files included for easy on-point printing.
+              </p>
+            </motion.div>
+
+            {/* Benefit 7 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-base sm:text-lg font-light mb-2">Community Gallery</h3>
+              <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
+                Share your builds, get inspired. Connect with other collectors.
+              </p>
+            </motion.div>
+
+            {/* Benefit 8 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.35 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-base sm:text-lg font-light mb-2">Support Included</h3>
+              <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
+                Priority tips, troubleshooting guides, and active Discord community.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-20">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              SIMPLE 3-STEP PROCESS
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight">
+              From Idea to Reality
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+            {/* Step 1 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="text-center"
             >
-              <div className="w-16 h-16 mx-auto mb-6 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
-                <Store className="w-8 h-8 text-white" strokeWidth={1.5} />
+              <div className="relative mb-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-2xl sm:text-3xl font-thin text-red-400">1</span>
+                </div>
               </div>
-              <h3 className="text-base font-light mb-3 whitespace-nowrap">Generic Models</h3>
-              <p className="text-sm font-extralight text-gray-400">
-                Hot Wheels makes the same cars everyone has. Nothing unique, nothing exclusive.
+              <h3 className="text-lg sm:text-xl font-light mb-3">Describe Your Vision</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Type a prompt or upload a reference image. Be as detailed or simple as you like.
               </p>
             </motion.div>
 
+            {/* Step 2 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -130,15 +779,18 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="text-center"
             >
-              <div className="w-16 h-16 mx-auto mb-6 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
-                <X className="w-8 h-8 text-white" strokeWidth={1.5} />
+              <div className="relative mb-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-2xl sm:text-3xl font-thin text-red-400">2</span>
+                </div>
               </div>
-              <h3 className="text-base font-light mb-3 whitespace-nowrap">No Custom Options</h3>
-              <p className="text-sm font-extralight text-gray-400">
-                Want a model of YOUR car? Good luck finding it.
+              <h3 className="text-lg sm:text-xl font-light mb-3">AI Creates Your Model</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Watch as AI generates your image and converts it to a fully-realized 3D model.
               </p>
             </motion.div>
 
+            {/* Step 3 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -146,54 +798,178 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="text-center"
             >
-              <div className="w-16 h-16 mx-auto mb-6 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
-                <DollarSign className="w-8 h-8 text-white" strokeWidth={1.5} />
+              <div className="relative mb-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-2xl sm:text-3xl font-thin text-red-400">3</span>
+                </div>
               </div>
-              <h3 className="text-base font-light mb-3 whitespace-nowrap">Expensive Customs</h3>
-              <p className="text-sm font-extralight text-gray-400">
-                Commission artists charge $200+ per model. One car. One time.
+              <h3 className="text-lg sm:text-xl font-light mb-3">Download & Create</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Export your 3D model in any format and start 3D printing or rendering immediately.
               </p>
             </motion.div>
           </div>
-
-          <motion.p 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-2xl font-light mt-20 text-red-400"
-          >
-            That's why we built this.
-          </motion.p>
         </div>
       </section>
 
-      {/* Product Showcase - This Month's Drops */}
-      <section className="min-h-screen relative py-32 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="mb-20 text-center">
-            <h3 className="text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">Showcase Gallery</h3>
-            <h2 className="text-4xl md:text-6xl font-thin tracking-tight">This Month's Drops</h2>
-            <p className="text-sm font-extralight text-gray-400 mt-4">Exclusive concept cars you won't find anywhere else</p>
+      {/* Social Proof / Stats Section - COMMENTED OUT */}
+      {/* 
+      <section className="py-16 sm:py-24 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-2">
+              TRUSTED BY CREATORS
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12 text-center">
+            <div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-thin mb-2">10K+</div>
+              <p className="text-xs sm:text-sm font-extralight text-gray-500 uppercase tracking-wide">Images Generated</p>
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-thin mb-2">5K+</div>
+              <p className="text-xs sm:text-sm font-extralight text-gray-500 uppercase tracking-wide">3D Models</p>
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-thin mb-2">1K+</div>
+              <p className="text-xs sm:text-sm font-extralight text-gray-500 uppercase tracking-wide">Creators</p>
+            </div>
+            <div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-thin mb-2">99%</div>
+              <p className="text-xs sm:text-sm font-extralight text-gray-500 uppercase tracking-wide">Satisfaction</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      */}
+
+      {/* Use Cases Section */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-20">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              WHO IT'S FOR
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight">
+              Built for Creators Like You
+            </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 md:gap-16">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {/* Use Case 1 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-lg font-light mb-2">Content Creators</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Create stunning car renders for YouTube thumbnails, Instagram posts, and video content without expensive photoshoots.
+              </p>
+            </motion.div>
+
+            {/* Use Case 2 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-lg font-light mb-2">Car Enthusiasts</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Build your dream garage digitally. Generate and collect 3D models of your favorite cars for personal projects.
+              </p>
+            </motion.div>
+
+            {/* Use Case 3 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-lg font-light mb-2">3D Printing Hobbyists</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Get print-ready STL files of custom car designs. Perfect for collectors building physical model collections.
+              </p>
+            </motion.div>
+
+            {/* Use Case 4 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-lg font-light mb-2">Game Developers</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Generate vehicle assets for your games quickly. Export optimized 3D models ready for Unity or Unreal Engine.
+              </p>
+            </motion.div>
+
+            {/* Use Case 5 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-lg font-light mb-2">Designers & Artists</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Prototype vehicle concepts rapidly. Transform sketches and ideas into 3D models for client presentations.
+              </p>
+            </motion.div>
+
+            {/* Use Case 6 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5 }}
+              className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
+            >
+              <h3 className="text-lg font-light mb-2">Marketing Teams</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Create custom automotive visuals for campaigns. Generate unique car renders without hiring photographers.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* This Month's Drops Section */}
+      <section className="min-h-screen relative py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="mb-12 sm:mb-20 text-center">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              SHOWCASE GALLERY
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight mb-4">
+              Drops Coming Soon
+            </h2>
+            <p className="text-sm font-extralight text-gray-400">
+              Exclusive concept cars you won't find anywhere else
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
             {/* Model Image Area */}
-            <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-900/10 to-black rounded-sm overflow-hidden">
-              <div className="absolute inset-0 glass-dark" />
+            <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-900/10 to-black rounded overflow-hidden border border-white/10">
               <motion.div 
                 className="absolute inset-0"
-                key={currentModel}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6 }}
               >
-                <Image
-                  src={models[currentModel].image}
-                  alt={models[currentModel].name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
-                  priority
+                <img 
+                  src="/features/i_want_you_to_create_a_card_design_very_similar_to_this_car_design_09wtxux3n4byspgmqcwp_3.png"
+                  alt="GRANBEAT"
+                  className="w-full h-full object-cover"
                 />
               </motion.div>
             </div>
@@ -202,56 +978,46 @@ export default function Home() {
             <div className="flex flex-col justify-between">
               <div>
                 <motion.div
-                  key={currentModel}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
                 >
                   <p className="text-[10px] font-light tracking-[0.3em] uppercase text-gray-400 mb-4">
-                    {models[currentModel].edition}
+                    LIMITED EDITION
                   </p>
-                  <h3 className="text-4xl md:text-5xl font-thin mb-2 whitespace-nowrap">
-                    {models[currentModel].name}
+                  <h3 className="text-3xl sm:text-4xl md:text-5xl font-thin mb-2">
+                    GRANBEAT
                   </h3>
                   <p className="text-sm font-extralight text-gray-400 mb-8">
-                    {models[currentModel].subtitle}
+                    Ultimate Precision Masterpiece
                   </p>
-                  
-                  <div className="space-y-6 mb-12">
-                    <div className="flex justify-between py-3 border-b border-white/10">
-                      <span className="text-[11px] font-extralight tracking-[0.2em] uppercase text-gray-500">Scale</span>
-                      <span className="text-sm font-light">{models[currentModel].scale}</span>
-                    </div>
-                    <div className="flex justify-between py-3 border-b border-white/10">
-                      <span className="text-[11px] font-extralight tracking-[0.2em] uppercase text-gray-500">Year</span>
-                      <span className="text-sm font-light">{models[currentModel].year}</span>
-                    </div>
-                  </div>
 
-                  <p className="text-sm font-extralight leading-relaxed text-gray-300 mb-12">
-                    {models[currentModel].description}
+                  <p className="text-sm font-extralight text-gray-400 leading-relaxed mb-8">
+                    Meticulously crafted with obsessive attention to detail. Every curve, every line, every surface finish replicated to perfection.
                   </p>
+
+                  <Link 
+                    href="/sign-up"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-white text-sm font-light hover:bg-white/10 transition-all"
+                  >
+                    VIEW DETAILS
+                  </Link>
                 </motion.div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <button className="btn-minimal">View Details</button>
-                
+              {/* Navigation */}
+              <div className="flex items-center justify-between mt-8 lg:mt-0">
                 <div className="flex items-center gap-4">
-                  <button 
-                    onClick={() => setCurrentModel((prev) => (prev - 1 + models.length) % models.length)}
-                    className="p-3 border border-white/10 hover:bg-white/5 transition-all"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
+                  <button className="p-2 border border-white/10 hover:bg-white/5 transition-all">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
-                  <span className="text-xs font-extralight">
-                    {String(currentModel + 1).padStart(2, '0')} / {String(models.length).padStart(2, '0')}
-                  </span>
-                  <button 
-                    onClick={() => setCurrentModel((prev) => (prev + 1) % models.length)}
-                    className="p-3 border border-white/10 hover:bg-white/5 transition-all"
-                  >
-                    <ChevronRight className="w-4 h-4" />
+                  <span className="text-xs font-light text-gray-500">01 / 02</span>
+                  <button className="p-2 border border-white/10 hover:bg-white/5 transition-all">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -259,356 +1025,67 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* How It Works Section */}
-      <section className="py-32 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="mb-20 text-center">
-            <h3 className="text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">Simple Process</h3>
-            <h2 className="text-4xl md:text-6xl font-thin tracking-tight">From Screen to Shelf in 3 Steps</h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-16 max-w-5xl mx-auto">
-            {[
-              { 
-                num: '01', 
-                title: 'Subscribe', 
-                desc: 'Choose your tier - as low as $9/month',
-                Icon: Ticket
-              },
-              { 
-                num: '02', 
-                title: 'Download', 
-                desc: 'Get instant access to monthly drops + vault of past designs',
-                Icon: Download
-              },
-              { 
-                num: '03', 
-                title: 'Print & Build', 
-                desc: 'Use any 3D printer - we provide pre-sliced files and print guides',
-                Icon: Printer
-              },
-            ].map((step, index) => (
-              <motion.div
-                key={step.num}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.15 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="w-20 h-20 mx-auto mb-6 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
-                  <step.Icon className="w-10 h-10 text-white" strokeWidth={1.5} />
-                </div>
-                <div className="text-5xl font-thin opacity-20 mb-4">{step.num}</div>
-                <h4 className="text-xl font-light mb-4 whitespace-nowrap">{step.title}</h4>
-                <p className="text-sm font-extralight text-gray-400 leading-relaxed">{step.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-32 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="mb-20">
-            <h3 className="text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">What You Get</h3>
-            <h2 className="text-4xl md:text-6xl font-thin tracking-tight">Membership Benefits</h2>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/5">
-            {[
-              { title: 'Monthly Drops', desc: 'New exclusive concept car every week - cyberpunk, retro-futuristic, and sci-fi designs' },
-              { title: 'Custom AI Models', desc: 'Upload photos of your real car and download a custom 3D-printable replica (AI-powered)' },
-              { title: 'Unlimited Downloads', desc: 'Print as many copies as you want - keep your favorites, gift them, or sell them' },
-              { title: 'Member Perks', desc: 'Vote on next drops, early access to limited editions, exclusive colorways' },
-              { title: 'Print Anywhere', desc: 'Works with Ender, Prusa, Bambu, or any FDM/resin printer' },
-              { title: 'Multiple Formats', desc: 'STL, OBJ, and pre-sliced files included for easy printing' },
-              { title: 'Community Gallery', desc: 'Share your builds, get inspired, connect with other collectors' },
-              { title: 'Support Included', desc: 'Printing tips, troubleshooting guides, and active Discord community' },
-            ].map((feature) => (
-              <div key={feature.title} className="bg-black p-12 hover:bg-white/[0.02] transition-colors">
-                <h4 className="text-base font-light mb-3 whitespace-nowrap">{feature.title}</h4>
-                <p className="text-[11px] font-extralight text-gray-400 leading-relaxed">{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Premium 3D Model Catalog */}
-      {/* <ModelCatalog /> */}
-
-      {/* 3D Model Converter Section */}
-      {/* <Model3DUploader /> */}
-
-      {/* THE COMMUNITY Section */}
-      <section className="py-32 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="mb-20 text-center">
-            <h3 className="text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">Join Us</h3>
-            <h2 className="text-4xl md:text-6xl font-thin tracking-tight">Built By Collectors, For Collectors</h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="bg-white/5 border border-white/10 rounded-sm p-8"
-            >
-              <div className="w-12 h-12 mb-4 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
-                <MessageCircle className="w-6 h-6 text-white" strokeWidth={1.5} />
-              </div>
-              <h3 className="text-lg font-light mb-4 whitespace-nowrap">Discord Server</h3>
-              <ul className="space-y-2 text-sm font-extralight text-gray-400">
-                <li>• Daily discussions</li>
-                <li>• Print tips & troubleshooting</li>
-                <li>• Show off your builds</li>
-                <li>• Trade files (coming soon)</li>
-              </ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="bg-white/5 border border-white/10 rounded-sm p-8"
-            >
-              <div className="w-12 h-12 mb-4 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-white" strokeWidth={1.5} />
-              </div>
-              <h3 className="text-lg font-light mb-4 whitespace-nowrap">Monthly Contests</h3>
-              <ul className="space-y-2 text-sm font-extralight text-gray-400">
-                <li>• Best paint job wins</li>
-                <li>• Community votes</li>
-                <li>• Winners get featured</li>
-                <li>• Free month subscription</li>
-              </ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="bg-white/5 border border-white/10 rounded-sm p-8"
-            >
-              <div className="w-12 h-12 mb-4 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
-                <ImageIcon className="w-6 h-6 text-white" strokeWidth={1.5} />
-              </div>
-              <h3 className="text-lg font-light mb-4 whitespace-nowrap">Member Gallery</h3>
-              <ul className="space-y-2 text-sm font-extralight text-gray-400">
-                <li>• User-submitted prints</li>
-                <li>• Before/after photos</li>
-                <li>• Build inspiration</li>
-                <li>• Connect with builders</li>
-              </ul>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING Section - Commented out */}
 
       {/* FAQ Section */}
-      <section className="py-32 border-t border-white/5">
-        <div className="max-w-4xl mx-auto px-8 md:px-16">
-          <div className="mb-20 text-center">
-            <h3 className="text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">Support</h3>
-            <h2 className="text-4xl md:text-6xl font-thin tracking-tight">Questions? We've Got Answers</h2>
-          </div>
-
-          <div className="space-y-8">
-            {[
-              {
-                q: 'What file formats do you provide?',
-                a: 'STL, OBJ, and pre-sliced G-code for popular printers.'
-              },
-              {
-                q: 'What printers work?',
-                a: 'Any FDM or resin printer - Ender, Prusa, Bambu, Anycubic, Elegoo, and more.'
-              },
-              {
-                q: 'Can I sell prints?',
-                a: 'Yes, with our Merchant tier ($149/month) you get a commercial license.'
-              },
-              {
-                q: 'Can I cancel anytime?',
-                a: 'Yes, no contracts. Cancel anytime from your account dashboard.'
-              },
-              {
-                q: 'Do you ship physical models?',
-                a: 'No, we provide digital files only. You print them at home or through a print service.'
-              },
-              {
-                q: 'What if I don\'t have a 3D printer?',
-                a: 'We\'re partnering with print services for those who want physical models without owning a printer (coming Q2 2025).'
-              },
-              {
-                q: 'How do I customize cars?',
-                a: 'Our AI custom car creator launches Q2 2026. Upload photos of YOUR car and get a printable 3D model.'
-              },
-              {
-                q: 'Can I request specific cars?',
-                a: 'Members vote on which concept drops next! Your voice shapes our catalog.'
-              },
-            ].map((faq, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                className="border-b border-white/10 pb-6"
-              >
-                <h3 className="text-base font-light mb-3">{faq.q}</h3>
-                <p className="text-sm font-extralight text-gray-400">{faq.a}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Early Access CTA Section */}
-      <section className="py-32 border-t border-white/5 bg-gradient-to-b from-transparent via-red-500/5 to-transparent">
-        <div className="max-w-4xl mx-auto px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-          >
-            <div className="inline-flex items-center space-x-2 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-full mb-8">
-              <Sparkles className="w-4 h-4 text-red-400" />
-              <span className="text-sm font-light text-red-400 uppercase tracking-wider">Limited Spots</span>
-            </div>
-            
-            <h2 className="text-4xl md:text-6xl font-thin mb-8">
-              Be a <span className="text-red-400">Founding Member</span>
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-4xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-20">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              QUESTIONS?
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-thin tracking-tight">
+              Frequently Asked Questions
             </h2>
-            
-            <div className="max-w-2xl mx-auto mb-12">
-              <p className="text-lg font-extralight text-gray-300 mb-6">
-                Lock in $9/month forever (price increases to $15 after launch)
+          </div>
+
+          <div className="space-y-0">
+            {/* FAQ 1 */}
+            <div className="py-8 border-b border-white/5">
+              <h3 className="text-base sm:text-lg font-light mb-3">How does the credit system work?</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Each image generation costs 1 credit, and each 3D model conversion costs 5 credits. You get 10 free credits to start, and can purchase more anytime.
               </p>
-              <ul className="text-sm font-extralight text-gray-400 space-y-2">
-                <li>✓ Lifetime access to founder-exclusive drops</li>
-                <li>✓ Your name in the credits</li>
-                <li>✓ First 100 members get free commercial license upgrade</li>
-              </ul>
             </div>
 
-            <Link 
-              href="/pricing"
-              className="inline-block px-12 py-4 bg-red-500 hover:bg-red-600 text-white font-light text-lg rounded-sm transition-all"
-            >
-              Join the Garage - Founders Only
-            </Link>
-            
-            <p className="text-sm font-extralight text-red-400 mt-6">
-              87 spots left • Launching March 1st
-            </p>
-          </motion.div>
+            {/* FAQ 2 */}
+            <div className="py-8 border-b border-white/5">
+              <h3 className="text-base sm:text-lg font-light mb-3">Can I use the generated images commercially?</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Yes! All images and 3D models you generate are yours to use commercially. We include a full commercial license with every generation.
+              </p>
+            </div>
+
+            {/* FAQ 3 */}
+            <div className="py-8 border-b border-white/5">
+              <h3 className="text-base sm:text-lg font-light mb-3">What file formats can I export?</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                3D models can be exported as STL (for 3D printing), OBJ, or GLB files. Images are available in PNG and JPEG formats.
+              </p>
+            </div>
+
+            {/* FAQ 4 */}
+            <div className="py-8 border-b border-white/5">
+              <h3 className="text-base sm:text-lg font-light mb-3">How long does generation take?</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Images generate in 30-60 seconds. 3D model conversions take 3-5 minutes depending on complexity.
+              </p>
+            </div>
+
+            {/* FAQ 5 */}
+            <div className="py-8 border-b border-white/5">
+              <h3 className="text-base sm:text-lg font-light mb-3">Can I customize the 3D models?</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Yes! Our interactive 3D viewer lets you adjust materials, colors, and viewing angles before export. Download and further edit in Blender or other 3D software.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-20 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-8 md:px-16">
-          <div className="grid md:grid-cols-4 gap-12 mb-16">
-            {/* Brand */}
-            <div>
-              <div className="font-light text-lg tracking-[0.3em] uppercase mb-4">Offense</div>
-              <p className="text-xs font-extralight text-gray-500 leading-relaxed mb-6">
-                Exclusive 3D-printable concept cars. New drops every week.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:border-white/30 transition-colors">
-                  <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:border-white/30 transition-colors">
-                  <Instagram className="w-4 h-4" strokeWidth={1.5} />
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:border-white/30 transition-colors">
-                  <Music className="w-4 h-4" strokeWidth={1.5} />
-                </a>
-                <a href="#" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:border-white/30 transition-colors">
-                  <Bot className="w-4 h-4" strokeWidth={1.5} />
-                </a>
-              </div>
-            </div>
+      {/* CTA is part of footer now; previous CTA section removed */}
 
-            {/* Links */}
-            <div>
-              <h4 className="text-sm font-light uppercase tracking-wider mb-4">Platform</h4>
-              <ul className="space-y-2 text-xs font-extralight text-gray-500">
-                <li><a href="#collection" className="hover:text-white transition-colors">Collection</a></li>
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><Link href="/studio" className="hover:text-white transition-colors">3D Studio</Link></li>
-                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h4 className="text-sm font-light uppercase tracking-wider mb-4">Support</h4>
-              <ul className="space-y-2 text-xs font-extralight text-gray-500">
-                <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Discord</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Print Guides</a></li>
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4 className="text-sm font-light uppercase tracking-wider mb-4">Legal</h4>
-              <ul className="space-y-2 text-xs font-extralight text-gray-500">
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Refund Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">License Terms</a></li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Email Signup */}
-          <div className="py-12 border-t border-white/5 mb-12">
-            <div className="max-w-md mx-auto text-center">
-              <h4 className="text-sm font-light uppercase tracking-wider mb-4">Stay Updated</h4>
-              <p className="text-xs font-extralight text-gray-500 mb-4">
-                Get notified when we launch and receive exclusive drops
-              </p>
-              <button
-                onClick={() => {
-                  if (typeof window !== 'undefined' && (window as any).Tally) {
-                    (window as any).Tally.openPopup('688ydk', {
-                      layout: 'modal',
-                      width: 500,
-                      autoClose: 3000
-                    })
-                  }
-                }}
-                className="w-full px-6 py-3 bg-red-500/20 border border-red-500/50 text-red-400 text-sm font-light rounded-sm transition-all hover:bg-red-500/30"
-              >
-                Join Waitlist
-              </button>
-            </div>
-          </div>
-          
-          {/* Copyright */}
-          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-center md:text-left">
-            <p className="text-[10px] font-extralight text-gray-500">
-              © 2025 Offense. All rights reserved.
-            </p>
-            <p className="text-[10px] font-extralight text-gray-600 mt-4 md:mt-0">
-              Made with ❤️ for car enthusiasts and 3D printing collectors
-            </p>
-          </div>
-        </div>
-      </footer>
       </div>
+      <SimpleFooter />
     </div>
   )
 }

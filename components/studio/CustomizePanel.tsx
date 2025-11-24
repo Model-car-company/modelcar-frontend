@@ -2,17 +2,20 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Car, CircleDot, Armchair, Cog, Box, Sparkles } from 'lucide-react'
+import { Car, CircleDot, Armchair, Cog, Box, Sparkles, Wand2, Wrench } from 'lucide-react'
 
 type PartCategory = 'all' | 'body' | 'wheels' | 'interior' | 'engine' | 'frame' | 'accessories'
 
 interface CustomizePanelProps {
   onCategoryChange?: (category: PartCategory | null) => void
+  onSmooth?: (strength: number) => void
+  onRepair?: () => void
 }
 
-export default function CustomizePanel({ onCategoryChange }: CustomizePanelProps) {
+export default function CustomizePanel({ onCategoryChange, onSmooth, onRepair }: CustomizePanelProps) {
   const [activeCategory, setActiveCategory] = useState<PartCategory | null>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [smoothStrength, setSmoothStrength] = useState(50)
 
   const categories = [
     { id: 'all', name: 'View All', icon: Car, description: 'See complete assembled car', isViewAll: true },
@@ -52,42 +55,26 @@ export default function CustomizePanel({ onCategoryChange }: CustomizePanelProps
       </div>
 
       {/* Categories */}
-      <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
         {categories.map((category) => {
           const Icon = category.icon
           const isActive = activeCategory === category.id
-          const isViewAll = category.id === 'all'
           
           return (
-            <motion.button
+            <button
               key={category.id}
               onClick={() => handleCategoryClick(category.id as PartCategory)}
-              className={`w-full text-left p-4 rounded-lg border transition-all ${
-                isViewAll && isActive
-                  ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/50 shadow-lg shadow-red-500/20'
-                  : isActive
-                  ? 'bg-red-500/10 border-red-500/50 shadow-lg shadow-red-500/10'
-                  : isViewAll
-                  ? 'bg-gradient-to-r from-white/10 to-white/5 border-white/20 hover:border-red-500/30 hover:bg-gradient-to-r hover:from-red-500/10 hover:to-orange-500/10'
-                  : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10'
+              className={`px-3 py-2 border transition-all text-[11px] font-extralight tracking-wide uppercase ${
+                isActive
+                  ? 'bg-white text-black border-white'
+                  : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/20 hover:bg-white/10'
               }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded ${isActive ? 'bg-red-500/20' : 'bg-white/10'}`}>
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-red-400' : 'text-gray-400'}`} />
-                </div>
-                <div className="flex-1">
-                  <div className={`text-sm font-light mb-1 ${isActive ? 'text-red-400' : 'text-white'}`}>
-                    {category.name}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {category.description}
-                  </div>
-                </div>
+              <div className="flex items-center justify-center gap-1.5">
+                <Icon className="w-3 h-3" />
+                <span>{category.name}</span>
               </div>
-            </motion.button>
+            </button>
           )
         })}
       </div>
@@ -97,42 +84,69 @@ export default function CustomizePanel({ onCategoryChange }: CustomizePanelProps
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-white/5 border border-white/10 rounded-lg"
+          className="p-3 bg-white/5 border border-white/10"
         >
           {activeCategory === 'all' ? (
-            <>
-              <div className="text-xs font-light text-gray-400 mb-2">
-                Assembly Overview
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">Total Parts</span>
-                  <span className="text-white font-medium">0</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">Completion</span>
-                  <span className="text-white font-medium">0%</span>
-                </div>
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <div className="text-xs text-gray-400 mb-2">Assembly Status</div>
-                  <div className="text-sm text-white">
-                    No parts added yet. Start by adding body, wheels, or other components.
-                  </div>
-                </div>
-              </div>
-            </>
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+              <span className="text-gray-400">Total Parts</span>
+              <span className="text-white">0</span>
+            </div>
           ) : (
-            <>
-              <div className="text-xs font-light text-gray-400 mb-2">
-                Available Parts
-              </div>
-              <div className="text-sm text-white">
-                No parts loaded yet. Upload 3D models or connect to a library.
-              </div>
-            </>
+            <div className="text-[10px] text-gray-400 uppercase tracking-wider">
+              No parts loaded yet
+            </div>
           )}
         </motion.div>
       )}
+
+      {/* Mesh Editing Tools */}
+      <div className="pt-4 border-t border-white/10 space-y-4">
+        <div>
+          <h4 className="text-xs font-light text-white mb-3 flex items-center gap-2">
+            <Wand2 className="w-3 h-3" />
+            Mesh Tools
+          </h4>
+          
+          {/* Smoothing */}
+          <div className="mb-4 p-3 bg-white/5 border border-white/10 rounded">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-gray-400">Smooth Surface</label>
+              <span className="text-xs text-white">{smoothStrength}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={smoothStrength}
+              onChange={(e) => setSmoothStrength(Number(e.target.value))}
+              className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
+            />
+            <button
+              onClick={() => onSmooth?.(smoothStrength)}
+              className="w-full mt-3 px-3 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-colors"
+            >
+              Apply Smoothing
+            </button>
+          </div>
+
+          {/* Mesh Repair */}
+          <div className="p-3 bg-white/5 border border-white/10 rounded">
+            <div className="flex items-center gap-2 mb-2">
+              <Wrench className="w-3 h-3 text-gray-400" />
+              <label className="text-xs text-gray-400">Auto-Fix Mesh</label>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Fix holes, self-intersections, and non-manifold geometry
+            </p>
+            <button
+              onClick={() => onRepair?.()}
+              className="w-full px-3 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-colors"
+            >
+              Repair Model
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Quick Actions */}
       <div className="pt-4 border-t border-white/10 space-y-2">

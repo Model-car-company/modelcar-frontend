@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Get assemblies error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch assemblies' },
       { status: 500 }
@@ -72,7 +71,6 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Save assembly error:', error)
     return NextResponse.json(
       { error: 'Failed to save assembly' },
       { status: 500 }
@@ -104,7 +102,6 @@ export async function DELETE(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Delete assembly error:', error)
     return NextResponse.json(
       { error: 'Failed to delete assembly' },
       { status: 500 }

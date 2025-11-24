@@ -11,24 +11,17 @@ export async function POST(request: NextRequest) {
     // In production, this would:
     // 1. Load all part meshes
     // 2. Apply transformations
-    // 3. Merge or keep separate based on options.separateParts
     // 4. Convert to target format (STL, OBJ, GLB)
     // 5. Add supports if options.includeSupports
     // 6. Scale according to options.scale and options.units
     // 7. Return as downloadable file
     
-    console.log('Export request:', {
-      assemblyName: assembly.name,
-      partCount: Object.keys(assembly.parts).length,
-      format: options.format,
-      quality: options.quality,
-    })
+    // Export request received
     
     // Mock export - in production, call Python backend
     const mockExportData = {
       assemblyName: assembly.name,
       format: options.format,
-      timestamp: new Date().toISOString(),
     }
     
     // Return as downloadable file
@@ -42,7 +35,6 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Export error:', error)
     return NextResponse.json(
       { error: 'Failed to export assembly' },
       { status: 500 }

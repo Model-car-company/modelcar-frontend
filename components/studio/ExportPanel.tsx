@@ -68,15 +68,15 @@ export default function ExportPanel({ modelUrl }: ExportPanelProps) {
       //   body: JSON.stringify({ modelUrl, targetFormat: format }),
       // })
       
-      console.log(`Exported as ${format}`)
+      // Exported
     } catch (error) {
-      console.error('Export error:', error)
+      // Export error
       alert('Failed to export model. Please try again.')
     }
   }
 
   const handleShare = () => {
-    console.log('Sharing model...')
+    // Share model
   }
 
   return (
@@ -177,29 +177,6 @@ export default function ExportPanel({ modelUrl }: ExportPanelProps) {
         </div>
       </div>
 
-      {/* Export History */}
-      <div className="pt-4 border-t border-white/10">
-        <h3 className="text-xs font-light text-gray-400 mb-3">Recent Exports</h3>
-        <div className="space-y-2">
-          {[
-            { name: 'model_v3.stl', time: '10m ago', size: '8.2 MB' },
-            { name: 'car_final.glb', time: '1h ago', size: '12.1 MB' },
-            { name: 'prototype.obj', time: '3h ago', size: '15.7 MB' },
-          ].map((file, i) => (
-            <div key={i} className="flex items-center justify-between p-2 bg-white/5 rounded text-xs">
-              <div className="flex items-center gap-2">
-                <Download className="w-3 h-3 text-gray-500" />
-                <span className="text-gray-300">{file.name}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-500">
-                <span>{file.size}</span>
-                <span>•</span>
-                <span>{file.time}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </motion.div>
   )
 }

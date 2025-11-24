@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('List models error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch models' },
       { status: 500 }
@@ -46,7 +45,6 @@ export async function DELETE(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Delete model error:', error);
     return NextResponse.json(
       { error: 'Failed to delete model' },
       { status: 500 }
