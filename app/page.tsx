@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../lib/supabase/client'
 import HeroSection from '../components/HeroSection'
+import Landing3DViewer from '../components/Landing3DViewer'
 
 export default function Home() {
   const router = useRouter()
@@ -740,6 +741,187 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Showcase Section - Platform Interface */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-16">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              SEAMLESS WORKFLOW
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight mb-6">
+              Built for Speed and Precision
+            </h2>
+            <p className="text-sm sm:text-base font-extralight text-gray-400 max-w-2xl mx-auto">
+              Professional-grade interface designed to get you from concept to 3D model in minutes
+            </p>
+          </div>
+
+          {/* Main Showcase Image */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative group"
+          >
+            <div className="aspect-[16/9] relative rounded-lg overflow-hidden border border-white/20 bg-white/5">
+              <Image
+                src="/landing/platform-interface.png"
+                alt="Platform interface showcase"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                priority
+              />
+              {/* Subtle overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 group-hover:from-black/30 transition-all" />
+              
+              {/* Floating badges */}
+              <div className="absolute top-6 right-6 flex gap-3">
+                <div className="bg-black/60 backdrop-blur-sm px-4 py-2 border border-white/20 rounded">
+                  <span className="text-xs font-light text-white">Real-time Preview</span>
+                </div>
+              </div>
+
+              <div className="absolute bottom-6 left-6 right-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    {/* <p className="text-xs font-extralight text-gray-300">Intuitive Controls</p> */}
+                    {/* <p className="text-lg sm:text-xl font-light text-white mt-1">Everything at Your Fingertips</p> */}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature callouts */}
+            <div className="grid sm:grid-cols-3 gap-4 mt-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-all"
+              >
+                <h4 className="text-sm font-light mb-2">Instant Generation</h4>
+                <p className="text-xs font-extralight text-gray-400">
+                  From prompt to 3D model in under 5 minutes
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-all"
+              >
+                <h4 className="text-sm font-light mb-2">Clean Interface</h4>
+                <p className="text-xs font-extralight text-gray-400">
+                  No clutter, just the tools you need
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-all"
+              >
+                <h4 className="text-sm font-light mb-2">One-Click Export</h4>
+                <p className="text-xs font-extralight text-gray-400">
+                  Download in any format, ready to print
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Interactive 3D Model Section */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-16">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              INTERACT WITH YOUR CREATION
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight mb-6">
+              See It in Action
+            </h2>
+            <p className="text-sm sm:text-base font-extralight text-gray-400 max-w-2xl mx-auto">
+              Rotate, zoom, and explore your 3D model from every angle in real-time
+            </p>
+          </div>
+
+          {/* 3D Viewer Container */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative group"
+          >
+            <div className="aspect-[16/9] relative rounded-lg overflow-hidden border border-white/20 bg-gradient-to-br from-white/5 to-black">
+              <Landing3DViewer />
+              
+              {/* Interactive hints */}
+              <div className="absolute bottom-6 left-6 right-6 pointer-events-none">
+                <div className="flex items-center justify-between">
+                  <div className="bg-black/60 backdrop-blur-sm px-4 py-2 border border-white/20 rounded">
+                    <p className="text-xs font-light text-white">Click and drag to rotate</p>
+                  </div>
+                  <div className="bg-black/60 backdrop-blur-sm px-4 py-2 border border-white/20 rounded">
+                    <p className="text-xs font-light text-white">Scroll to zoom</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Features below 3D viewer */}
+            <div className="grid sm:grid-cols-3 gap-4 mt-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-all"
+              >
+                <h4 className="text-sm font-light mb-2">360° View</h4>
+                <p className="text-xs font-extralight text-gray-400">
+                  Examine every detail from any perspective
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+                className="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-all"
+              >
+                <h4 className="text-sm font-light mb-2">High-Quality Mesh</h4>
+                <p className="text-xs font-extralight text-gray-400">
+                  Production-ready topology and geometry
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-all"
+              >
+                <h4 className="text-sm font-light mb-2">Real-time Rendering</h4>
+                <p className="text-xs font-extralight text-gray-400">
+                  Smooth performance on any device
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* How It Works Section */}
       <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
@@ -747,7 +929,7 @@ export default function Home() {
             <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
               SIMPLE 3-STEP PROCESS
             </p>
-            <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-thin tracking-tight">
               From Idea to Reality
             </h2>
           </div>
@@ -760,12 +942,12 @@ export default function Home() {
               viewport={{ once: true }}
               className="text-center"
             >
-              <div className="relative mb-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-2xl sm:text-3xl font-thin text-red-400">1</span>
+              <div className="relative mb-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-lg sm:text-xl font-thin text-red-400">1</span>
                 </div>
               </div>
-              <h3 className="text-lg sm:text-xl font-light mb-3">Describe Your Vision</h3>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Describe Your Vision</h3>
               <p className="text-sm font-extralight text-gray-400 leading-relaxed">
                 Type a prompt or upload a reference image. Be as detailed or simple as you like.
               </p>
@@ -779,12 +961,12 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="text-center"
             >
-              <div className="relative mb-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-2xl sm:text-3xl font-thin text-red-400">2</span>
+              <div className="relative mb-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-lg sm:text-xl font-thin text-red-400">2</span>
                 </div>
               </div>
-              <h3 className="text-lg sm:text-xl font-light mb-3">AI Creates Your Model</h3>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">AI Creates Your Model</h3>
               <p className="text-sm font-extralight text-gray-400 leading-relaxed">
                 Watch as AI generates your image and converts it to a fully-realized 3D model.
               </p>
@@ -798,12 +980,12 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="text-center"
             >
-              <div className="relative mb-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-2xl sm:text-3xl font-thin text-red-400">3</span>
+              <div className="relative mb-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-lg sm:text-xl font-thin text-red-400">3</span>
                 </div>
               </div>
-              <h3 className="text-lg sm:text-xl font-light mb-3">Download & Create</h3>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Download & Own</h3>
               <p className="text-sm font-extralight text-gray-400 leading-relaxed">
                 Export your 3D model in any format and start 3D printing or rendering immediately.
               </p>
@@ -863,7 +1045,7 @@ export default function Home() {
               viewport={{ once: true }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-lg font-light mb-2">Content Creators</h3>
+              <h3 className="text-lg font-light mb-2">Aftermarket Design</h3>
               <p className="text-sm font-extralight text-gray-400 leading-relaxed">
                 Create stunning car renders for YouTube thumbnails, Instagram posts, and video content without expensive photoshoots.
               </p>
@@ -933,7 +1115,7 @@ export default function Home() {
               transition={{ delay: 0.5 }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-lg font-light mb-2">Marketing Teams</h3>
+              <h3 className="text-lg font-light mb-2">Car Brands</h3>
               <p className="text-sm font-extralight text-gray-400 leading-relaxed">
                 Create custom automotive visuals for campaigns. Generate unique car renders without hiring photographers.
               </p>

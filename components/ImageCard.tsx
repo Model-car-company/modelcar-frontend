@@ -19,40 +19,30 @@ interface ImageCardProps {
     isGenerating?: boolean
   }
   onGenerate3D?: (imageUrl: string, points: SegmentPoint[]) => void
+  onMake3D?: (imageUrl: string) => void
 }
 
-export default function ImageCard({ image, onGenerate3D }: ImageCardProps) {
+export default function ImageCard({ image, onGenerate3D, onMake3D }: ImageCardProps) {
   const [segmentPoints, setSegmentPoints] = useState<SegmentPoint[]>([])
   const [segmentMode, setSegmentMode] = useState<'add' | 'remove' | null>(null)
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (!segmentMode) return
-    
     const rect = e.currentTarget.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * 100
     const y = ((e.clientY - rect.top) / rect.height) * 100
-    
-    const newPoint: SegmentPoint = {
-      x,
-      y,
-      label: segmentMode === 'add' ? 1 : 0
-    }
-    
+    const newPoint: SegmentPoint = { x, y, label: segmentMode === 'add' ? 1 : 0 }
     setSegmentPoints(prev => [...prev, newPoint])
   }
 
   const startAddMode = () => {
     setSegmentMode('add')
-    if (segmentPoints.length === 0) {
-      toast.success('Click to add segments (areas to include)')
-    }
+    if (segmentPoints.length === 0) toast.success('Click to add segments (areas to include)')
   }
 
   const startRemoveMode = () => {
     setSegmentMode('remove')
-    if (segmentPoints.length === 0) {
-      toast.success('Click to exclude segments (areas to remove)')
-    }
+    if (segmentPoints.length === 0) toast.success('Click to exclude segments (areas to remove)')
   }
 
   const clearSegments = () => {
@@ -75,7 +65,6 @@ export default function ImageCard({ image, onGenerate3D }: ImageCardProps) {
     <div className="border border-white/10 rounded-lg overflow-hidden bg-black/50 group">
       <div className="aspect-video bg-gray-900 relative">
         {image.isGenerating ? (
-          // Loading state
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 animate-pulse">
             <div className="relative">
               <Sparkles className="w-12 h-12 text-white/30 animate-spin" style={{ animationDuration: '3s' }} />
@@ -88,109 +77,61 @@ export default function ImageCard({ image, onGenerate3D }: ImageCardProps) {
           </div>
         ) : (
           <img 
-            src={image.url} 
+            src={image.url}
             alt={image.prompt}
             className={`w-full h-full object-cover ${segmentMode ? 'cursor-crosshair' : ''}`}
             onClick={handleImageClick}
           />
         )}
-        
-        {/* Segment Points - only show if not generating */}
+
         {!image.isGenerating && segmentPoints.map((point, idx) => (
           <div
             key={idx}
             className={`absolute w-3 h-3 rounded-full border-2 transform -translate-x-1/2 -translate-y-1/2 ${
-              point.label === 1 
-                ? 'bg-green-400 border-green-600' 
-                : 'bg-red-400 border-red-600'
+              point.label === 1 ? 'bg-green-400 border-green-600' : 'bg-red-400 border-red-600'
             }`}
             style={{ left: `${point.x}%`, top: `${point.y}%` }}
           >
-            <div className={`absolute inset-0 rounded-full animate-ping ${
-              point.label === 1 ? 'bg-green-400' : 'bg-red-400'
-            } opacity-25`} />
+            <div className={`absolute inset-0 rounded-full animate-ping ${point.label === 1 ? 'bg-green-400' : 'bg-red-400'} opacity-25`} />
           </div>
         ))}
-        
-        {/* Overlay Controls - hide during generation */}
+
         {!image.isGenerating && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex items-center justify-between gap-2">
-            {/* Left - Segmentation Controls */}
-            <div className="flex gap-1.5">
-              <button
-                onClick={startAddMode}
-                className={`px-2.5 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 ${
-                  segmentMode === 'add'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                <Plus className="w-3 h-3" />
-                Add
-              </button>
-              
-              <button
-                onClick={startRemoveMode}
-                className={`px-2.5 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 ${
-                  segmentMode === 'remove'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                <Minus className="w-3 h-3" />
-                Remove
-              </button>
-              
-              {segmentPoints.length > 0 && (
-                <button
-                  onClick={clearSegments}
-                  className="px-2.5 py-1.5 bg-white/10 text-white text-[11px] rounded hover:bg-white/20 transition-colors"
-                >
-                  Clear
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex gap-1.5">
+                <button onClick={startAddMode} className={`px-2.5 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 ${segmentMode === 'add' ? 'bg-green-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                  <Plus className="w-3 h-3" />
+                  Add
                 </button>
-              )}
-              
-              <a
-                href={image.url}
-                download
-                className="px-2.5 py-1.5 bg-white/10 text-white text-[11px] rounded hover:bg-white/20 transition-colors flex items-center"
-              >
-                <Download className="w-3 h-3" />
-              </a>
+                <button onClick={startRemoveMode} className={`px-2.5 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 ${segmentMode === 'remove' ? 'bg-red-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                  <Minus className="w-3 h-3" />
+                  Remove
+                </button>
+                {segmentPoints.length > 0 && (
+                  <button onClick={clearSegments} className="px-2.5 py-1.5 bg-white/10 text-white text-[11px] rounded hover:bg-white/20 transition-colors">Clear</button>
+                )}
+                <a href={image.url} download className="px-2.5 py-1.5 bg-white/10 text-white text-[11px] rounded hover:bg-white/20 transition-colors flex items-center">
+                  <Download className="w-3 h-3" />
+                </a>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => onMake3D?.(image.url)} className="px-3 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 bg-white text-black hover:bg-gray-200">
+                  <Sparkles className="w-3 h-3" />
+                  Make 3D
+                </button>
+              </div>
             </div>
-
-            {/* Right - Generate 3D Button */}
-            <button
-              onClick={handleGenerate3D}
-              disabled={segmentPoints.length === 0}
-              className={`px-3 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 ${
-                segmentPoints.length > 0
-                  ? 'bg-white text-black hover:bg-gray-200'
-                  : 'bg-gray-800 text-gray-600 cursor-not-allowed'
-              }`}
-            >
-              <Sparkles className="w-3 h-3" />
-              Generate 3D
-            </button>
+            {segmentPoints.length > 0 && (
+              <div className="mt-2 flex gap-3 text-[10px]">
+                {includeCount > 0 && <span className="text-green-400">+{includeCount} include</span>}
+                {excludeCount > 0 && <span className="text-red-400">-{excludeCount} exclude</span>}
+              </div>
+            )}
           </div>
-          
-          {/* Segment Counter */}
-          {segmentPoints.length > 0 && (
-            <div className="mt-2 flex gap-3 text-[10px]">
-              {includeCount > 0 && (
-                <span className="text-green-400">+{includeCount} include</span>
-              )}
-              {excludeCount > 0 && (
-                <span className="text-red-400">-{excludeCount} exclude</span>
-              )}
-            </div>
-          )}
-        </div>
         )}
       </div>
 
-      {/* Prompt - Outside image, below */}
       <div className="p-3 bg-black/30">
         <p className="text-xs text-gray-400 line-clamp-2">{image.prompt}</p>
       </div>

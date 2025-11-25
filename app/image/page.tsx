@@ -8,8 +8,9 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '../../lib/supabase/client'
 import { Sparkles, Image as ImageIcon, Download, Loader, X, Paintbrush, Eraser, Undo, Redo, Trash2, Minus, Plus } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
-import { checkCredits, deductCredits, CREDIT_COSTS } from '../../lib/credits'
+// All credits and asset writes now happen on the backend
 import ImageCard from '../../components/ImageCard'
+import ModelViewer3D from '../../components/ModelViewer3D'
 import UpgradeModal from '../../components/UpgradeModal'
 
 export default function ImagePage() {
@@ -21,6 +22,7 @@ export default function ImagePage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [creditsRemaining, setCreditsRemaining] = useState<number>(0)
   
   // Form states
   const [prompt, setPrompt] = useState('')
@@ -65,6 +67,150 @@ export default function ImagePage() {
     }
   }, [mode])
 
+  // Fetch credit balance from backend
+  const fetchCredits = async () => {
+    if (!user) return
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) return
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/credits/balance`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (resp.ok) {
+        const data = await resp.json()
+        setCreditsRemaining(data.credits_remaining || 0)
+      }
+    } catch (e) {
+      console.error('Failed to fetch credits:', e)
+    }
+  }
+
+  // Handle 1-click 3D (no segmentation) using backend provider
+  const handleMake3D = async (imageUrl: string) => {
+    if (!user) { router.push('/sign-in'); return }
+
+    // Check credits before starting
+    if (creditsRemaining < 14) {
+      setShowUpgradeModal(true)
+      return
+    }
+
+    // Insert a loading card immediately
+    const tempId = `temp_${Date.now()}`
+    const loadingCard = {
+      id: tempId,
+      type: 'model3d' as const,
+      url: '',
+      prompt: 'Generating 3D model…',
+      timestamp: new Date().toISOString(),
+      format: 'glb' as const,
+      thumbnailUrl: imageUrl,
+      isGenerating: true,
+    }
+    setDesignAssets(prev => [loadingCard, ...prev])
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/generate-3d`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ image_url: imageUrl, provider: 'hyper3d' })
+      })
+      if (response.status === 402) {
+        setShowUpgradeModal(true)
+        // Remove temp card
+        setDesignAssets(prev => prev.filter(a => a.id !== tempId))
+        return
+      }
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error || 'Failed to generate 3D')
+
+      const a = data.asset || {}
+      const finalized = {
+        id: a.id || Date.now().toString(),
+        type: 'model3d' as const,
+        url: data.modelUrl || a.url,
+        prompt: a.prompt || '3D model',
+        timestamp: new Date().toISOString(),
+        format: data.format || a.format || 'glb',
+        thumbnailUrl: imageUrl,
+        isGenerating: false,
+      }
+      setDesignAssets(prev => prev.map(x => x.id === tempId ? finalized : x))
+      // Refresh credits after successful generation
+      await fetchCredits()
+    } catch (e) {
+      // Remove loading card on error
+      setDesignAssets(prev => prev.filter(a => a.id !== tempId))
+    }
+  }
+
+  // Small inline component to render a model with split controls
+  const ModelAssetCard = ({ asset }: { asset: { id: string; url: string; prompt: string; format?: string; isGenerating?: boolean } }) => {
+    const [split, setSplit] = useState(false)
+    const [sep, setSep] = useState(0.8)
+    const [serverSplitLoading, setServerSplitLoading] = useState(false)
+    const [modelUrlOverride, setModelUrlOverride] = useState<string | null>(null)
+
+    const doServerSplit = async () => {
+      try {
+        setServerSplitLoading(true)
+        const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/split-3d`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model_url: modelUrlOverride || asset.url, mode: 'by-node', explode: sep }),
+        })
+        const data = await resp.json()
+        if (!resp.ok) throw new Error(data?.detail || data?.error || 'Split failed')
+        setModelUrlOverride(data.modelUrl)
+        setSplit(true)
+      } catch (e) {
+        // No toast; silent failure could be confusing. Minimal alert for now.
+        alert('Server-side split failed')
+      } finally {
+        setServerSplitLoading(false)
+      }
+    }
+    return (
+      <div className="border border-white/10 rounded-lg overflow-hidden bg-black/50">
+        <div className="p-3 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-200">3D Model</p>
+            <p className="text-xs text-gray-500">{asset.prompt}</p>
+          </div>
+          <div className="flex gap-2">
+            <Link href={`/studio?model=${encodeURIComponent(asset.url)}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200">View in Studio</Link>
+          </div>
+        </div>
+        <div className="h-[360px] border-t border-white/10">
+          {asset.isGenerating || !(modelUrlOverride || asset.url) ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto" />
+                <p className="text-xs text-gray-500 mt-2">Generating 3D model…</p>
+              </div>
+            </div>
+          ) : (
+            <ModelViewer3D modelUrl={modelUrlOverride || asset.url} explode={split} explodeFactor={sep} className="w-full h-full" />
+          )}
+        </div>
+        <div className="p-3 flex items-center gap-3 border-t border-white/10 flex-wrap">
+          <label className="flex items-center gap-2 text-xs text-gray-300">
+            <input type="checkbox" checked={split} onChange={(e) => setSplit(e.target.checked)} />
+            Split parts
+          </label>
+          <input type="range" min={0} max={2} step={0.1} value={sep} onChange={(e) => setSep(parseFloat(e.target.value))} className="flex-1" />
+          <span className="text-[10px] text-gray-500 w-8 text-right">{sep.toFixed(1)}</span>
+          <button onClick={doServerSplit} disabled={serverSplitLoading} className={`px-3 py-1.5 text-xs rounded ${serverSplitLoading ? 'bg-white/10 text-gray-400' : 'bg-white text-black hover:bg-gray-200'}`}>
+            {serverSplitLoading ? 'Splitting…' : 'Request server-side split'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   useEffect(() => {
     const loadPageData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -87,6 +233,23 @@ export default function ImagePage() {
 
       if (profileResponse.data) {
         setProfile(profileResponse.data);
+      }
+
+      // Fetch credits from backend
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (token) {
+        try {
+          const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/credits/balance`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (resp.ok) {
+            const data = await resp.json()
+            setCreditsRemaining(data.credits_remaining || 0)
+          }
+        } catch (e) {
+          console.error('Failed to fetch credits:', e)
+        }
       }
 
       if (assetsResponse.error) {
@@ -193,131 +356,50 @@ export default function ImagePage() {
   }
 
   const generateImage = async () => {
-    if (!prompt.trim()) {
-      toast.error('Please enter a prompt')
-      return
-    }
+    if (!prompt.trim()) { toast.error('Please enter a prompt'); return }
+    if (!user) { router.push('/sign-in'); return }
 
-    if (!user) {
-      toast.error('Please sign in to generate images')
-      router.push('/sign-in')
-      return
-    }
-
-    const creditCheck = await checkCredits(user.id, 'IMAGE_GENERATION')
-    
-    if (!creditCheck.hasEnough) {
+    // Check credits before starting
+    if (creditsRemaining < 3) {
       setShowUpgradeModal(true)
       return
     }
 
     setGenerating(true)
-    
-    // Create a loading card immediately
     const loadingId = `loading-${Date.now()}`
-    const loadingAsset = {
-      id: loadingId,
-      type: 'image' as const,
-      url: '',
-      prompt: prompt,
-      timestamp: new Date().toISOString(),
-      isGenerating: true
-    }
+    const loadingAsset = { id: loadingId, type: 'image' as const, url: '', prompt, timestamp: new Date().toISOString(), isGenerating: true }
     setDesignAssets(prev => [loadingAsset, ...prev])
-    
+
     try {
-      const response = await fetch('/api/generate-image', {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/generate-image`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          previousImage: referencePreview,
-        }),
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ prompt, previousImage: referencePreview, aspect_ratio: '16:9', output_format: 'jpg' })
       })
-
-      if (!response.ok) {
-        throw new Error('Generation failed')
+      if (response.status === 402) {
+        setShowUpgradeModal(true)
+        setDesignAssets(prev => prev.filter(a => a.id !== loadingId))
+        setGenerating(false)
+        return
       }
-
+      if (!response.ok) throw new Error('Generation failed')
       const data = await response.json()
-      
-      await deductCredits(
-        user.id,
-        CREDIT_COSTS.IMAGE_GENERATION
-      )
-      
-      // Save to Supabase user_assets table
-      const { data: savedAsset, error: saveError } = await supabase
-        .from('user_assets')
-        .insert({
-          user_id: user.id,
-          type: 'image',
-          url: data.imageUrl,
-          prompt: prompt
-        })
-        .select()
-        .single()
-      
-      if (saveError) {
-        toast.error('Failed to save to garage', {
-          style: {
-            background: '#0a0a0a',
-            color: '#fff',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-          },
-        })
-      }
-      
-      // Replace loading card with actual image
-      const newAsset = {
-        id: savedAsset?.id || Date.now().toString(),
-        type: 'image' as const,
-        url: data.imageUrl,
-        prompt: prompt,
-        timestamp: new Date().toISOString(),
-        isGenerating: false
-      }
-      setDesignAssets(prev => prev.map(asset => 
-        asset.id === loadingId ? newAsset : asset
-      ))
-      
-      toast.success('Image generated successfully!', {
-        style: {
-          background: '#0a0a0a',
-          color: '#fff',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        },
-      })
-      
-      // Refresh profile to get updated credits
-      const { data: updatedProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-      
-      if (updatedProfile) {
-        setProfile(updatedProfile)
-      }
-      
+      const a = data.asset || {}
+      const newAsset = { id: a.id || Date.now().toString(), type: 'image' as const, url: data.imageUrl || a.url, prompt: a.prompt || prompt, timestamp: new Date().toISOString(), isGenerating: false }
+      setDesignAssets(prev => prev.map(asset => asset.id === loadingId ? newAsset : asset))
+      // Refresh credits after successful generation
+      await fetchCredits()
     } catch (error) {
-      // Remove loading card on error
       setDesignAssets(prev => prev.filter(asset => asset.id !== loadingId))
-      toast.error('Failed to generate image', {
-        style: {
-          background: '#0a0a0a',
-          color: '#fff',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        },
-      })
+      toast.error('Failed to generate image')
     } finally {
       setGenerating(false)
     }
   }
 
-  // Handle 3D generation from ImageCard
+  // Handle 3D generation from ImageCard (segmented flow)
   const handleGenerate3D = async (imageUrl: string, points: {x: number, y: number, label: 1 | 0}[]) => {
     const loadingToast = toast.loading('Generating 3D model from selection...')
     
@@ -338,7 +420,7 @@ export default function ImagePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: segmentData.segmentedImage,
-          provider: 'meshy'
+          provider: 'hyper3d'  // Use Hyper3D for best quality with part separation
         })
       })
       
@@ -404,8 +486,8 @@ export default function ImagePage() {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        creditsRemaining={profile?.credits_remaining || 0}
-        requiredCredits={CREDIT_COSTS.IMAGE_GENERATION}
+        creditsRemaining={creditsRemaining}
+        requiredCredits={3}
       />
       
       <div className="flex flex-col lg:flex-row h-screen">
@@ -420,7 +502,7 @@ export default function ImagePage() {
             </Link>
             <div className="flex items-center justify-between px-3 py-2 bg-white/5 rounded">
               <span className="text-[10px] font-light text-gray-500 uppercase tracking-wide">Credits</span>
-              <span className="text-sm font-thin text-white">{profile?.credits_remaining || 0}</span>
+              <span className="text-sm font-thin text-white">{creditsRemaining}</span>
             </div>
           </div>
 
@@ -664,121 +746,18 @@ export default function ImagePage() {
           <button
             onClick={async () => {
               if (mode === 'sketch') {
-                // Capture canvas as image first
                 if (!sketchImage && canvasRef.current) {
                   const dataUrl = canvasRef.current.toDataURL('image/png')
                   setSketchImage(dataUrl)
                   return
                 }
-                
-                if (!sketchImage) {
-                  toast.error('Please draw something first')
-                  return
-                }
-                
-                // Render sketch to photorealistic image
-                if (!user) {
-                  toast.error('Please sign in to generate images')
-                  router.push('/sign-in')
-                  return
-                }
-
-                const creditCheck = await checkCredits(user.id, 'IMAGE_GENERATION')
-                
-                if (!creditCheck.hasEnough) {
-                  setShowUpgradeModal(true)
-                  return
-                }
-
-                setGenerating(true)
-                const loadingId = `loading-${Date.now()}`
-                const loadingAsset = {
-                  id: loadingId,
-                  type: 'image' as const,
-                  url: '',
-                  prompt: 'Rendering sketch...',
-                  timestamp: new Date().toISOString(),
-                  isGenerating: true
-                }
-                setDesignAssets(prev => [loadingAsset, ...prev])
-                
-                try {
-                  const response = await fetch('/api/sketch-to-render', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      sketchImage,
-                      prompt,
-                      drawingInfluence: 0.7,
-                    }),
-                  })
-
-                  if (!response.ok) {
-                    throw new Error('Sketch render failed')
-                  }
-
-                  const data = await response.json()
-                  
-                  await deductCredits(user.id, CREDIT_COSTS.IMAGE_GENERATION)
-                  
-                  // Save to Supabase
-                  const { data: savedAsset, error: saveError } = await supabase
-                    .from('user_assets')
-                    .insert({
-                      user_id: user.id,
-                      type: 'image',
-                      url: data.imageUrl,
-                      prompt: prompt || 'Rendered from sketch'
-                    })
-                    .select()
-                    .single()
-                  
-                  // Replace loading card with actual image
-                  const newAsset = {
-                    id: savedAsset?.id || Date.now().toString(),
-                    type: 'image' as const,
-                    url: data.imageUrl,
-                    prompt: prompt || 'Rendered from sketch',
-                    timestamp: new Date().toISOString(),
-                    isGenerating: false
-                  }
-                  setDesignAssets(prev => prev.map(asset => 
-                    asset.id === loadingId ? newAsset : asset
-                  ))
-                  
-                  toast.success('Sketch rendered successfully!', {
-                    style: {
-                      background: '#0a0a0a',
-                      color: '#fff',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                    },
-                  })
-                  
-                  // Refresh profile
-                  const { data: updatedProfile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single()
-                  
-                  if (updatedProfile) {
-                    setProfile(updatedProfile)
-                  }
-                  
-                } catch (error) {
-                  setDesignAssets(prev => prev.filter(asset => asset.id !== loadingId))
-                  toast.error('Failed to render sketch', {
-                    style: {
-                      background: '#0a0a0a',
-                      color: '#fff',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                    },
-                  })
-                } finally {
-                  setGenerating(false)
-                }
+                if (!sketchImage) { toast.error('Please draw something first'); return }
+                if (!user) { router.push('/sign-in'); return }
+                // Use sketch as reference
+                setReferencePreview(sketchImage)
+                await generateImage()
               } else {
-                generateImage()
+                await generateImage()
               }
             }}
             disabled={(mode === 'text' && !prompt.trim()) || generating}
@@ -884,13 +863,10 @@ export default function ImagePage() {
                     key={asset.id} 
                     image={asset}
                     onGenerate3D={handleGenerate3D}
+                    onMake3D={handleMake3D}
                   />
                 ) : (
-                  // 3D Model Card - TODO: Create ModelCard component
-                  <div key={asset.id} className="border border-white/10 rounded-lg overflow-hidden bg-black/50 p-4">
-                    <p className="text-sm text-gray-400">3D Model: {asset.prompt}</p>
-                    <p className="text-xs text-gray-600 mt-2">Format: {asset.format}</p>
-                  </div>
+                  <ModelAssetCard key={asset.id} asset={asset as any} />
                 )
               ))}
             </div>

@@ -118,7 +118,7 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-8 md:px-16 py-6">
           <div className="flex justify-between items-center">
             <Link href="/" className="text-xl font-thin tracking-[0.2em]">
-              DREAMFORGE
+              ATELIER
             </Link>
             <Link
               href="/dashboard"
