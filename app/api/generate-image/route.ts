@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// SECURITY: Only use server-side env variable, never NEXT_PUBLIC_
-const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY
+// Backend URL for ATELIER API
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-// Replicate FLUX Pro
-const REPLICATE_MODELS_FLUX_URL = 'https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions'
 
 // Lazily create Supabase client when needed
 function getSupabase() {
@@ -22,83 +19,28 @@ function getSupabase() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, previousImage, chatHistory } = await request.json()
+    const { prompt, previousImage } = await request.json()
 
-    if (!REPLICATE_API_KEY) {
+    if (!BACKEND_URL) {
       return NextResponse.json(
-        { error: 'No image provider configured. Set REPLICATE_API_KEY in .env' },
+        { error: 'Backend URL not configured. Set NEXT_PUBLIC_BACKEND_URL in .env' },
         { status: 500 }
       )
     }
 
-    // Build the prompt for car generation
-    const enhancedPrompt = previousImage
-      ? `Based on the previous car design, ${prompt}. Maintain the overall style and make only the requested changes. High quality, photorealistic, 4K resolution.`
-      : `Generate a highly detailed, photorealistic image of a car: ${prompt}. Professional automotive photography style, studio lighting, dramatic 3/4 view angle, clean background, 4K quality, sharp focus.`
+    // Call backend external endpoint
+    const resp = await fetch(`${BACKEND_URL}/api/v1/external/generate-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, previousImage, aspect_ratio: '16:9', output_format: 'jpg' })
+    })
 
-    // Image generation started
-    let imageUrl: string | null = null
-
-    // Prefer Replicate FLUX if configured
-    if (REPLICATE_API_KEY) {
-      const start = await fetch(REPLICATE_MODELS_FLUX_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${REPLICATE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          input: {
-            prompt: enhancedPrompt,
-            aspect_ratio: '16:9',
-            output_format: 'jpg',
-          }
-        }),
-      })
-
-      if (!start.ok) {
-        const errorText = await start.text()
-        return NextResponse.json(
-          { error: 'Failed to start image generation (Replicate)', details: errorText },
-          { status: start.status }
-        )
-      }
-
-      const started = await start.json()
-      const predictionId = started.id
-
-      // Poll Replicate until completed
-      let attempts = 0
-      const maxAttempts = 60
-      while (!imageUrl && attempts < maxAttempts) {
-        const statusResp = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-          headers: {
-            'Authorization': `Token ${REPLICATE_API_KEY}`,
-            'Content-Type': 'application/json',
-          }
-        })
-        const status = await statusResp.json()
-        if (status.status === 'succeeded') {
-          // Replicate output for FLUX is an array of URLs
-          const out = status.output
-          imageUrl = Array.isArray(out) ? out[0] : (typeof out === 'string' ? out : null)
-          break
-        } else if (status.status === 'failed' || status.status === 'canceled') {
-          return NextResponse.json(
-            { error: 'Image generation failed (Replicate)' },
-            { status: 500 }
-          )
-        }
-        await new Promise(r => setTimeout(r, 1000))
-        attempts++
-      }
+    if (!resp.ok) {
+      const text = await resp.text()
+      return NextResponse.json({ error: 'Backend image generation failed', details: text }, { status: resp.status })
     }
 
-    // No fallback provider; enforce two-API architecture (Replicate + fal.ai)
-
-    if (!imageUrl) {
-      throw new Error('Image generation timed out')
-    }
+    const { imageUrl, prompt: enhancedPrompt } = await resp.json()
     
     // Download the image from the generated URL
     const imageResponse = await fetch(imageUrl)

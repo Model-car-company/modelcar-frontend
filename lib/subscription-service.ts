@@ -1,4 +1,4 @@
-import { createClient } from './supabase/client';
+import { createClient } from './supabase/server';
 import getStripe from './stripe';
 import { SUBSCRIPTION_TIERS, SubscriptionTier, BillingInterval, normalizeTier } from './subscription-config';
 
@@ -7,7 +7,7 @@ export class SubscriptionService {
    * Create or retrieve Stripe customer for user
    */
   static async createOrGetCustomer(userId: string, email: string): Promise<string> {
-    const supabase = createClient();
+    const supabase = await createClient();
     const stripe = getStripe();
     
     // Check if user already has a customer ID
@@ -51,7 +51,7 @@ export class SubscriptionService {
     tier: SubscriptionTier,
     billingInterval: BillingInterval
   ): Promise<void> {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const tierConfig = SUBSCRIPTION_TIERS[tier];
     const credits = billingInterval === 'year' 
@@ -80,7 +80,7 @@ export class SubscriptionService {
       currentPeriodEnd: Date;
     }
   ): Promise<void> {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     await supabase
       .from('profiles')
@@ -98,7 +98,7 @@ export class SubscriptionService {
    * Cancel subscription
    */
   static async cancelSubscription(userId: string): Promise<void> {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     await supabase
       .from('profiles')
@@ -113,7 +113,7 @@ export class SubscriptionService {
    * Check if user has active subscription
    */
   static async hasActiveSubscription(userId: string): Promise<boolean> {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data: profile } = await supabase
       .from('profiles')
@@ -131,7 +131,7 @@ export class SubscriptionService {
    * Get user subscription details
    */
   static async getSubscriptionDetails(userId: string) {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { data: profile } = await supabase
       .from('profiles')

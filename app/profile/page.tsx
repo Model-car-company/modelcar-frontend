@@ -291,76 +291,281 @@ export default function ProfilePage() {
 
             {/* Subscription & Billing */}
             {activeTab === 'billing' && (
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded p-4 sm:p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <CreditCard className="w-5 h-5 text-white" />
-                <h2 className="text-lg font-thin tracking-tight">Subscription & Billing</h2>
-              </div>
+            <div className="space-y-6">
+              {/* Subscription Status Card */}
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <CreditCard className="w-5 h-5 text-white" />
+                  <h2 className="text-lg font-thin tracking-tight">Subscription & Billing</h2>
+                </div>
 
-              <div className="space-y-6">
                 {/* Current Plan */}
-                <div>
+                <div className="mb-6">
                   <p className="text-xs font-light text-gray-400 mb-3">Current Plan</p>
                   <div className="bg-white/5 border border-white/10 rounded p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-light capitalize">
-                          {profile?.subscription_tier === 'garage' && 'Garage Parking'}
-                          {profile?.subscription_tier === 'showroom' && 'Showroom Floor'}
-                          {profile?.subscription_tier === 'dealership' && 'Dealership'}
-                          {(!profile?.subscription_tier || profile?.subscription_tier === 'free') && 'Free'}
-                          {' '}Plan
-                        </p>
-                        <p className="text-[10px] text-gray-500 mt-1">
-                          {profile?.credits_remaining || 0} credits remaining
-                        </p>
-                        {profile?.subscription_status === 'active' && profile?.current_period_end && (
-                          <p className="text-[10px] text-gray-600 mt-1">
-                            Renews {new Date(profile.current_period_end).toLocaleDateString()}
+                    <div className="flex items-start justify-between flex-wrap gap-4">
+                      <div className="flex-1 min-w-[200px]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-base font-light">
+                            {profile?.subscription_tier === 'garage' && 'Garage Parking'}
+                            {profile?.subscription_tier === 'showroom' && 'Showroom Floor'}
+                            {profile?.subscription_tier === 'dealership' && 'Dealership'}
+                            {(!profile?.subscription_tier || profile?.subscription_tier === 'free') && 'Free Tier'}
                           </p>
+                          {profile?.subscription_status && (
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-light ${
+                              profile.subscription_status === 'active' ? 'bg-green-500/20 text-green-400' :
+                              profile.subscription_status === 'trialing' ? 'bg-blue-500/20 text-blue-400' :
+                              profile.subscription_status === 'past_due' ? 'bg-yellow-500/20 text-yellow-400' :
+                              profile.subscription_status === 'canceled' ? 'bg-red-500/20 text-red-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {profile.subscription_status.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Credits */}
+                        <div className="flex items-center gap-2 mt-3">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-[10px] text-gray-500">Credits Remaining</p>
+                              <p className="text-[10px] font-light">{profile?.credits_remaining || 0}</p>
+                            </div>
+                            <div className="w-full bg-white/10 rounded-full h-1.5">
+                              <div 
+                                className="bg-white rounded-full h-1.5 transition-all"
+                                style={{ 
+                                  width: `${Math.min(
+                                    ((profile?.credits_remaining || 0) / 
+                                    (
+                                      profile?.subscription_tier === 'garage' ? 50 :
+                                      profile?.subscription_tier === 'showroom' ? 200 :
+                                      profile?.subscription_tier === 'dealership' ? 500 :
+                                      10
+                                    )) * 100,
+                                    100
+                                  )}%` 
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Renewal Date */}
+                        {profile?.subscription_status === 'active' && profile?.current_period_end && (
+                          <div className="mt-3 pt-3 border-t border-white/10">
+                            <p className="text-[10px] text-gray-500">Next billing date</p>
+                            <p className="text-xs font-light mt-1">
+                              {new Date(profile.current_period_end).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Period Dates for Active Subscription */}
+                        {profile?.subscription_status === 'active' && profile?.current_period_start && (
+                          <div className="mt-2">
+                            <p className="text-[10px] text-gray-600">
+                              Current period: {new Date(profile.current_period_start).toLocaleDateString()} - {new Date(profile.current_period_end).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Cancellation Notice */}
+                        {profile?.subscription_status === 'canceled' && profile?.current_period_end && (
+                          <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded">
+                            <p className="text-[10px] text-yellow-400">
+                              Your subscription will end on {new Date(profile.current_period_end).toLocaleDateString()}
+                            </p>
+                          </div>
                         )}
                       </div>
-                      <Link 
-                        href="/pricing"
-                        className="px-4 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-100 transition-colors"
-                      >
-                        {profile?.subscription_status === 'active' ? 'Change Plan' : 'Upgrade Plan'}
-                      </Link>
+                      
+                      <div className="flex flex-col gap-2">
+                        <Link 
+                          href="/pricing"
+                          className="px-4 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-100 transition-colors text-center whitespace-nowrap"
+                        >
+                          {profile?.subscription_status === 'active' ? 'Change Plan' : 'Upgrade Plan'}
+                        </Link>
+                        
+                        {/* Manage Billing Button */}
+                        {profile?.stripe_customer_id && (
+                          <button
+                            onClick={async () => {
+                              const loadingToast = toast.loading('Opening billing portal...')
+                              try {
+                                const response = await fetch('/api/create-portal-session', { method: 'POST' })
+                                const data = await response.json()
+                                toast.dismiss(loadingToast)
+                                if (data.url) {
+                                  window.location.href = data.url
+                                } else {
+                                  toast.error(data.error || 'Failed to open billing portal')
+                                }
+                              } catch (error) {
+                                toast.dismiss(loadingToast)
+                                toast.error('Failed to open billing portal')
+                              }
+                            }}
+                            className="px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors text-center whitespace-nowrap"
+                          >
+                            Manage Billing
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Billing History */}
-                <div>
-                  <p className="text-xs font-light text-gray-400 mb-3">Billing History</p>
-                  <div className="bg-white/5 border border-white/10 rounded p-4">
-                    <p className="text-xs text-gray-500 text-center py-4">No billing history yet</p>
+                {/* Plan Features */}
+                {profile?.subscription_tier && profile.subscription_tier !== 'free' && (
+                  <div>
+                    <p className="text-xs font-light text-gray-400 mb-3">Plan Features</p>
+                    <div className="bg-white/5 border border-white/10 rounded p-4">
+                      <ul className="space-y-2 text-xs font-light text-gray-300">
+                        {profile.subscription_tier === 'garage' && (
+                          <>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              50 AI generations per month
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              10 GB cloud storage
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              STL, OBJ, GLB exports
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              Community support
+                            </li>
+                          </>
+                        )}
+                        {profile.subscription_tier === 'showroom' && (
+                          <>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              200 AI generations per month
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              100 GB cloud storage
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              All export formats
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              Priority support
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              Commercial license
+                            </li>
+                          </>
+                        )}
+                        {profile.subscription_tier === 'dealership' && (
+                          <>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              Unlimited AI generations
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              1 TB cloud storage
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              API access
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              Team collaboration (5 seats)
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-white" />
+                              Premium support
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
 
-                {/* Payment Method */}
-                <div>
-                  <p className="text-xs font-light text-gray-400 mb-3">Payment Method</p>
+              {/* Billing Portal Card */}
+              {profile?.stripe_customer_id && (
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded p-4 sm:p-6">
+                  <h3 className="text-sm font-light mb-4">Billing Portal</h3>
+                  <p className="text-xs text-gray-400 mb-4">
+                    Access your Stripe billing portal to:
+                  </p>
+                  <ul className="space-y-2 text-xs text-gray-400 mb-6">
+                    <li className="flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-gray-400" />
+                      Update payment methods
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-gray-400" />
+                      View billing history and invoices
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-gray-400" />
+                      Update billing information
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-gray-400" />
+                      Cancel subscription
+                    </li>
+                  </ul>
                   <button 
                     onClick={async () => {
+                      const loadingToast = toast.loading('Opening billing portal...')
                       try {
                         const response = await fetch('/api/create-portal-session', { method: 'POST' })
                         const data = await response.json()
+                        toast.dismiss(loadingToast)
                         if (data.url) {
                           window.location.href = data.url
                         } else {
                           toast.error(data.error || 'Failed to open billing portal')
                         }
                       } catch (error) {
+                        toast.dismiss(loadingToast)
                         toast.error('Failed to open billing portal')
                       }
                     }}
-                    className="w-full bg-white/5 border border-white/10 rounded p-4 text-xs font-light text-gray-400 hover:bg-white/10 transition-colors"
+                    className="w-full bg-white text-black border border-white rounded p-3 text-xs font-light hover:bg-gray-100 transition-colors"
                   >
-                    Manage Billing & Payment Methods
+                    Open Stripe Billing Portal →
                   </button>
                 </div>
-              </div>
+              )}
+
+              {/* No Subscription Message */}
+              {(!profile?.subscription_tier || profile?.subscription_tier === 'free') && !profile?.stripe_customer_id && (
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded p-6 text-center">
+                  <p className="text-sm font-light mb-2">You're on the free plan</p>
+                  <p className="text-xs text-gray-400 mb-4">
+                    Upgrade to unlock more features and credits
+                  </p>
+                  <Link 
+                    href="/pricing"
+                    className="inline-block px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-100 transition-colors"
+                  >
+                    View Plans
+                  </Link>
+                </div>
+              )}
             </div>
             )}
 

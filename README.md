@@ -24,9 +24,11 @@ All documentation is in the `/docs` folder:
 
 - **[Getting Started](./docs/QUICK_START.md)** - Quick setup guide
 - **[Full Documentation Index](./docs/README.md)** - Complete documentation overview
+- **[Beta Launch Checklist](./docs/BETA_LAUNCH_CHECKLIST.md)** - Launch preparation
+- **[Stripe Setup](./docs/STRIPE_READY.md)** - Payment integration
 - **[Architecture](./docs/ARCHITECTURE.md)** - System architecture
 - **[Supabase Setup](./docs/SUPABASE_SETUP.md)** - Database configuration
-- **[Security Checklist](./docs/SECURITY_CHECKLIST.md)** - Security guide
+- **[Security Audit](./docs/SECURITY_AUDIT.md)** - Security guide
 
 ## ✨ Features
 

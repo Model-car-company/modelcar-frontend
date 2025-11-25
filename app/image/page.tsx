@@ -2,11 +2,11 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../../lib/supabase/client'
-import { Sparkles, Image as ImageIcon, Download, Loader, X } from 'lucide-react'
+import { Sparkles, Image as ImageIcon, Download, Loader, X, Paintbrush, Eraser, Undo, Redo, Trash2, Minus, Plus } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import { checkCredits, deductCredits, CREDIT_COSTS } from '../../lib/credits'
 import ImageCard from '../../components/ImageCard'
@@ -26,6 +26,17 @@ export default function ImagePage() {
   const [prompt, setPrompt] = useState('')
   const [referenceImage, setReferenceImage] = useState<File | null>(null)
   const [referencePreview, setReferencePreview] = useState<string | null>(null)
+  const [mode, setMode] = useState<'text' | 'sketch'>('text')
+  const [sketchImage, setSketchImage] = useState<string>('')
+  
+  // Canvas drawing state
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [brushSize, setBrushSize] = useState(3)
+  const [color, setColor] = useState('#000000')
+  const [tool, setTool] = useState<'pen' | 'eraser'>('pen')
+  const [history, setHistory] = useState<ImageData[]>([])
+  const [historyStep, setHistoryStep] = useState(-1)
   
   // Unified design assets (images + 3D models)
   const [designAssets, setDesignAssets] = useState<Array<{
@@ -38,6 +49,21 @@ export default function ImagePage() {
     thumbnailUrl?: string
     isGenerating?: boolean
   }>>([])
+
+  // Initialize canvas on mount
+  useEffect(() => {
+    if (mode === 'sketch' && canvasRef.current) {
+      const canvas = canvasRef.current
+      const ctx = canvas.getContext('2d')
+      if (ctx && history.length === 0) {
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        setHistory([imageData])
+        setHistoryStep(0)
+      }
+    }
+  }, [mode])
 
   useEffect(() => {
     const loadPageData = async () => {
@@ -398,17 +424,207 @@ export default function ImagePage() {
             </div>
           </div>
 
-          <div className="mb-6 lg:mb-8">
-            <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Prompt</h3>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe your car in detail..."
-              className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors resize-none h-24 lg:h-32"
-              disabled={generating}
-            />
-            <p className="text-[10px] text-gray-500 mt-2">Be specific about style, color, angle, and details</p>
+          {/* Mode Toggle */}
+          <div className="mb-4 lg:mb-6">
+            <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-lg">
+              <button
+                onClick={() => setMode('text')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
+                  mode === 'text'
+                    ? 'bg-white text-black'
+                    : 'hover:bg-white/10 text-gray-400'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Text Prompt</span>
+              </button>
+              <button
+                onClick={() => setMode('sketch')}
+                className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
+                  mode === 'sketch'
+                    ? 'bg-white text-black'
+                    : 'hover:bg-white/10 text-gray-400'
+                }`}
+              >
+                <Paintbrush className="w-3 h-3" />
+                <span>Sketch</span>
+              </button>
+            </div>
           </div>
+
+          {/* Text Mode */}
+          {mode === 'text' && (
+            <div className="mb-6 lg:mb-8">
+              <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Prompt</h3>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe your car in detail..."
+                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors resize-none h-24 lg:h-32"
+                disabled={generating}
+              />
+              <p className="text-[10px] text-gray-500 mt-2">Be specific about style, color, angle, and details</p>
+            </div>
+          )}
+
+          {/* Sketch Mode */}
+          {mode === 'sketch' && (
+            <div className="mb-6 lg:mb-8">
+              <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Sketch Your Design</h3>
+              
+              {sketchImage && (
+                <div className="relative mb-4">
+                  <img src={sketchImage} alt="Your sketch" className="w-full rounded-lg border border-white/10" />
+                  <button
+                    onClick={() => setSketchImage('')}
+                    className="absolute top-2 right-2 px-3 py-1.5 bg-red-500/20 text-red-400 text-xs rounded hover:bg-red-500/30"
+                  >
+                    Clear & Redraw
+                  </button>
+                </div>
+              )}
+              
+              {!sketchImage && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-3">Use the canvas on the right to draw your design →</p>
+                  
+                  {/* Drawing Tools */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-light text-gray-400 mb-2 block">Tool</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setTool('pen')}
+                          className={`flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 ${
+                            tool === 'pen' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
+                          }`}
+                        >
+                          <Paintbrush className="w-3 h-3" />
+                          Pen
+                        </button>
+                        <button
+                          onClick={() => setTool('eraser')}
+                          className={`flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 ${
+                            tool === 'eraser' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
+                          }`}
+                        >
+                          <Eraser className="w-3 h-3" />
+                          Eraser
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs font-light text-gray-400 mb-2 block">Brush Size: {brushSize}px</label>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setBrushSize(Math.max(1, brushSize - 1))}
+                          className="p-1 hover:bg-white/10 rounded transition-colors"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <input
+                          type="range"
+                          min="1"
+                          max="50"
+                          value={brushSize}
+                          onChange={(e) => setBrushSize(Number(e.target.value))}
+                          className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                        />
+                        <button
+                          onClick={() => setBrushSize(Math.min(50, brushSize + 1))}
+                          className="p-1 hover:bg-white/10 rounded transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs font-light text-gray-400 mb-2 block">Color</label>
+                      <input
+                        type="color"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value)}
+                        className="w-full h-10 rounded cursor-pointer"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => {
+                          if (historyStep > 0 && canvasRef.current) {
+                            const ctx = canvasRef.current.getContext('2d')
+                            if (ctx) {
+                              const newStep = historyStep - 1
+                              setHistoryStep(newStep)
+                              ctx.putImageData(history[newStep], 0, 0)
+                            }
+                          }
+                        }}
+                        disabled={historyStep <= 0}
+                        className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
+                      >
+                        <Undo className="w-3 h-3" />
+                        Undo
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (historyStep < history.length - 1 && canvasRef.current) {
+                            const ctx = canvasRef.current.getContext('2d')
+                            if (ctx) {
+                              const newStep = historyStep + 1
+                              setHistoryStep(newStep)
+                              ctx.putImageData(history[newStep], 0, 0)
+                            }
+                          }
+                        }}
+                        disabled={historyStep >= history.length - 1}
+                        className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
+                      >
+                        <Redo className="w-3 h-3" />
+                        Redo
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (canvasRef.current) {
+                            const canvas = canvasRef.current
+                            const ctx = canvas.getContext('2d')
+                            if (ctx) {
+                              ctx.fillStyle = '#FFFFFF'
+                              ctx.fillRect(0, 0, canvas.width, canvas.height)
+                              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                              const newHistory = history.slice(0, historyStep + 1)
+                              newHistory.push(imageData)
+                              setHistory(newHistory)
+                              setHistoryStep(newHistory.length - 1)
+                            }
+                          }
+                        }}
+                        className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {sketchImage && (
+                <div>
+                  <h3 className="text-sm font-light text-white mb-2 uppercase tracking-wide">Add Details (Optional)</h3>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Make it matte black, add carbon fiber spoiler, aggressive stance..."
+                    className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors resize-none h-20"
+                    disabled={generating}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="mb-6 lg:mb-8">
             <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Reference Image</h3>
@@ -446,10 +662,128 @@ export default function ImagePage() {
           </div>
 
           <button
-            onClick={generateImage}
-            disabled={!prompt.trim() || generating}
+            onClick={async () => {
+              if (mode === 'sketch') {
+                // Capture canvas as image first
+                if (!sketchImage && canvasRef.current) {
+                  const dataUrl = canvasRef.current.toDataURL('image/png')
+                  setSketchImage(dataUrl)
+                  return
+                }
+                
+                if (!sketchImage) {
+                  toast.error('Please draw something first')
+                  return
+                }
+                
+                // Render sketch to photorealistic image
+                if (!user) {
+                  toast.error('Please sign in to generate images')
+                  router.push('/sign-in')
+                  return
+                }
+
+                const creditCheck = await checkCredits(user.id, 'IMAGE_GENERATION')
+                
+                if (!creditCheck.hasEnough) {
+                  setShowUpgradeModal(true)
+                  return
+                }
+
+                setGenerating(true)
+                const loadingId = `loading-${Date.now()}`
+                const loadingAsset = {
+                  id: loadingId,
+                  type: 'image' as const,
+                  url: '',
+                  prompt: 'Rendering sketch...',
+                  timestamp: new Date().toISOString(),
+                  isGenerating: true
+                }
+                setDesignAssets(prev => [loadingAsset, ...prev])
+                
+                try {
+                  const response = await fetch('/api/sketch-to-render', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      sketchImage,
+                      prompt,
+                      drawingInfluence: 0.7,
+                    }),
+                  })
+
+                  if (!response.ok) {
+                    throw new Error('Sketch render failed')
+                  }
+
+                  const data = await response.json()
+                  
+                  await deductCredits(user.id, CREDIT_COSTS.IMAGE_GENERATION)
+                  
+                  // Save to Supabase
+                  const { data: savedAsset, error: saveError } = await supabase
+                    .from('user_assets')
+                    .insert({
+                      user_id: user.id,
+                      type: 'image',
+                      url: data.imageUrl,
+                      prompt: prompt || 'Rendered from sketch'
+                    })
+                    .select()
+                    .single()
+                  
+                  // Replace loading card with actual image
+                  const newAsset = {
+                    id: savedAsset?.id || Date.now().toString(),
+                    type: 'image' as const,
+                    url: data.imageUrl,
+                    prompt: prompt || 'Rendered from sketch',
+                    timestamp: new Date().toISOString(),
+                    isGenerating: false
+                  }
+                  setDesignAssets(prev => prev.map(asset => 
+                    asset.id === loadingId ? newAsset : asset
+                  ))
+                  
+                  toast.success('Sketch rendered successfully!', {
+                    style: {
+                      background: '#0a0a0a',
+                      color: '#fff',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    },
+                  })
+                  
+                  // Refresh profile
+                  const { data: updatedProfile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+                  
+                  if (updatedProfile) {
+                    setProfile(updatedProfile)
+                  }
+                  
+                } catch (error) {
+                  setDesignAssets(prev => prev.filter(asset => asset.id !== loadingId))
+                  toast.error('Failed to render sketch', {
+                    style: {
+                      background: '#0a0a0a',
+                      color: '#fff',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    },
+                  })
+                } finally {
+                  setGenerating(false)
+                }
+              } else {
+                generateImage()
+              }
+            }}
+            disabled={(mode === 'text' && !prompt.trim()) || generating}
             className={`w-full py-3 rounded font-light text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-              generating
+              generating || (mode === 'text' && !prompt.trim())
                 ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                 : 'bg-white text-black hover:bg-gray-200'
             }`}
@@ -457,20 +791,86 @@ export default function ImagePage() {
             {generating ? (
               <>
                 <Loader className="w-4 h-4 animate-spin" />
-                Generating...
+                {mode === 'sketch' ? 'Rendering Sketch...' : 'Generating...'}
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
-                Generate Image
+                {mode === 'sketch' ? <Paintbrush className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                {mode === 'sketch' ? (sketchImage ? 'Render Sketch' : 'Save Sketch') : 'Generate Image'}
               </>
             )}
           </button>
         </div>
 
-        {/* Right Panel - Design Assets (Images + 3D Models) */}
+        {/* Right Panel - Canvas or Gallery */}
         <div className="flex-1 bg-gradient-to-br from-black via-black/95 to-black/90 overflow-y-auto p-6">
-          {designAssets.length === 0 ? (
+          {mode === 'sketch' && !sketchImage ? (
+            /* Large Sketch Canvas */
+            <div className="h-full flex flex-col items-center justify-center">
+              <div className="w-full max-w-5xl">
+                <div className="mb-4 text-center">
+                  <h3 className="text-lg font-light tracking-wider mb-2">DRAW YOUR DESIGN</h3>
+                  <p className="text-xs text-gray-500">Use the tools on the left, then click "Save Sketch" button</p>
+                </div>
+                <canvas
+                  ref={canvasRef}
+                  width={1200}
+                  height={800}
+                  onMouseDown={(e) => {
+                    const canvas = canvasRef.current
+                    if (!canvas) return
+                    setIsDrawing(true)
+                    const ctx = canvas.getContext('2d')
+                    if (!ctx) return
+                    const rect = canvas.getBoundingClientRect()
+                    const x = (e.clientX - rect.left) * (canvas.width / rect.width)
+                    const y = (e.clientY - rect.top) * (canvas.height / rect.height)
+                    ctx.beginPath()
+                    ctx.moveTo(x, y)
+                  }}
+                  onMouseMove={(e) => {
+                    if (!isDrawing) return
+                    const canvas = canvasRef.current
+                    if (!canvas) return
+                    const ctx = canvas.getContext('2d')
+                    if (!ctx) return
+                    const rect = canvas.getBoundingClientRect()
+                    const x = (e.clientX - rect.left) * (canvas.width / rect.width)
+                    const y = (e.clientY - rect.top) * (canvas.height / rect.height)
+                    ctx.lineWidth = brushSize
+                    ctx.lineCap = 'round'
+                    ctx.lineJoin = 'round'
+                    if (tool === 'eraser') {
+                      ctx.globalCompositeOperation = 'destination-out'
+                      ctx.strokeStyle = 'rgba(0,0,0,1)'
+                    } else {
+                      ctx.globalCompositeOperation = 'source-over'
+                      ctx.strokeStyle = color
+                    }
+                    ctx.lineTo(x, y)
+                    ctx.stroke()
+                  }}
+                  onMouseUp={() => {
+                    if (!isDrawing) return
+                    setIsDrawing(false)
+                    const canvas = canvasRef.current
+                    if (!canvas) return
+                    const ctx = canvas.getContext('2d')
+                    if (!ctx) return
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                    const newHistory = history.slice(0, historyStep + 1)
+                    newHistory.push(imageData)
+                    setHistory(newHistory)
+                    setHistoryStep(newHistory.length - 1)
+                  }}
+                  onMouseLeave={() => setIsDrawing(false)}
+                  className="w-full border border-white/20 rounded-lg cursor-crosshair bg-white shadow-2xl"
+                  style={{ maxHeight: 'calc(100vh - 200px)', height: 'auto', aspectRatio: '3/2' }}
+                />
+              </div>
+            </div>
+          ) :
+          designAssets.length === 0 ? (
             <div className="text-center py-20">
               <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-700" />
               <p className="text-gray-500">No designs yet</p>

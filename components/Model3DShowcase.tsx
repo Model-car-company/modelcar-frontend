@@ -2,18 +2,20 @@
 
 import { Suspense } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, PerspectiveCamera, Environment } from '@react-three/drei'
+import { OrbitControls, PerspectiveCamera, Environment, Center } from '@react-three/drei'
 import { useGLTF } from '@react-three/drei'
 
+// Module-level path and preload for the featured model
+// Note: encode space and parentheses in the URL path
+const FEATURED_MODEL_PATH = '/3d-models/full/untitled.glb'
+useGLTF.preload(FEATURED_MODEL_PATH)
+
 function CompleteCarModel() {
-  const { scene } = useGLTF('/3d-models/4f77e996-a7d5-4a03-8067-e0b12a7d6d00_white_mesh.glb')
+  // Load the featured model from public/3d-models/full
+  const { scene } = useGLTF(FEATURED_MODEL_PATH)
   
   return (
-    <primitive 
-      object={scene} 
-      scale={3.5}
-      position={[0, -0.8, 0]}
-    />
+    <primitive object={scene} scale={3.5} />
   )
 }
 
@@ -34,11 +36,15 @@ export default function Model3DShowcase() {
         
         {/* Complete Car Model */}
         <Suspense fallback={null}>
-          <CompleteCarModel />
+          {/* Center will recenter the model's bounding box at the origin */}
+          <Center>
+            <CompleteCarModel />
+          </Center>
         </Suspense>
         
         {/* Controls */}
         <OrbitControls
+          target={[0, 0, 0]}
           enablePan={false}
           minDistance={5}
           maxDistance={25}

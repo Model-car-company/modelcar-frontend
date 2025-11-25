@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const FAL_API_KEY = process.env.FAL_API_KEY
-const FAL_QUEUE_ENDPOINT = 'https://queue.fal.run/fal-ai/bytedance/seed3d/image-to-3d'
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +9,7 @@ export async function POST(request: NextRequest) {
     let image: string | File | null = null
     let prompt: string = ''
     let quality: string = 'standard'
-    let provider: string = 'meshy'
+    let provider: string = 'replicate'
     
     if (contentType?.includes('multipart/form-data')) {
       const formData = await request.formData()
@@ -40,9 +39,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use fal.ai Seed3D for 3D generation
-    const result = await generateWithSeed3D(image, prompt)
-    return NextResponse.json(result)
+    if (!BACKEND_URL) {
+      return NextResponse.json({ error: 'Backend URL not configured. Set NEXT_PUBLIC_BACKEND_URL' }, { status: 500 })
+    }
+
+    // For our backend we require a public image URL
+    if (typeof image !== 'string') {
+      return NextResponse.json({ error: 'image must be a public URL string' }, { status: 400 })
+    }
+
+    const resp = await fetch(`${BACKEND_URL}/api/v1/external/generate-3d`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: image, prompt, provider })
+    })
+
+    if (!resp.ok) {
+      const text = await resp.text()
+      return NextResponse.json({ error: 'Backend 3D generation failed', details: text }, { status: resp.status })
+    }
+
+    const data = await resp.json()
+    return NextResponse.json(data)
 
   } catch (error) {
     return NextResponse.json(
@@ -52,84 +70,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 3D Generation with fal.ai Seed3D
-async function generateWithSeed3D(image: string | File, prompt: string) {
-  if (!FAL_API_KEY) {
-    throw new Error('fal.ai API key not configured')
-  }
-  if (typeof image !== 'string') {
-    throw new Error('image must be a public URL string for Seed3D')
-  }
-
-  // Step 1: Submit request to fal queue
-  const start = await fetch(FAL_QUEUE_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Key ${FAL_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      image_url: image,
-      prompt: prompt || ''
-    })
-  })
-
-  if (!start.ok) {
-    const msg = await start.text()
-    throw new Error(`fal.ai queue error: ${msg}`)
-  }
-
-  const started = await start.json()
-  const statusUrl: string = started.status_url
-  const responseUrl: string = started.response_url
-
-  // Step 2: Poll for completion using provided URLs
-  const maxAttempts = 180
-  for (let i = 0; i < maxAttempts; i++) {
-    // Try fetching response directly
-    const resp = await fetch(responseUrl, { headers: { 'Authorization': `Key ${FAL_API_KEY}` } })
-    if (resp.ok) {
-      const result = await resp.json()
-      const zipUrl: string | undefined = result?.model?.url
-      if (zipUrl) {
-        return {
-          success: true,
-          modelUrl: zipUrl,
-          format: 'zip',
-          provider: 'seed3d-fal',
-          metadata: {
-            usageTokens: result?.usage_tokens,
-          }
-        }
-      }
-    }
-
-    // Check status as fallback
-    const statusResp = await fetch(statusUrl, { headers: { 'Authorization': `Key ${FAL_API_KEY}` } })
-    if (statusResp.ok) {
-      const status = await statusResp.json()
-      if (status.status && ['COMPLETED', 'completed', 'succeeded', 'SUCCEEDED'].includes(status.status)) {
-        // loop will fetch response next iteration; continue
-      } else if (status.status && ['FAILED', 'failed', 'canceled', 'CANCELED'].includes(status.status)) {
-        throw new Error('Seed3D generation failed')
-      }
-    }
-
-    await new Promise(r => setTimeout(r, 2000))
-  }
-
-  throw new Error('Seed3D generation timed out')
-}
-
-
 // Health check endpoint
 export async function GET() {
   return NextResponse.json({
     status: 'ready',
     message: '3D Generation API is online',
-    integrations: {
-      metaSAM: 'pending', // Will be 'connected' when integrated
-      fallback: 'luma-ai' // Alternative if Meta SAM not available
-    }
+    integrations: { backend: BACKEND_URL ? 'connected' : 'not-configured' }
   })
 }
