@@ -3,6 +3,7 @@
 import { motion, MotionValue } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
 import { ChevronDown, Sparkles } from 'lucide-react'
+import Image from 'next/image'
 
 interface HeroSectionProps {
   y1: MotionValue<string>
@@ -21,6 +22,156 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-red-500/5 to-transparent rounded-full blur-3xl" />
         </div>
       </motion.div>
+
+      {/* Sleek Interface Lines - Hub Design */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Diagonal Lines - Top Left to Bottom Right */}
+        <motion.div
+          initial={{ opacity: 0, pathLength: 0 }}
+          animate={inView ? { opacity: 0.15, pathLength: 1 } : {}}
+          transition={{ duration: 2, delay: 0.8 }}
+          className="absolute top-0 left-0 w-full h-full"
+        >
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <line x1="0%" y1="20%" x2="100%" y2="80%" stroke="white" strokeWidth="0.5" opacity="0.3" />
+            <line x1="10%" y1="0%" x2="90%" y2="100%" stroke="white" strokeWidth="0.5" opacity="0.2" />
+          </svg>
+        </motion.div>
+
+        {/* Horizontal Lines - Left Side */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={inView ? { scaleX: 1 } : {}}
+          transition={{ duration: 1.5, delay: 1 }}
+          className="absolute left-0 top-1/3 w-64 h-px bg-gradient-to-r from-white/40 via-white/20 to-transparent origin-left"
+        />
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={inView ? { scaleX: 1 } : {}}
+          transition={{ duration: 1.5, delay: 1.2 }}
+          className="absolute left-0 top-1/2 w-48 h-px bg-gradient-to-r from-white/30 via-white/15 to-transparent origin-left"
+        />
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={inView ? { scaleX: 1 } : {}}
+          transition={{ duration: 1.5, delay: 1.4 }}
+          className="absolute left-0 top-2/3 w-56 h-px bg-gradient-to-r from-white/35 via-white/18 to-transparent origin-left"
+        />
+
+        {/* Horizontal Lines - Right Side */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={inView ? { scaleX: 1 } : {}}
+          transition={{ duration: 1.5, delay: 1.1 }}
+          className="absolute right-0 top-1/4 w-72 h-px bg-gradient-to-l from-white/40 via-white/20 to-transparent origin-right"
+        />
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={inView ? { scaleX: 1 } : {}}
+          transition={{ duration: 1.5, delay: 1.3 }}
+          className="absolute right-0 top-1/2 w-52 h-px bg-gradient-to-l from-white/30 via-white/15 to-transparent origin-right"
+        />
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={inView ? { scaleX: 1 } : {}}
+          transition={{ duration: 1.5, delay: 1.5 }}
+          className="absolute right-0 top-3/4 w-64 h-px bg-gradient-to-l from-white/35 via-white/18 to-transparent origin-right"
+        />
+
+        {/* Connection Nodes - Left */}
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={inView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 2.5 }}
+          className="absolute left-0 top-1/3 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+        />
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={inView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 2.7 }}
+          className="absolute left-0 top-1/2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+        />
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={inView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 2.9 }}
+          className="absolute left-0 top-2/3 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+        />
+
+        {/* Connection Nodes - Right */}
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={inView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 2.6 }}
+          className="absolute right-0 top-1/4 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+        />
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={inView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 2.8 }}
+          className="absolute right-0 top-1/2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+        />
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={inView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 3 }}
+          className="absolute right-0 top-3/4 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+        />
+
+        {/* Vertical Lines */}
+        <motion.div
+          initial={{ scaleY: 0 }}
+          animate={inView ? { scaleY: 1 } : {}}
+          transition={{ duration: 1.8, delay: 1.6 }}
+          className="absolute left-1/4 top-0 w-px h-1/3 bg-gradient-to-b from-transparent via-white/20 to-transparent origin-top"
+        />
+        <motion.div
+          initial={{ scaleY: 0 }}
+          animate={inView ? { scaleY: 1 } : {}}
+          transition={{ duration: 1.8, delay: 1.8 }}
+          className="absolute right-1/4 bottom-0 w-px h-1/3 bg-gradient-to-t from-transparent via-white/20 to-transparent origin-bottom"
+        />
+
+        {/* Corner Brackets - Top Left */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={inView ? { opacity: 0.4 } : {}}
+          transition={{ duration: 1, delay: 2 }}
+          className="absolute top-24 left-8 w-12 h-12"
+        >
+          <div className="absolute top-0 left-0 w-full h-px bg-white/40" />
+          <div className="absolute top-0 left-0 w-px h-full bg-white/40" />
+        </motion.div>
+
+        {/* Corner Brackets - Bottom Right */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={inView ? { opacity: 0.4 } : {}}
+          transition={{ duration: 1, delay: 2.2 }}
+          className="absolute bottom-24 right-8 w-12 h-12"
+        >
+          <div className="absolute bottom-0 right-0 w-full h-px bg-white/40" />
+          <div className="absolute bottom-0 right-0 w-px h-full bg-white/40" />
+        </motion.div>
+
+        {/* Technical Labels */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={inView ? { opacity: 0.5, x: 0 } : {}}
+          transition={{ duration: 0.8, delay: 2.5 }}
+          className="absolute left-16 top-1/3 text-[9px] font-light tracking-[0.3em] text-white/60 uppercase"
+        >
+          INTERFACE
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={inView ? { opacity: 0.5, x: 0 } : {}}
+          transition={{ duration: 0.8, delay: 2.7 }}
+          className="absolute right-16 top-3/4 text-[9px] font-light tracking-[0.3em] text-white/60 uppercase text-right"
+        >
+          SYSTEM
+        </motion.div>
+      </div>
 
       <div className="container mx-auto px-6 relative z-10">
         <motion.div
@@ -45,7 +196,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            Build the <span className="font-light text-white">Dream Garage</span> You Can't Afford
+            Build Your <span className="font-light text-white">Dream Garage</span> without the house loan
           </motion.h1>
 
           {/* Subtitle */}
@@ -56,16 +207,6 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             transition={{ delay: 0.4, duration: 0.8 }}
           >
             Can't drop $44K on a Mustang GT? Own it as a detailed 3D model. Print it. Display it. Build your entire collection without the car payment.
-          </motion.p>
-
-          {/* Social Proof */}
-          <motion.p
-            className="text-sm font-extralight text-gray-500 mb-16"
-            initial={{ opacity: 0 }}
-            animate={inView ? { opacity: 1 } : {}}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            Join 247 collectors on the waitlist
           </motion.p>
 
           {/* Get Early Access Button */}
@@ -91,6 +232,25 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
         </motion.div>
       </div>
 
+      {/* Top Left Image */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={inView ? { opacity: 1, scale: 1 } : {}}
+        transition={{ duration: 1, delay: 1.2 }}
+        className="absolute top-32 left-8 w-64 h-40 md:w-72 md:h-44 lg:w-80 lg:h-48"
+      >
+        <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
+          <Image
+            src="/landing/Gemini_Generated_Image_ct4rdhct4rdhct4r.png"
+            alt="3D Model Preview"
+            fill
+            className="object-cover opacity-80 hover:opacity-100 transition-opacity"
+            sizes="(max-width: 768px) 256px, (max-width: 1024px) 288px, 320px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+        </div>
+      </motion.div>
+
       {/* Scroll Indicator */}
       <motion.div
         className="absolute bottom-10 left-1/2 -translate-x-1/2"
@@ -98,6 +258,25 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
         transition={{ duration: 2, repeat: Infinity }}
       >
         <ChevronDown className="w-5 h-5 text-gray-600" />
+      </motion.div>
+
+      {/* Bottom Right Image */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={inView ? { opacity: 1, scale: 1 } : {}}
+        transition={{ duration: 1, delay: 1.5 }}
+        className="absolute bottom-8 right-8 w-64 h-40 md:w-72 md:h-44 lg:w-80 lg:h-48"
+      >
+        <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
+          <Image
+            src="/landing/Gemini_Generated_Image_2kb57k2kb57k2kb5.png"
+            alt="3D Model Preview"
+            fill
+            className="object-cover opacity-80 hover:opacity-100 transition-opacity"
+            sizes="(max-width: 768px) 256px, (max-width: 1024px) 288px, 320px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+        </div>
       </motion.div>
     </section>
   )

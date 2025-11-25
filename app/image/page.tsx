@@ -26,8 +26,8 @@ export default function ImagePage() {
   
   // Form states
   const [prompt, setPrompt] = useState('')
-  const [referenceImage, setReferenceImage] = useState<File | null>(null)
-  const [referencePreview, setReferencePreview] = useState<string | null>(null)
+  const [referenceImages, setReferenceImages] = useState<(File | null)[]>([null, null, null])
+  const [referencePreviews, setReferencePreviews] = useState<(string | null)[]>([null, null, null])
   const [mode, setMode] = useState<'text' | 'sketch'>('text')
   const [sketchImage, setSketchImage] = useState<string>('')
   
@@ -343,16 +343,31 @@ export default function ImagePage() {
   ];
 
 
-  const handleReferenceImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReferenceImage = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0]
     if (file) {
-      setReferenceImage(file)
+      const newImages = [...referenceImages]
+      newImages[index] = file
+      setReferenceImages(newImages)
+      
       const reader = new FileReader()
       reader.onloadend = () => {
-        setReferencePreview(reader.result as string)
+        const newPreviews = [...referencePreviews]
+        newPreviews[index] = reader.result as string
+        setReferencePreviews(newPreviews)
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  const removeReferenceImage = (index: number) => {
+    const newImages = [...referenceImages]
+    newImages[index] = null
+    setReferenceImages(newImages)
+    
+    const newPreviews = [...referencePreviews]
+    newPreviews[index] = null
+    setReferencePreviews(newPreviews)
   }
 
   const generateImage = async () => {
@@ -373,10 +388,18 @@ export default function ImagePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
+      // Collect all non-null reference images
+      const referenceImagesList = referencePreviews.filter(preview => preview !== null)
+      
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/generate-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ prompt, previousImage: referencePreview, aspect_ratio: '16:9', output_format: 'jpg' })
+        body: JSON.stringify({ 
+          prompt, 
+          reference_images: referenceImagesList.length > 0 ? referenceImagesList : undefined,
+          aspect_ratio: '16:9', 
+          output_format: 'jpg' 
+        })
       })
       if (response.status === 402) {
         setShowUpgradeModal(true)
@@ -709,38 +732,43 @@ export default function ImagePage() {
           )}
 
           <div className="mb-6 lg:mb-8">
-            <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Reference Image</h3>
-            <label className="block w-full">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleReferenceImage}
-                className="hidden"
-                disabled={generating}
-              />
-              <div className="border-2 border-dashed border-white/10 rounded-lg p-6 text-center cursor-pointer hover:border-white/20 transition-colors">
-                {referencePreview ? (
-                  <div className="relative">
-                    <img src={referencePreview} alt="Reference" className="w-full h-32 object-cover rounded" />
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setReferenceImage(null)
-                        setReferencePreview(null)
-                      }}
-                      className="absolute top-2 right-2 p-1 bg-black/50 rounded hover:bg-black/70 transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+            <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Reference Images (up to 3)</h3>
+            <p className="text-[10px] text-gray-500 mb-3">Add reference images to guide the AI generation</p>
+            
+            <div className="grid grid-cols-3 gap-2">
+              {[0, 1, 2].map((index) => (
+                <label key={index} className="block">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleReferenceImage(e, index)}
+                    className="hidden"
+                    disabled={generating}
+                  />
+                  <div className="border border-dashed border-white/10 rounded-lg p-2 text-center cursor-pointer hover:border-white/20 transition-colors h-full">
+                    {referencePreviews[index] ? (
+                      <div className="relative">
+                        <img src={referencePreviews[index]!} alt={`Reference ${index + 1}`} className="w-full h-20 object-cover rounded" />
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            removeReferenceImage(index)
+                          }}
+                          className="absolute top-1 right-1 p-0.5 bg-black/70 rounded hover:bg-black/90 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-5 h-5 mx-auto mb-1 text-gray-600" />
+                        <p className="text-[9px] text-gray-500">{index + 1}</p>
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <ImageIcon className="w-8 h-8 mx-auto mb-2 text-gray-500" />
-                    <p className="text-xs text-gray-400">Upload reference (optional)</p>
-                  </>
-                )}
-              </div>
-            </label>
+                </label>
+              ))}
+            </div>
           </div>
 
           <button
@@ -753,8 +781,9 @@ export default function ImagePage() {
                 }
                 if (!sketchImage) { toast.error('Please draw something first'); return }
                 if (!user) { router.push('/sign-in'); return }
-                // Use sketch as reference
-                setReferencePreview(sketchImage)
+                // Use sketch as first reference image
+                const newPreviews = [sketchImage, ...referencePreviews.slice(1)]
+                setReferencePreviews(newPreviews as (string | null)[])
                 await generateImage()
               } else {
                 await generateImage()
