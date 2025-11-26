@@ -18,9 +18,16 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
+#############################
+# Build-time environment
+#############################
 # Ensure Next.js runs in production mode so it loads .env.production
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Public Supabase envs needed by @supabase/ssr during build
+ENV NEXT_PUBLIC_SUPABASE_URL="https://mwyzvpadlfroamzjxlex.supabase.co"
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13eXp2cGFkbGZyb2Ftemp4bGV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NzY1MzYsImV4cCI6MjA3OTI1MjUzNn0.ZA1_vrD_80TAV6ETmA_bHViNPMxvylwLyB41oumvbjA"
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -33,8 +40,15 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
+#############################
+# Runtime environment
+#############################
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Public Supabase envs for runtime as well
+ENV NEXT_PUBLIC_SUPABASE_URL="https://mwyzvpadlfroamzjxlex.supabase.co"
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13eXp2cGFkbGZyb2Ftemp4bGV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NzY1MzYsImV4cCI6MjA3OTI1MjUzNn0.ZA1_vrD_80TAV6ETmA_bHViNPMxvylwLyB41oumvbjA"
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
