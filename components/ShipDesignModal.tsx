@@ -113,37 +113,30 @@ export default function ShipDesignModal({
     setStep('invoice')
     
     try {
-      // Get cart preview (pricing) with default US location
-      const response = await fetch('/api/imaterialise/cart/preview', {
+      // Get invoice from i.materialise invoice endpoint
+      const response = await fetch('/api/imaterialise/invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: [{
-            model_id: model.id,
-            material_id: selectedMaterial!.materialID,
-            finish_id: selectedFinish!.finishID,
-            quantity: 1,
-            scale: scale,
-            file_units: unit
-          }],
-          shipping_country: 'US',
-          shipping_city: 'New York',
-          shipping_state: 'NY',
-          shipping_zip: '10001',
+          model_id: model.id,
+          material_id: selectedMaterial!.materialID,
+          finish_id: selectedFinish!.finishID,
+          quantity: 1,
+          scale: scale,
           currency: 'USD'
         })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to get pricing')
+        throw new Error('Failed to get invoice')
       }
 
       const data = await response.json()
       setQuoteData(data)
       
     } catch (error) {
-      console.error('Error getting pricing:', error)
-      toast.error('Failed to get pricing', {
+      console.error('Error getting invoice:', error)
+      toast.error('Failed to get invoice', {
         style: {
           background: '#0a0a0a',
           color: '#fff',
@@ -407,17 +400,31 @@ export default function ShipDesignModal({
                           <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Finish</div>
                           <div className="text-sm font-light text-white">{selectedFinish?.finishName}</div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Items Total</div>
-                            <div className="text-sm font-light text-white">${quoteData.items_total?.toFixed(2)}</div>
-                          </div>
+                        <div>
+                          <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Quantity</div>
+                          <div className="text-sm font-light text-white">{quoteData.quantity || 1}</div>
                         </div>
+                        <div className="pt-3 border-t border-white/10">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-light uppercase tracking-wide text-gray-400">Total Price</div>
+                            <div className="text-xl font-light text-white">${quoteData.total_price?.toFixed(2)} {quoteData.currency}</div>
+                          </div>
+                          {quoteData.unit_price && (
+                            <div className="text-[10px] font-light text-gray-500 mt-1">
+                              ${quoteData.unit_price.toFixed(2)} per item
+                            </div>
+                          )}
+                        </div>
+                        {quoteData.valid_until && (
+                          <div className="text-[10px] font-light text-gray-600">
+                            Valid until: {new Date(quoteData.valid_until).toLocaleDateString()}
+                          </div>
+                        )}
                       </div>
 
                       {/* Info note */}
                       <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded text-xs font-light text-blue-200">
-                        💳 Payment and shipping details will be collected securely in the next step
+                        Payment and shipping details will be collected securely in the next step
                       </div>
                     </div>
                   ) : null}
