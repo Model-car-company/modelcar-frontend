@@ -33,7 +33,12 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "build/types/**/*.ts",
+    ".next-build-temp/types/**/*.ts",
+    "node_modules/.cache/next-build/types/**/*.ts",
+    "C:/Users/shaki/AppData/Local/Temp/next-dist/types/**/*.ts",
+    "temp-dist/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

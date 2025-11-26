@@ -52,7 +52,7 @@ const resolveTierAndInterval = (
   // 3) Fallback to metadata
   const tierMeta = metadata?.tier ? normalizeTier(metadata.tier) : 'free';
   const intervalMeta =
-    (priceInterval as BillingInterval) ||
+    (interval as BillingInterval) ||
     (metadata?.billingInterval as BillingInterval) ||
     'month';
   return { tier: tierMeta, billingInterval: intervalMeta };
@@ -124,8 +124,8 @@ const resolveUserId = async (
       .eq('stripe_customer_id', customerId)
       .single();
 
-    if (profile) {
-      return profile.id;
+    if (profile && (profile as any).id) {
+      return (profile as any).id as string;
     }
   }
 

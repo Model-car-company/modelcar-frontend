@@ -6,8 +6,8 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
     domains: [],
   },
-  // Enable standalone output for Docker
-  output: 'standalone',
+  distDir: '.next',
+  outputFileTracing: false,
 }
 
 module.exports = nextConfig

@@ -17,16 +17,18 @@ import { SubscriptionTier } from '../../lib/subscription-config'
 export default function ImagePage() {
   const router = useRouter()
   const supabase = createClient()
-  
+
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [creditsRemaining, setCreditsRemaining] = useState<number>(0)
-  const requiredTier: SubscriptionTier = 'garage'
+  const requiredTier: SubscriptionTier = 'showroom' // starter paid plan
   const activeStatuses = ['active', 'trialing', 'past_due']
-  
+  const IMAGE_COST = 3
+  const MODEL3D_COST = 14
+
   // Form states
   const [prompt, setPrompt] = useState('')
   const [referenceImages, setReferenceImages] = useState<(File | null)[]>([null, null, null])
@@ -35,7 +37,7 @@ export default function ImagePage() {
   const [sketchImage, setSketchImage] = useState<string>('')
   const [drawingInfluence, setDrawingInfluence] = useState(70)
   const [stylePreset, setStylePreset] = useState<'automotive' | 'vray' | 'keyshot' | 'octane'>('automotive')
-  
+
   // Canvas drawing state
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
@@ -44,7 +46,7 @@ export default function ImagePage() {
   const [tool, setTool] = useState<'pen' | 'eraser'>('pen')
   const [history, setHistory] = useState<ImageData[]>([])
   const [historyStep, setHistoryStep] = useState(-1)
-  
+
   // Unified design assets (images + 3D models)
   const [designAssets, setDesignAssets] = useState<Array<{
     id: string
@@ -76,22 +78,16 @@ export default function ImagePage() {
     ? activeStatuses.includes(profile.subscription_status.toLowerCase()) && profile.subscription_tier !== 'free'
     : false
 
-  // Fetch credit balance from backend
+  // Fetch credit balance from Supabase profile
   const fetchCredits = async () => {
     if (!user) return
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-      if (!token) return
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/credits/balance`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (resp.ok) {
-        const data = await resp.json()
-        setCreditsRemaining(data.credits_remaining || 0)
-      }
-    } catch (e) {
-      console.error('Failed to fetch credits:', e)
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('credits_remaining')
+      .eq('id', user.id)
+      .single()
+    if (!error && data?.credits_remaining !== undefined && data?.credits_remaining !== null) {
+      setCreditsRemaining(data.credits_remaining)
     }
   }
 
@@ -101,8 +97,8 @@ export default function ImagePage() {
     if (!isPaidActive) { setShowUpgradeModal(true); return }
 
     // Check credits before starting
-    if (creditsRemaining < 14) {
-      if (!isPaidActive) setShowUpgradeModal(true)
+    if (creditsRemaining < MODEL3D_COST) {
+      setShowUpgradeModal(true)
       return
     }
 
@@ -135,7 +131,7 @@ export default function ImagePage() {
         return
       }
       const data = await response.json()
-      if (!response.ok) throw new Error(data?.error || 'Failed to generate 3D')
+      if (!response.ok) throw new Error(data?.error || data.detail || '3D generation failed')
 
       const a = data.asset || {}
       const finalized = {
@@ -150,9 +146,12 @@ export default function ImagePage() {
       }
       setDesignAssets(prev => prev.map(x => x.id === tempId ? finalized : x))
       // Refresh credits after successful generation
-      await fetchCredits()
-    } catch (e) {
+      const newCredits = Math.max(0, creditsRemaining - MODEL3D_COST)
+      setCreditsRemaining(newCredits)
+      await supabase.from('profiles').update({ credits_remaining: newCredits }).eq('id', user.id)
+    } catch (e: any) {
       // Remove loading card on error
+      toast.error(e.message)
       setDesignAssets(prev => prev.filter(a => a.id !== tempId))
     }
   }
@@ -243,24 +242,13 @@ export default function ImagePage() {
 
       if (profileResponse.data) {
         setProfile(profileResponse.data);
-      }
-
-      // Fetch credits from backend
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-      if (token) {
-        try {
-          const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/credits/balance`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          if (resp.ok) {
-            const data = await resp.json()
-            setCreditsRemaining(data.credits_remaining || 0)
-          }
-        } catch (e) {
-          console.error('Failed to fetch credits:', e)
+        if (profileResponse.data.credits_remaining !== undefined && profileResponse.data.credits_remaining !== null) {
+          setCreditsRemaining(profileResponse.data.credits_remaining)
         }
       }
+
+
+
 
       if (assetsResponse.error) {
         console.error('Failed to load assets:', assetsResponse.error);
@@ -309,7 +297,7 @@ export default function ImagePage() {
           finalAssets = refreshedAssets || [];
         }
       }
-      
+
       // Transform and set the final assets
       const transformedAssets = finalAssets.map(asset => ({
         id: asset.id,
@@ -359,7 +347,7 @@ export default function ImagePage() {
       const newImages = [...referenceImages]
       newImages[index] = file
       setReferenceImages(newImages)
-      
+
       const reader = new FileReader()
       reader.onloadend = () => {
         const newPreviews = [...referencePreviews]
@@ -374,7 +362,7 @@ export default function ImagePage() {
     const newImages = [...referenceImages]
     newImages[index] = null
     setReferenceImages(newImages)
-    
+
     const newPreviews = [...referencePreviews]
     newPreviews[index] = null
     setReferencePreviews(newPreviews)
@@ -386,8 +374,8 @@ export default function ImagePage() {
     if (!isPaidActive) { setShowUpgradeModal(true); return }
 
     // Check credits before starting
-    if (creditsRemaining < 3) {
-      if (!isPaidActive) setShowUpgradeModal(true)
+    if (creditsRemaining < IMAGE_COST) {
+      setShowUpgradeModal(true)
       return
     }
 
@@ -401,30 +389,27 @@ export default function ImagePage() {
       const token = session?.access_token
       // Collect all non-null reference images
       const referenceImagesList = referencePreviews.filter(preview => preview !== null)
-      
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/generate-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ 
-          prompt, 
+        body: JSON.stringify({
+          prompt,
           reference_images: referenceImagesList.length > 0 ? referenceImagesList : undefined,
-          aspect_ratio: '16:9', 
-          output_format: 'jpg' 
+          aspect_ratio: '16:9',
+          output_format: 'jpg'
         })
       })
-      if (response.status === 402) {
-        if (!isPaidActive) setShowUpgradeModal(true)
-        setDesignAssets(prev => prev.filter(a => a.id !== loadingId))
-        setGenerating(false)
-        return
-      }
+
       if (!response.ok) throw new Error('Generation failed')
       const data = await response.json()
       const a = data.asset || {}
       const newAsset = { id: a.id || Date.now().toString(), type: 'image' as const, url: data.imageUrl || a.url, prompt: a.prompt || prompt, timestamp: new Date().toISOString(), isGenerating: false }
       setDesignAssets(prev => prev.map(asset => asset.id === loadingId ? newAsset : asset))
-      // Refresh credits after successful generation
-      await fetchCredits()
+      // Deduct credits locally and persist
+      const newCredits = Math.max(0, creditsRemaining - IMAGE_COST)
+      setCreditsRemaining(newCredits)
+      await supabase.from('profiles').update({ credits_remaining: newCredits }).eq('id', user.id)
     } catch (error) {
       setDesignAssets(prev => prev.filter(asset => asset.id !== loadingId))
       toast.error('Failed to generate image')
@@ -434,9 +419,12 @@ export default function ImagePage() {
   }
 
   // Handle 3D generation from ImageCard (segmented flow)
-  const handleGenerate3D = async (imageUrl: string, points: {x: number, y: number, label: 1 | 0}[]) => {
+  const handleGenerate3D = async (imageUrl: string, points: { x: number, y: number, label: 1 | 0 }[]) => {
+    if (!user) { router.push('/sign-in'); return }
+    if (!isPaidActive || creditsRemaining < MODEL3D_COST) { setShowUpgradeModal(true); return }
+
     const loadingToast = toast.loading('Generating 3D model from selection...')
-    
+
     try {
       const segmentResponse = await fetch('/api/segment', {
         method: 'POST',
@@ -446,9 +434,9 @@ export default function ImagePage() {
           points: points
         })
       })
-      
+
       const segmentData = await segmentResponse.json()
-      
+
       const response = await fetch('/api/generate-3d', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -457,12 +445,12 @@ export default function ImagePage() {
           provider: 'hyper3d'  // Use Hyper3D for best quality with part separation
         })
       })
-      
+
       const data = await response.json()
-      
+
       toast.dismiss(loadingToast)
       toast.success('3D model generated!')
-      
+
       // Save to Supabase user_assets table
       if (user) {
         const { data: savedAsset, error: saveError } = await supabase
@@ -477,11 +465,11 @@ export default function ImagePage() {
           })
           .select()
           .single()
-        
+
         if (saveError) {
           console.error('Failed to save 3D asset:', saveError)
         }
-        
+
         // Add 3D model to design assets feed (at the top)
         const newAsset = {
           id: savedAsset?.id || Date.now().toString(),
@@ -494,10 +482,15 @@ export default function ImagePage() {
         }
         setDesignAssets(prev => [newAsset, ...prev])
       }
-      
-    } catch (error) {
+
+      // Deduct credits
+      const newCredits = Math.max(0, creditsRemaining - MODEL3D_COST)
+      setCreditsRemaining(newCredits)
+      await supabase.from('profiles').update({ credits_remaining: newCredits }).eq('id', user.id)
+
+    } catch (error: any) {
       toast.dismiss(loadingToast)
-      toast.error('Failed to generate 3D model')
+      toast.error(error.message)
     }
   }
 
@@ -515,7 +508,7 @@ export default function ImagePage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Toaster position="top-right" />
-      
+
       {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
@@ -526,7 +519,7 @@ export default function ImagePage() {
         billingInterval="month"
         hasActivePaidPlan={isPaidActive}
       />
-      
+
       <div className="flex flex-col lg:flex-row h-screen">
         {/* Left Panel - Generation Form */}
         <div className="w-full lg:w-80 border-b lg:border-r lg:border-b-0 border-white/5 bg-gradient-to-b from-black/50 via-black/30 to-black/50 backdrop-blur-sm p-4 lg:p-6 flex flex-col">
@@ -548,22 +541,20 @@ export default function ImagePage() {
             <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-lg">
               <button
                 onClick={() => setMode('text')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
-                  mode === 'text'
-                    ? 'bg-white text-black'
-                    : 'hover:bg-white/10 text-gray-400'
-                }`}
+                className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${mode === 'text'
+                  ? 'bg-white text-black'
+                  : 'hover:bg-white/10 text-gray-400'
+                  }`}
               >
                 <Sparkles className="w-3 h-3" />
                 <span>Text Prompt</span>
               </button>
               <button
                 onClick={() => setMode('sketch')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
-                  mode === 'sketch'
-                    ? 'bg-white text-black'
-                    : 'hover:bg-white/10 text-gray-400'
-                }`}
+                className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${mode === 'sketch'
+                  ? 'bg-white text-black'
+                  : 'hover:bg-white/10 text-gray-400'
+                  }`}
               >
                 <Paintbrush className="w-3 h-3" />
                 <span>Sketch</span>
@@ -591,137 +582,135 @@ export default function ImagePage() {
             <div className="mb-6 lg:mb-8">
               <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Drawing Tools</h3>
               <p className="text-xs text-gray-500 mb-3">Use the canvas on the right to draw your design →</p>
-              
+
               <div>
-                  
-                  {/* Drawing Tools */}
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-light text-gray-400 mb-2 block">Tool</label>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => setTool('pen')}
-                          className={`flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 ${
-                            tool === 'pen' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
-                          }`}
-                        >
-                          <Paintbrush className="w-3 h-3" />
-                          Pen
-                        </button>
-                        <button
-                          onClick={() => setTool('eraser')}
-                          className={`flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 ${
-                            tool === 'eraser' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
-                          }`}
-                        >
-                          <Eraser className="w-3 h-3" />
-                          Eraser
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-xs font-light text-gray-400 mb-2 block">Brush Size: {brushSize}px</label>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setBrushSize(Math.max(1, brushSize - 1))}
-                          className="p-1 hover:bg-white/10 rounded transition-colors"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <input
-                          type="range"
-                          min="1"
-                          max="50"
-                          value={brushSize}
-                          onChange={(e) => setBrushSize(Number(e.target.value))}
-                          className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
-                        />
-                        <button
-                          onClick={() => setBrushSize(Math.min(50, brushSize + 1))}
-                          className="p-1 hover:bg-white/10 rounded transition-colors"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-xs font-light text-gray-400 mb-2 block">Color</label>
-                      <input
-                        type="color"
-                        value={color}
-                        onChange={(e) => setColor(e.target.value)}
-                        className="w-full h-10 rounded cursor-pointer"
-                      />
-                    </div>
-                    
-                    <div className="flex gap-2 pt-2">
+
+                {/* Drawing Tools */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-light text-gray-400 mb-2 block">Tool</label>
+                    <div className="flex gap-2">
                       <button
-                        onClick={() => {
-                          if (historyStep > 0 && canvasRef.current) {
-                            const ctx = canvasRef.current.getContext('2d')
-                            if (ctx) {
-                              const newStep = historyStep - 1
-                              setHistoryStep(newStep)
-                              ctx.putImageData(history[newStep], 0, 0)
-                            }
-                          }
-                        }}
-                        disabled={historyStep <= 0}
-                        className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
+                        onClick={() => setTool('pen')}
+                        className={`flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 ${tool === 'pen' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
+                          }`}
                       >
-                        <Undo className="w-3 h-3" />
-                        Undo
+                        <Paintbrush className="w-3 h-3" />
+                        Pen
                       </button>
                       <button
-                        onClick={() => {
-                          if (historyStep < history.length - 1 && canvasRef.current) {
-                            const ctx = canvasRef.current.getContext('2d')
-                            if (ctx) {
-                              const newStep = historyStep + 1
-                              setHistoryStep(newStep)
-                              ctx.putImageData(history[newStep], 0, 0)
-                            }
-                          }
-                        }}
-                        disabled={historyStep >= history.length - 1}
-                        className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
+                        onClick={() => setTool('eraser')}
+                        className={`flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 ${tool === 'eraser' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
+                          }`}
                       >
-                        <Redo className="w-3 h-3" />
-                        Redo
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (canvasRef.current) {
-                            const canvas = canvasRef.current
-                            const ctx = canvas.getContext('2d')
-                            if (ctx) {
-                              ctx.fillStyle = '#FFFFFF'
-                              ctx.fillRect(0, 0, canvas.width, canvas.height)
-                              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-                              const newHistory = history.slice(0, historyStep + 1)
-                              newHistory.push(imageData)
-                              setHistory(newHistory)
-                              setHistoryStep(newHistory.length - 1)
-                            }
-                          }
-                        }}
-                        className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Clear
+                        <Eraser className="w-3 h-3" />
+                        Eraser
                       </button>
                     </div>
                   </div>
+
+                  <div>
+                    <label className="text-xs font-light text-gray-400 mb-2 block">Brush Size: {brushSize}px</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setBrushSize(Math.max(1, brushSize - 1))}
+                        className="p-1 hover:bg-white/10 rounded transition-colors"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <input
+                        type="range"
+                        min="1"
+                        max="50"
+                        value={brushSize}
+                        onChange={(e) => setBrushSize(Number(e.target.value))}
+                        className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                      />
+                      <button
+                        onClick={() => setBrushSize(Math.min(50, brushSize + 1))}
+                        className="p-1 hover:bg-white/10 rounded transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-light text-gray-400 mb-2 block">Color</label>
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="w-full h-10 rounded cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      onClick={() => {
+                        if (historyStep > 0 && canvasRef.current) {
+                          const ctx = canvasRef.current.getContext('2d')
+                          if (ctx) {
+                            const newStep = historyStep - 1
+                            setHistoryStep(newStep)
+                            ctx.putImageData(history[newStep], 0, 0)
+                          }
+                        }
+                      }}
+                      disabled={historyStep <= 0}
+                      className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
+                    >
+                      <Undo className="w-3 h-3" />
+                      Undo
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (historyStep < history.length - 1 && canvasRef.current) {
+                          const ctx = canvasRef.current.getContext('2d')
+                          if (ctx) {
+                            const newStep = historyStep + 1
+                            setHistoryStep(newStep)
+                            ctx.putImageData(history[newStep], 0, 0)
+                          }
+                        }
+                      }}
+                      disabled={historyStep >= history.length - 1}
+                      className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
+                    >
+                      <Redo className="w-3 h-3" />
+                      Redo
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (canvasRef.current) {
+                          const canvas = canvasRef.current
+                          const ctx = canvas.getContext('2d')
+                          if (ctx) {
+                            ctx.fillStyle = '#FFFFFF'
+                            ctx.fillRect(0, 0, canvas.width, canvas.height)
+                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                            const newHistory = history.slice(0, historyStep + 1)
+                            newHistory.push(imageData)
+                            setHistory(newHistory)
+                            setHistoryStep(newHistory.length - 1)
+                          }
+                        }
+                      }}
+                      className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Clear
+                    </button>
+                  </div>
                 </div>
+              </div>
             </div>
           )}
 
           <div className="mb-6 lg:mb-8">
             <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Reference Images (up to 3)</h3>
             <p className="text-[10px] text-gray-500 mb-3">Add reference images to guide the AI generation</p>
-            
+
             <div className="grid grid-cols-3 gap-2">
               {[0, 1, 2].map((index) => (
                 <label key={index} className="block">
@@ -775,11 +764,10 @@ export default function ImagePage() {
               }
             }}
             disabled={(mode === 'text' && !prompt.trim()) || generating}
-            className={`w-full py-3 rounded font-light text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-              generating || (mode === 'text' && !prompt.trim())
-                ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                : 'bg-white text-black hover:bg-gray-200'
-            }`}
+            className={`w-full py-3 rounded font-light text-sm transition-all duration-300 flex items-center justify-center gap-2 ${generating || (mode === 'text' && !prompt.trim())
+              ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+              : 'bg-white text-black hover:bg-gray-200'
+              }`}
           >
             {generating ? (
               <>
@@ -884,24 +872,24 @@ export default function ImagePage() {
                     onClick={async () => {
                       if (!user) { router.push('/sign-in'); return }
                       if (!canvasRef.current) { toast.error('No sketch found'); return }
-                      
+
                       if (creditsRemaining < 5) {
                         if (!isPaidActive) setShowUpgradeModal(true)
                         return
                       }
-                      
+
                       setGenerating(true)
                       const loadingId = `loading-sketch-${Date.now()}`
-                      const loadingAsset = { 
-                        id: loadingId, 
-                        type: 'image' as const, 
-                        url: '', 
-                        prompt: prompt.trim() ? `Sketch: ${prompt}` : 'Sketch rendering', 
-                        timestamp: new Date().toISOString(), 
-                        isGenerating: true 
+                      const loadingAsset = {
+                        id: loadingId,
+                        type: 'image' as const,
+                        url: '',
+                        prompt: prompt.trim() ? `Sketch: ${prompt}` : 'Sketch rendering',
+                        timestamp: new Date().toISOString(),
+                        isGenerating: true
                       }
                       setDesignAssets(prev => [loadingAsset, ...prev])
-                      
+
                       try {
                         // Get current canvas as blob
                         const canvas = canvasRef.current
@@ -909,25 +897,25 @@ export default function ImagePage() {
                         const base64Response = await fetch(dataUrl)
                         const blob = await base64Response.blob()
                         const fileName = `sketches/${user.id}/${Date.now()}.png`
-                        
+
                         const { data: uploadData, error: uploadError } = await supabase.storage
                           .from('user-sketches')
                           .upload(fileName, blob, { contentType: 'image/png' })
-                        
+
                         if (uploadError) throw new Error('Failed to upload sketch')
-                        
+
                         const { data: { publicUrl } } = supabase.storage
                           .from('user-sketches')
                           .getPublicUrl(fileName)
-                        
+
                         const { data: { session } } = await supabase.auth.getSession()
                         const token = session?.access_token
-                        
+
                         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/sketch-to-render`, {
                           method: 'POST',
-                          headers: { 
-                            'Content-Type': 'application/json', 
-                            ...(token ? { Authorization: `Bearer ${token}` } : {}) 
+                          headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { Authorization: `Bearer ${token}` } : {})
                           },
                           body: JSON.stringify({
                             sketch_image_url: publicUrl,
@@ -937,28 +925,28 @@ export default function ImagePage() {
                             negative_prompt: 'blurry, low quality, distorted, ugly'
                           })
                         })
-                        
+
                         if (response.status === 402) {
                           if (!isPaidActive) setShowUpgradeModal(true)
                           setDesignAssets(prev => prev.filter(a => a.id !== loadingId))
                           setGenerating(false)
                           return
                         }
-                        
+
                         if (!response.ok) throw new Error('Sketch rendering failed')
-                        
+
                         const data = await response.json()
                         const a = data.asset || {}
-                        const newAsset = { 
-                          id: a.id || Date.now().toString(), 
-                          type: 'image' as const, 
-                          url: data.imageUrl || a.url, 
-                          prompt: a.prompt ? `Sketch: ${a.prompt}` : (prompt.trim() ? `Sketch: ${prompt}` : 'Sketch render'), 
-                          timestamp: new Date().toISOString(), 
-                          isGenerating: false 
+                        const newAsset = {
+                          id: a.id || Date.now().toString(),
+                          type: 'image' as const,
+                          url: data.imageUrl || a.url,
+                          prompt: a.prompt ? `Sketch: ${a.prompt}` : (prompt.trim() ? `Sketch: ${prompt}` : 'Sketch render'),
+                          timestamp: new Date().toISOString(),
+                          isGenerating: false
                         }
                         setDesignAssets(prev => prev.map(asset => asset.id === loadingId ? newAsset : asset))
-                        
+
                         await fetchCredits()
                         toast.success('Rendered! ✨')
                       } catch (error: any) {
@@ -969,11 +957,10 @@ export default function ImagePage() {
                       }
                     }}
                     disabled={generating}
-                    className={`px-3 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${
-                      generating
-                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                        : 'bg-white text-black hover:bg-gray-200'
-                    }`}
+                    className={`px-3 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${generating
+                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                      : 'bg-white text-black hover:bg-gray-200'
+                      }`}
                   >
                     {generating ? (
                       <>
@@ -991,28 +978,28 @@ export default function ImagePage() {
               </div>
             </div>
           ) :
-          designAssets.length === 0 ? (
-            <div className="text-center py-20">
-              <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-700" />
-              <p className="text-gray-500">No designs yet</p>
-              <p className="text-xs text-gray-600 mt-2">Start by entering a prompt and clicking generate</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {designAssets.map((asset) => (
-                asset.type === 'image' ? (
-                  <ImageCard 
-                    key={asset.id} 
-                    image={asset}
-                    onGenerate3D={handleGenerate3D}
-                    onMake3D={handleMake3D}
-                  />
-                ) : (
-                  <ModelAssetCard key={asset.id} asset={asset as any} />
-                )
-              ))}
-            </div>
-          )}
+            designAssets.length === 0 ? (
+              <div className="text-center py-20">
+                <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-700" />
+                <p className="text-gray-500">No designs yet</p>
+                <p className="text-xs text-gray-600 mt-2">Start by entering a prompt and clicking generate</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {designAssets.map((asset) => (
+                  asset.type === 'image' ? (
+                    <ImageCard
+                      key={asset.id}
+                      image={asset}
+                      onGenerate3D={handleGenerate3D}
+                      onMake3D={handleMake3D}
+                    />
+                  ) : (
+                    <ModelAssetCard key={asset.id} asset={asset as any} />
+                  )
+                ))}
+              </div>
+            )}
         </div>
       </div>
     </div>
