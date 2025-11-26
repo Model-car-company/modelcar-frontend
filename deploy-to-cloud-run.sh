@@ -49,6 +49,10 @@ while IFS='=' read -r key value; do
   # Skip empty values
   [[ -z $value ]] && continue
   
+  # Skip runtime-only secrets that are not in cloudbuild.yaml
+  [[ $key == "STRIPE_SECRET_KEY" ]] && continue
+  [[ $key == "STRIPE_WEBHOOK_SECRET" ]] && continue
+  
   # Add to substitutions string
   if [ -z "$SUBSTITUTIONS" ]; then
     SUBSTITUTIONS="_${key}=${value}"
@@ -58,6 +62,13 @@ while IFS='=' read -r key value; do
   
   echo "  ✓ $key"
 done < .env
+
+if [[ "$SUBSTITUTIONS" != *"NEXT_PUBLIC_SUPABASE_URL"* ]]; then
+  echo -e "${YELLOW}WARNING: NEXT_PUBLIC_SUPABASE_URL not found in substitutions! Build will likely fail.${NC}"
+fi
+if [[ "$SUBSTITUTIONS" != *"NEXT_PUBLIC_SUPABASE_ANON_KEY"* ]]; then
+  echo -e "${YELLOW}WARNING: NEXT_PUBLIC_SUPABASE_ANON_KEY not found in substitutions! Build will likely fail.${NC}"
+fi
 
 echo "Loaded build variables"
 
