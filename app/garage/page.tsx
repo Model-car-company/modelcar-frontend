@@ -8,7 +8,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '../../lib/supabase/client'
 import CollapsibleSidebar from '../../components/CollapsibleSidebar'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import { Download, Trash2, Eye, Box, Grid3x3, List } from 'lucide-react'
+import ShipDesignModal from '../../components/ShipDesignModal'
+import { Download, Trash2, Eye, Box, Grid3x3, List, Package } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 export default function GaragePage() {
@@ -23,6 +24,8 @@ export default function GaragePage() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [modelToDelete, setModelToDelete] = useState<any>(null)
+  const [showShipModal, setShowShipModal] = useState(false)
+  const [modelToShip, setModelToShip] = useState<any>(null)
 
   useEffect(() => {
     loadUserData()
@@ -137,6 +140,11 @@ export default function GaragePage() {
     })
   }
 
+  const handleShipClick = (model: any) => {
+    setModelToShip(model)
+    setShowShipModal(true)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -161,6 +169,19 @@ export default function GaragePage() {
         confirmText="Delete"
         cancelText="Cancel"
       />
+
+      {/* Ship Design Modal */}
+      {modelToShip && (
+        <ShipDesignModal
+          isOpen={showShipModal}
+          onClose={() => {
+            setShowShipModal(false)
+            setModelToShip(null)
+          }}
+          model={modelToShip}
+          userEmail={user?.email}
+        />
+      )}
       
       {/* Sidebar */}
       <CollapsibleSidebar
@@ -266,6 +287,14 @@ export default function GaragePage() {
                         <span className="hidden sm:inline">View</span>
                       </Link>
                       <button
+                        onClick={() => handleShipClick(model)}
+                        className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 rounded text-[10px] font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center justify-center gap-1"
+                        title="Ship Design to 3D Printing"
+                      >
+                        <Package className="w-3 h-3" />
+                        <span className="hidden sm:inline">Ship</span>
+                      </button>
+                      <button
                         onClick={() => handleDownload(model)}
                         className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 rounded text-[10px] font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center justify-center gap-1"
                       >
@@ -325,6 +354,14 @@ export default function GaragePage() {
                       <Eye className="w-3 h-3" />
                       View
                     </Link>
+                    <button
+                      onClick={() => handleShipClick(model)}
+                      className="px-4 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 rounded text-xs font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center gap-2"
+                      title="Ship Design to 3D Printing"
+                    >
+                      <Package className="w-3 h-3" />
+                      Ship
+                    </button>
                     <button
                       onClick={() => handleDownload(model)}
                       className="px-4 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 rounded text-xs font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2"
