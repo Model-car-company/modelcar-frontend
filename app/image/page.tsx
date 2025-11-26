@@ -12,6 +12,7 @@ import toast, { Toaster } from 'react-hot-toast'
 import ImageCard from '../../components/ImageCard'
 import ModelViewer3D from '../../components/ModelViewer3D'
 import UpgradeModal from '../../components/UpgradeModal'
+import { SubscriptionTier } from '../../lib/subscription-config'
 
 export default function ImagePage() {
   const router = useRouter()
@@ -23,6 +24,8 @@ export default function ImagePage() {
   const [profile, setProfile] = useState<any>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [creditsRemaining, setCreditsRemaining] = useState<number>(0)
+  const requiredTier: SubscriptionTier = 'garage'
+  const activeStatuses = ['active', 'trialing', 'past_due']
   
   // Form states
   const [prompt, setPrompt] = useState('')
@@ -69,6 +72,10 @@ export default function ImagePage() {
     }
   }, [mode])
 
+  const isPaidActive = profile?.subscription_status
+    ? activeStatuses.includes(profile.subscription_status.toLowerCase()) && profile.subscription_tier !== 'free'
+    : false
+
   // Fetch credit balance from backend
   const fetchCredits = async () => {
     if (!user) return
@@ -91,10 +98,11 @@ export default function ImagePage() {
   // Handle 1-click 3D (no segmentation) using backend provider
   const handleMake3D = async (imageUrl: string) => {
     if (!user) { router.push('/sign-in'); return }
+    if (!isPaidActive) { setShowUpgradeModal(true); return }
 
     // Check credits before starting
     if (creditsRemaining < 14) {
-      setShowUpgradeModal(true)
+      if (!isPaidActive) setShowUpgradeModal(true)
       return
     }
 
@@ -121,7 +129,7 @@ export default function ImagePage() {
         body: JSON.stringify({ image_url: imageUrl, provider: 'hyper3d' })
       })
       if (response.status === 402) {
-        setShowUpgradeModal(true)
+        if (!isPaidActive) setShowUpgradeModal(true)
         // Remove temp card
         setDesignAssets(prev => prev.filter(a => a.id !== tempId))
         return
@@ -375,10 +383,11 @@ export default function ImagePage() {
   const generateImage = async () => {
     if (!prompt.trim()) { toast.error('Please enter a prompt'); return }
     if (!user) { router.push('/sign-in'); return }
+    if (!isPaidActive) { setShowUpgradeModal(true); return }
 
     // Check credits before starting
     if (creditsRemaining < 3) {
-      setShowUpgradeModal(true)
+      if (!isPaidActive) setShowUpgradeModal(true)
       return
     }
 
@@ -404,7 +413,7 @@ export default function ImagePage() {
         })
       })
       if (response.status === 402) {
-        setShowUpgradeModal(true)
+        if (!isPaidActive) setShowUpgradeModal(true)
         setDesignAssets(prev => prev.filter(a => a.id !== loadingId))
         setGenerating(false)
         return
@@ -513,6 +522,9 @@ export default function ImagePage() {
         onClose={() => setShowUpgradeModal(false)}
         creditsRemaining={creditsRemaining}
         requiredCredits={3}
+        requiredTier={requiredTier}
+        billingInterval="month"
+        hasActivePaidPlan={isPaidActive}
       />
       
       <div className="flex flex-col lg:flex-row h-screen">
@@ -874,7 +886,7 @@ export default function ImagePage() {
                       if (!canvasRef.current) { toast.error('No sketch found'); return }
                       
                       if (creditsRemaining < 5) {
-                        setShowUpgradeModal(true)
+                        if (!isPaidActive) setShowUpgradeModal(true)
                         return
                       }
                       
@@ -927,7 +939,7 @@ export default function ImagePage() {
                         })
                         
                         if (response.status === 402) {
-                          setShowUpgradeModal(true)
+                          if (!isPaidActive) setShowUpgradeModal(true)
                           setDesignAssets(prev => prev.filter(a => a.id !== loadingId))
                           setGenerating(false)
                           return

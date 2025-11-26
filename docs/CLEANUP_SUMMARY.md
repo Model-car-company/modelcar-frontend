@@ -24,7 +24,6 @@
 
 ### **Unused Libraries & Utils:**
 - ❌ `lib/booleanOperations.ts` - Not needed with Babylon
-- ❌ `lib/prisma.ts.bak` - Backup file
 
 ### **Unused Scripts:**
 - ❌ `check-glb.js` - Empty file

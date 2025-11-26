@@ -3,95 +3,54 @@
 import { motion } from 'framer-motion'
 import { Check, Sparkles, Zap, Building2, Factory } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import SubscribeButton from '../../components/SubscribeButton'
 import { Toaster } from 'react-hot-toast'
-import { SubscriptionTier } from '../../lib/subscription-config'
+import { PRICING_PLANS, SubscriptionTier } from '../../lib/subscription-config'
+import { createClient } from '../../lib/supabase/client'
 
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false)
-  
-  const tiers = [
-    {
-      name: 'Garage Parking',
-      tierKey: 'garage' as SubscriptionTier,
-      icon: Zap,
-      price: 9,
-      description: 'CPU-based generations for hobbyists and individual creators',
-      features: [
-        '50 AI generations/month',
-        '10 GB cloud storage',
-        'STL, OBJ, GLB exports',
-        'Basic 3D viewer',
-        'Community support',
-        'Watermark on exports',
-      ],
-      cta: 'Start Creating',
-      popular: false,
-    },
-    {
-      name: 'Showroom Floor',
-      tierKey: 'showroom' as SubscriptionTier,
-      icon: Building2,
-      price: 29,
-      description: 'GPU-based generations for serious creators and small studios',
-      features: [
-        '200 AI generations/month',
-        '100 GB cloud storage',
-        'All export formats',
-        'Advanced 3D editing',
-        'Priority support',
-        'No watermarks',
-        'Commercial license',
-        'Texture customization',
-      ],
-      cta: 'Go Pro',
-      popular: true,
-    },
-    {
-      name: 'Dealership',
-      tierKey: 'dealership' as SubscriptionTier,
-      icon: Building2,
-      price: 49,
-      description: 'GPU-based generations for commercial teams and design agencies',
-      features: [
-        'Unlimited AI generations',
-        '1 TB cloud storage',
-        'API access',
-        'Team collaboration (5 seats)',
-        'White-label exports',
-        'Premium support',
-        'Custom branding',
-        'Batch processing',
-        'Version control',
-        'Analytics dashboard',
-      ],
-      cta: 'Scale Up',
-      popular: false,
-    },
-    {
-      name: 'Factory Owner',
-      tierKey: 'dealership' as SubscriptionTier, // Use dealership tier or handle as custom/contact sales
-      icon: Factory,
-      price: 199,
-      description: 'GPU-based generations with enterprise-grade AI customization',
-      isEnterprise: true,
-      features: [
-        'Everything in Dealership',
-        'Custom AI model training',
-        'Dedicated infrastructure',
-        'Unlimited team seats',
-        'SSO & advanced security',
-        'SLA guarantee (99.9%)',
-        'On-premise deployment option',
-        'Dedicated account manager',
-        'Custom integrations',
-        'Priority feature requests',
-      ],
-      cta: 'Contact Sales',
-      popular: false,
-    },
-  ]
+  const supabase = createClient()
+  const [profile, setProfile] = useState<any>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [showManageModal, setShowManageModal] = useState(false)
+
+  const iconByTier: Record<string, typeof Zap> = {
+    garage: Zap,
+    showroom: Building2,
+    dealership: Building2,
+    factory: Factory,
+  }
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setProfile(null)
+          return
+        }
+        const { data } = await supabase
+          .from('profiles')
+          .select('subscription_tier, subscription_status, stripe_subscription_id, subscription_billing_interval')
+          .eq('id', user.id)
+          .single()
+        setProfile(data || null)
+      } finally {
+        setProfileLoading(false)
+      }
+    }
+    loadProfile()
+  }, [supabase])
+
+  const activeStatuses = useMemo(() => ['active', 'trialing', 'past_due'], [])
+  const currentTier = profile?.subscription_tier as SubscriptionTier | undefined
+  const currentInterval = (profile?.subscription_billing_interval || 'month').toLowerCase()
+  const isActive = profile?.subscription_status
+    ? activeStatuses.includes(profile.subscription_status.toLowerCase())
+    : false
+  const billingInterval = profile?.subscription_billing_interval || 'month'
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
@@ -189,20 +148,34 @@ export default function PricingPage() {
       <section className="pb-32 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {tiers.map((tier, index) => (
+            {PRICING_PLANS.map((tier, index) => {
+              const isCurrent =
+                isActive &&
+                currentTier === tier.tier &&
+                ((isYearly && currentInterval === 'year') || (!isYearly && currentInterval === 'month'))
+              const blocked = isActive
+              return (
               <motion.div
                 key={tier.name}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className={`relative bg-white/[0.02] backdrop-blur-sm border rounded-lg p-8 hover:bg-white/[0.04] transition-all duration-300 ${
-                  tier.popular
-                    ? 'border-white/20 lg:-mt-6 lg:mb-[-24px]'
-                    : 'border-white/5'
+                className={`relative backdrop-blur-sm rounded-lg p-8 transition-all duration-300 ${
+                  isCurrent
+                    ? 'border border-green-400/60 bg-white/[0.06] shadow-[0_0_30px_rgba(74,222,128,0.25)]'
+                    : tier.popular
+                      ? 'border border-white/20 bg-white/[0.02] lg:-mt-6 lg:mb-[-24px]'
+                      : 'border border-white/5 bg-white/[0.02] hover:bg-white/[0.04]'
                 }`}
               >
-                {/* Popular Badge */}
-                {tier.popular && (
+                {/* Popular / Current Badge */}
+                {isCurrent ? (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <div className="px-4 py-1 bg-green-400 text-black text-[10px] font-semibold tracking-[0.2em] uppercase rounded-full">
+                      Current Plan
+                    </div>
+                  </div>
+                ) : tier.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <div className="px-4 py-1 bg-white text-black text-[10px] font-light tracking-[0.2em] uppercase rounded-full">
                       Most Popular
@@ -212,7 +185,10 @@ export default function PricingPage() {
 
                 {/* Icon */}
                 <div className="mb-6">
-                  <tier.icon className="w-8 h-8 text-white/40" strokeWidth={1} />
+                  {(() => {
+                    const Icon = iconByTier[tier.tier] || Sparkles
+                    return <Icon className="w-8 h-8 text-white/40" strokeWidth={1} />
+                  })()}
                 </div>
 
                 {/* Tier Name */}
@@ -229,7 +205,9 @@ export default function PricingPage() {
                 <div className="mb-8">
                   <div className="flex items-baseline gap-1">
                     <span className="text-5xl font-thin tracking-tight">
-                      ${isYearly ? Math.floor(tier.price * 12 * 0.8) : tier.price}
+                      ${isYearly
+                        ? Math.floor(tier.monthlyPrice * 12 * (1 - tier.yearlyDiscountPercent / 100))
+                        : tier.monthlyPrice}
                     </span>
                     <span className="text-sm font-extralight text-gray-500 tracking-wider">
                       /{isYearly ? 'year' : 'month'}
@@ -237,7 +215,7 @@ export default function PricingPage() {
                   </div>
                   {isYearly && (
                     <p className="text-xs font-extralight text-gray-500 mt-2">
-                      ${tier.price}/month billed annually
+                      ${tier.monthlyPrice}/month billed annually
                     </p>
                   )}
                 </div>
@@ -245,10 +223,19 @@ export default function PricingPage() {
                 {/* CTA Button */}
                 <div className="mb-8">
                   <SubscribeButton
-                    tier={tier.tierKey}
+                    tier={tier.tier as SubscriptionTier}
                     billingInterval={isYearly ? 'year' : 'month'}
-                    label={tier.cta}
+                    label={
+                      isCurrent
+                        ? 'Current Plan'
+                        : blocked
+                        ? 'Manage in Billing'
+                        : tier.cta || 'Subscribe'
+                    }
                     popular={tier.popular}
+                    blocked={blocked}
+                    disabled={profileLoading}
+                    onBlocked={() => setShowManageModal(true)}
                   />
                 </div>
 
@@ -264,10 +251,41 @@ export default function PricingPage() {
                   ))}
                 </div>
               </motion.div>
-            ))}
+            )})}
           </div>
         </div>
       </section>
+
+      {/* Manage Billing Modal */}
+      {showManageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowManageModal(false)}
+          />
+          <div className="relative max-w-lg w-full bg-white/[0.04] border border-white/10 rounded-2xl p-8 shadow-2xl">
+            <h3 className="text-2xl font-light tracking-tight mb-3">Manage Your Plan</h3>
+            <p className="text-sm text-gray-300 font-extralight leading-6 mb-6">
+              You already have an active subscription. To upgrade or downgrade, go to your profile, open the
+              <span className="font-medium text-white"> Subscription & Billing </span> tab, and open the Stripe billing portal.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/profile"
+                className="flex-1 text-center px-4 py-3 rounded bg-white text-black text-sm tracking-[0.1em] hover:bg-white/90 transition"
+              >
+                Go to Profile
+              </Link>
+              <button
+                onClick={() => setShowManageModal(false)}
+                className="flex-1 px-4 py-3 rounded border border-white/20 text-sm font-light tracking-[0.1em] hover:bg-white/5 transition"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FAQ Section */}
       <section className="pb-32 px-4">
