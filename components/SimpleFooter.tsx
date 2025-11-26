@@ -10,7 +10,7 @@ export default function SimpleFooter() {
         {/* Centered Title and CTA */}
         <div className="mb-24">
           <h2 className="text-3xl sm:text-4xl font-thin tracking-tight mb-8 whitespace-nowrap">
-            The workshop where car enthusiasts build their dreams.
+            Make Your Dream Tangible
           </h2>
           <Link
             href="/sign-up"

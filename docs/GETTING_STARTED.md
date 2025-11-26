@@ -33,7 +33,7 @@ npm install
 1. Go to [supabase.com](https://supabase.com/dashboard)
 2. Click "New Project"
 3. Fill in:
-   - **Project name**: `offense-3d-models` (or your choice)
+   - **Project name**: `tangibel-3d-models` (or your choice)
    - **Database password**: Strong password (save this!)
    - **Region**: Choose closest to your users
 4. Click "Create new project" (takes ~2 minutes)

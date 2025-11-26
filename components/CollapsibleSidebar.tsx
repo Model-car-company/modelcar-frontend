@@ -55,7 +55,7 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
       {/* Logo & Toggle */}
       <div className={`${isCollapsed ? 'px-4' : 'px-6'} py-6 border-b border-white/5 transition-all duration-300 flex items-center justify-between`}>
         <Link href="/" className={`${isCollapsed ? 'text-sm' : 'text-lg'} font-thin tracking-[0.3em] transition-all duration-300`}>
-          {isCollapsed ? 'A' : 'ATELIER'}
+          {isCollapsed ? 'T' : 'TANGIBEL'}
         </Link>
         {!isCollapsed && (
           <button

@@ -118,7 +118,7 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-8 md:px-16 py-6">
           <div className="flex justify-between items-center">
             <Link href="/" className="text-xl font-thin tracking-[0.2em]">
-              ATELIER
+              TANGIBEL
             </Link>
             <Link
               href="/dashboard"
@@ -349,7 +349,7 @@ export default function PricingPage() {
       <footer className="border-t border-white/5 py-12 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-[10px] font-extralight tracking-[0.3em] text-gray-600 uppercase">
-            © 2024 Atelier • All Rights Reserved
+            2024 Tangibel • All Rights Reserved
           </p>
         </div>
       </footer>

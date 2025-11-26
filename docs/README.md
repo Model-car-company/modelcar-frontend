@@ -1,6 +1,6 @@
-# Offense - AI Car Generation Platform
+# Tangibel - AI Car Generation Platform
 
-Complete documentation for the Offense AI-powered car generation platform.
+Complete documentation for the Tangibel AI-powered car generation platform.
 
 ## 📚 Documentation Index
 

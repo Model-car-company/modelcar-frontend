@@ -265,7 +265,7 @@ export default function SignInPage() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-[10px] font-light text-gray-600 tracking-wide">
-            ATELIER © 2024 · SECURE AUTHENTICATION
+            TANGIBEL © 2024 · SECURE AUTHENTICATION
           </p>
         </div>
       </div>

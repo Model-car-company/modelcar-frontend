@@ -82,7 +82,7 @@ A beautiful, multi-step modal that guides users through:
 - ✅ **Error handling** with user-friendly messages
 
 ### Visual Design
-- **Dark theme** consistent with ATELIER design
+- **Dark theme** consistent with Tangibel design
 - **Gradient buttons** (green for ship, red for download)
 - **Glass morphism** styling on modal
 - **Smooth animations** on all transitions
