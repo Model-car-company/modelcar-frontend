@@ -38,7 +38,7 @@ while IFS='=' read -r key value; do
   # Skip comments and empty lines
   [[ $key =~ ^#.*$ ]] && continue
   [[ -z $key ]] && continue
-  [[ $key != NEXT_PUBLIC_* ]] && continue
+  [[ $key != NEXT_PUBLIC_* && $key != STRIPE_* ]] && continue
   
   # Remove quotes from value
   value="${value%\"}"
