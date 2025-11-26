@@ -136,14 +136,26 @@ export default function ShipDesignModal({
       
     } catch (error) {
       console.error('Error getting invoice:', error)
-      toast.error('Failed to get invoice', {
+      
+      // Show placeholder data so UI is still visible
+      setQuoteData({
+        success: false,
+        material_id: selectedMaterial!.materialID,
+        finish_id: selectedFinish!.finishID,
+        quantity: 1,
+        total_price: null,
+        unit_price: null,
+        currency: 'USD',
+        error: true
+      })
+      
+      toast.error('Failed to get invoice - showing placeholder', {
         style: {
           background: '#0a0a0a',
           color: '#fff',
           border: '1px solid rgba(255, 255, 255, 0.1)',
         },
       })
-      setStep('size')
     } finally {
       setLoading(false)
     }
@@ -367,7 +379,7 @@ export default function ShipDesignModal({
                   </div>
 
                   <div className="text-[10px] font-light text-gray-400 p-3 bg-white/5 border border-white/10 rounded">
-                    💡 The final size will be determined by i.materialise based on your model's geometry
+                    The final size will be determined based on your model's geometry
                   </div>
                 </div>
               )}
@@ -394,11 +406,11 @@ export default function ShipDesignModal({
                       <div className="p-4 bg-white/[0.02] rounded border border-white/10 space-y-3">
                         <div>
                           <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Material</div>
-                          <div className="text-sm font-light text-white">{selectedMaterial?.materialName}</div>
+                          <div className="text-sm font-light text-white">{selectedMaterial?.materialName || '--'}</div>
                         </div>
                         <div>
                           <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Finish</div>
-                          <div className="text-sm font-light text-white">{selectedFinish?.finishName}</div>
+                          <div className="text-sm font-light text-white">{selectedFinish?.finishName || '--'}</div>
                         </div>
                         <div>
                           <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Quantity</div>
@@ -407,9 +419,11 @@ export default function ShipDesignModal({
                         <div className="pt-3 border-t border-white/10">
                           <div className="flex items-center justify-between">
                             <div className="text-sm font-light uppercase tracking-wide text-gray-400">Total Price</div>
-                            <div className="text-xl font-light text-white">${quoteData.total_price?.toFixed(2)} {quoteData.currency}</div>
+                            <div className="text-xl font-light text-white">
+                              {quoteData.total_price != null ? `$${quoteData.total_price.toFixed(2)} ${quoteData.currency}` : '--'}
+                            </div>
                           </div>
-                          {quoteData.unit_price && (
+                          {quoteData.unit_price != null && (
                             <div className="text-[10px] font-light text-gray-500 mt-1">
                               ${quoteData.unit_price.toFixed(2)} per item
                             </div>
@@ -418,6 +432,11 @@ export default function ShipDesignModal({
                         {quoteData.valid_until && (
                           <div className="text-[10px] font-light text-gray-600">
                             Valid until: {new Date(quoteData.valid_until).toLocaleDateString()}
+                          </div>
+                        )}
+                        {quoteData.error && (
+                          <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-xs font-light text-red-300">
+                            ⚠️ Unable to fetch pricing. Please try again or contact support.
                           </div>
                         )}
                       </div>
