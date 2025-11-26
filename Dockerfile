@@ -18,12 +18,13 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
+# Ensure Next.js runs in production mode so it loads .env.production
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Disable telemetry during build
-ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
 RUN npm run build
