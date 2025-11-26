@@ -46,8 +46,17 @@ export default function Home() {
       <nav className="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-sm border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-4 sm:py-6">
           <div className="flex justify-between items-center">
-            <Link href="/" className="text-lg sm:text-xl font-thin tracking-[0.3em] hover:opacity-60 transition-opacity">
-              TANGIBEL
+            <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
+              <div className="relative w-8 h-8">
+                <Image
+                  src="/logo/Tangibellight.png"
+                  alt="Tangibel"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <span className="text-lg sm:text-xl font-thin tracking-[0.3em]">TANGIBEL</span>
             </Link>
             <div className="flex items-center gap-2 sm:gap-4">
               <Link 

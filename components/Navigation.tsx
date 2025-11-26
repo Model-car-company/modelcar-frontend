@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Sparkles } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 
 interface NavigationProps {
   isMenuOpen: boolean
@@ -29,9 +30,15 @@ export default function Navigation({ isMenuOpen, setIsMenuOpen }: NavigationProp
       <div className="container mx-auto px-6 flex items-center justify-between">
         <motion.div 
           whileHover={{ scale: 1.05 }}
+          className="flex items-center gap-1"
         >
-          <div className="w-8 h-8 bg-gradient-to-br from-accent to-purple-500 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="relative w-8 h-8">
+            <Image
+              src="/logo/Tangibellight.png"
+              alt="Tangibel"
+              fill
+              className="object-contain"
+            />
           </div>
           <span className="text-xl font-bold">TANGIBEL</span>
         </motion.div>
