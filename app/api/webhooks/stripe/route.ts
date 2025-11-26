@@ -398,7 +398,7 @@ export async function POST(req: NextRequest) {
         if (session.mode === 'payment') {
           // One-time payment (shipping flow)
           const metadata = session.metadata ?? {}
-          const shipping = session.shipping_details
+          const shipping = (session as any).shipping_details
           log('one-time checkout completed', {
             sessionId: session.id,
             mode: session.mode,
@@ -410,7 +410,7 @@ export async function POST(req: NextRequest) {
 
           // Best-effort insert into ship_orders table if it exists
           try {
-            await supabase.from('ship_orders').insert({
+            await (supabase as any).from('ship_orders').insert({
               user_id: metadata.userId || null,
               session_id: session.id,
               model_id: metadata.modelId || null,
@@ -450,7 +450,7 @@ export async function POST(req: NextRequest) {
 
         // Persist order if table exists
         try {
-          await supabase.from('ship_orders').insert({
+          await (supabase as any).from('ship_orders').insert({
             user_id: metadata.userId || null,
             payment_intent_id: pi.id,
             model_id: metadata.modelId || null,
