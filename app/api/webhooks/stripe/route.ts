@@ -394,8 +394,80 @@ export async function POST(req: NextRequest) {
       }
 
       case 'checkout.session.completed': {
-        // Session completed - subscription lifecycle handled by invoice events
-        log('checkout.session.completed received', { sessionId: event.data.object.id });
+        const session = event.data.object as Stripe.Checkout.Session
+        if (session.mode === 'payment') {
+          // One-time payment (shipping flow)
+          const metadata = session.metadata ?? {}
+          const shipping = session.shipping_details
+          log('one-time checkout completed', {
+            sessionId: session.id,
+            mode: session.mode,
+            amount_total: session.amount_total,
+            currency: session.currency,
+            metadata,
+            shipping,
+          })
+
+          // Best-effort insert into ship_orders table if it exists
+          try {
+            await supabase.from('ship_orders').insert({
+              user_id: metadata.userId || null,
+              session_id: session.id,
+              model_id: metadata.modelId || null,
+              material_id: metadata.materialId || null,
+              finish_id: metadata.finishId || null,
+              quantity: metadata.quantity ? Number(metadata.quantity) : 1,
+              scale: metadata.scale ? Number(metadata.scale) : null,
+              total_price: session.amount_total ? session.amount_total / 100 : null,
+              currency: session.currency,
+              shipping_address: shipping?.address ?? null,
+              shipping_name: shipping?.name ?? null,
+              shipping_phone: shipping?.phone ?? null,
+              raw_session: session as any,
+            })
+          } catch (err) {
+            console.warn('ship_orders insert skipped/failed', (err as any)?.message)
+          }
+        } else {
+          // Subscription lifecycle handled by invoice events
+          log('checkout.session.completed received', { sessionId: session.id });
+        }
+        break;
+      }
+
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object as Stripe.PaymentIntent
+        const shipping = pi.shipping
+        const metadata = pi.metadata ?? {}
+
+        log('payment_intent.succeeded', {
+          intentId: pi.id,
+          amount: pi.amount,
+          currency: pi.currency,
+          metadata,
+          shipping,
+        })
+
+        // Persist order if table exists
+        try {
+          await supabase.from('ship_orders').insert({
+            user_id: metadata.userId || null,
+            payment_intent_id: pi.id,
+            model_id: metadata.modelId || null,
+            material_id: metadata.materialId || null,
+            finish_id: metadata.finishId || null,
+            quantity: metadata.quantity ? Number(metadata.quantity) : 1,
+            scale: metadata.scale ? Number(metadata.scale) : null,
+            total_price: pi.amount ? pi.amount / 100 : null,
+            currency: pi.currency,
+            shipping_address: shipping?.address ?? null,
+            shipping_name: shipping?.name ?? null,
+            shipping_phone: shipping?.phone ?? null,
+            raw_session: pi as any,
+          })
+        } catch (err) {
+          console.warn('ship_orders insert skipped/failed (pi)', (err as any)?.message)
+        }
         break;
       }
 
