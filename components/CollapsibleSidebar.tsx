@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Sparkles, Box, LayoutDashboard, User, LogOut, Image as ImageIcon, ChevronLeft, ChevronRight, Menu, X, Package } from 'lucide-react'
+import { Sparkles, Box, LayoutDashboard, User, LogOut, Image as ImageIcon, ChevronLeft, ChevronRight, Menu, X, Truck } from 'lucide-react'
 
 interface CollapsibleSidebarProps {
   currentPage: 'dashboard' | 'image' | 'studio' | 'garage' | 'orders' | 'profile'
@@ -133,7 +133,7 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
               } transition-colors`}
             title="Orders"
           >
-            <Package className="w-4 h-4 flex-shrink-0" />
+            <Truck className="w-4 h-4 flex-shrink-0" />
             {!isCollapsed && <span className="text-xs font-light tracking-wide">Orders</span>}
           </Link>
 

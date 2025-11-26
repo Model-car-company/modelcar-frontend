@@ -1,38 +1,8 @@
 steps:
-  # Build the Docker image with build arguments
+  # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_BACKEND_URL=${_NEXT_PUBLIC_BACKEND_URL}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_SUPABASE_URL=${_NEXT_PUBLIC_SUPABASE_URL}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_SUPABASE_ANON_KEY=${_NEXT_PUBLIC_SUPABASE_ANON_KEY}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_SITE_URL=${_NEXT_PUBLIC_SITE_URL}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${_NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_APP_URL=${_NEXT_PUBLIC_APP_URL}'
-      - '--build-arg'
-      - 'STRIPE_GARAGE_MONTHLY_PRICE_ID=${_STRIPE_GARAGE_MONTHLY_PRICE_ID}'
-      - '--build-arg'
-      - 'STRIPE_GARAGE_YEARLY_PRICE_ID=${_STRIPE_GARAGE_YEARLY_PRICE_ID}'
-      - '--build-arg'
-      - 'STRIPE_SHOWROOM_MONTHLY_PRICE_ID=${_STRIPE_SHOWROOM_MONTHLY_PRICE_ID}'
-      - '--build-arg'
-      - 'STRIPE_SHOWROOM_YEARLY_PRICE_ID=${_STRIPE_SHOWROOM_YEARLY_PRICE_ID}'
-      - '--build-arg'
-      - 'STRIPE_DEALERSHIP_MONTHLY_PRICE_ID=${_STRIPE_DEALERSHIP_MONTHLY_PRICE_ID}'
-      - '--build-arg'
-      - 'STRIPE_DEALERSHIP_YEARLY_PRICE_ID=${_STRIPE_DEALERSHIP_YEARLY_PRICE_ID}'
-      - '--build-arg'
-      - 'STRIPE_FACTORY_MONTHLY_PRICE_ID=${_STRIPE_FACTORY_MONTHLY_PRICE_ID}'
-      - '--build-arg'
-      - 'STRIPE_FACTORY_YEARLY_PRICE_ID=${_STRIPE_FACTORY_YEARLY_PRICE_ID}'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_POSTHOG_HOST=${_NEXT_PUBLIC_POSTHOG_HOST}'
       - '-t'
       - 'gcr.io/$PROJECT_ID/tangibel-frontend:$BUILD_ID'
       - '-t'
@@ -45,6 +15,12 @@ steps:
       - 'push'
       - 'gcr.io/$PROJECT_ID/tangibel-frontend:$BUILD_ID'
   
+  # Push latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/tangibel-frontend:latest'
+
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -71,6 +47,8 @@ steps:
       - '10'
       - '--timeout'
       - '300'
+      - '--set-env-vars'
+      - 'STRIPE_SECRET_KEY=${_STRIPE_SECRET_KEY},STRIPE_WEBHOOK_SECRET=${_STRIPE_WEBHOOK_SECRET},SUPABASE_SERVICE_ROLE_KEY=${_SUPABASE_SERVICE_ROLE_KEY},STRIPE_GARAGE_MONTHLY_PRICE_ID=${_STRIPE_GARAGE_MONTHLY_PRICE_ID},STRIPE_GARAGE_YEARLY_PRICE_ID=${_STRIPE_GARAGE_YEARLY_PRICE_ID},STRIPE_SHOWROOM_MONTHLY_PRICE_ID=${_STRIPE_SHOWROOM_MONTHLY_PRICE_ID},STRIPE_SHOWROOM_YEARLY_PRICE_ID=${_STRIPE_SHOWROOM_YEARLY_PRICE_ID},STRIPE_DEALERSHIP_MONTHLY_PRICE_ID=${_STRIPE_DEALERSHIP_MONTHLY_PRICE_ID},STRIPE_DEALERSHIP_YEARLY_PRICE_ID=${_STRIPE_DEALERSHIP_YEARLY_PRICE_ID},STRIPE_FACTORY_MONTHLY_PRICE_ID=${_STRIPE_FACTORY_MONTHLY_PRICE_ID},STRIPE_FACTORY_YEARLY_PRICE_ID=${_STRIPE_FACTORY_YEARLY_PRICE_ID}'
 
 images:
   - 'gcr.io/$PROJECT_ID/tangibel-frontend:$BUILD_ID'

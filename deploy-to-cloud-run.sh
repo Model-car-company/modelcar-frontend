@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Tangibel - Cloud Run Deployment Script
-# Deploys Next.js app to Google Cloud Run and configures custom domain
+# Deploys Next.js app to Google Cloud Run
+# Public vars are baked into Docker image, secrets are set at runtime
 
 set -e
 
@@ -13,8 +14,6 @@ echo ""
 PROJECT_ID="serious-conduit-448301-d7"
 SERVICE_NAME="tangibel-frontend"
 REGION="us-central1"
-DOMAIN="tangibel.io"
-WWW_DOMAIN="www.tangibel.io"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -26,57 +25,38 @@ echo -e "${BLUE}Step 1: Setting Google Cloud project${NC}"
 gcloud config set project $PROJECT_ID
 
 echo ""
-echo -e "${BLUE}Step 2: Loading environment variables from .env file${NC}"
+echo -e "${BLUE}Step 2: Reading secrets from .env file${NC}"
 if [ ! -f .env ]; then
-  echo -e "${YELLOW}Warning: .env file not found. Build may fail without environment variables.${NC}"
+  echo -e "${YELLOW}Warning: .env file not found.${NC}"
   exit 1
 fi
 
-# Parse .env file and create substitutions for Cloud Build
-SUBSTITUTIONS=""
-while IFS='=' read -r key value; do
-  # Skip comments and empty lines
-  [[ $key =~ ^#.*$ ]] && continue
-  [[ -z $key ]] && continue
-  [[ $key != NEXT_PUBLIC_* && $key != STRIPE_* ]] && continue
-  
-  # Remove quotes from value
-  value="${value%\"}"
-  value="${value#\"}"
-  value="${value%\'}"
-  value="${value#\'}"
-  
-  # Skip empty values
-  [[ -z $value ]] && continue
-  
-  # Skip runtime-only secrets that are not in cloudbuild.yaml
-  [[ $key == "STRIPE_SECRET_KEY" ]] && continue
-  [[ $key == "STRIPE_WEBHOOK_SECRET" ]] && continue
-  
-  # Add to substitutions string
-  if [ -z "$SUBSTITUTIONS" ]; then
-    SUBSTITUTIONS="_${key}=${value}"
-  else
-    SUBSTITUTIONS="${SUBSTITUTIONS},_${key}=${value}"
-  fi
-  
-  echo "  ✓ $key"
-done < .env
+# Read secrets from .env (these go to Cloud Run runtime, NOT Docker image)
+source <(grep -E '^(STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET|SUPABASE_SERVICE_ROLE_KEY|STRIPE_.*_PRICE_ID)=' .env | sed 's/^/export /')
 
-if [[ "$SUBSTITUTIONS" != *"NEXT_PUBLIC_SUPABASE_URL"* ]]; then
-  echo -e "${YELLOW}WARNING: NEXT_PUBLIC_SUPABASE_URL not found in substitutions! Build will likely fail.${NC}"
-fi
-if [[ "$SUBSTITUTIONS" != *"NEXT_PUBLIC_SUPABASE_ANON_KEY"* ]]; then
-  echo -e "${YELLOW}WARNING: NEXT_PUBLIC_SUPABASE_ANON_KEY not found in substitutions! Build will likely fail.${NC}"
-fi
+echo "  ✓ Secrets loaded (will be set as Cloud Run env vars)"
 
-echo "Loaded build variables"
+# Build substitutions string for runtime secrets
+SUBSTITUTIONS="_STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_GARAGE_MONTHLY_PRICE_ID=${STRIPE_GARAGE_MONTHLY_PRICE_ID}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_GARAGE_YEARLY_PRICE_ID=${STRIPE_GARAGE_YEARLY_PRICE_ID}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_SHOWROOM_MONTHLY_PRICE_ID=${STRIPE_SHOWROOM_MONTHLY_PRICE_ID}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_SHOWROOM_YEARLY_PRICE_ID=${STRIPE_SHOWROOM_YEARLY_PRICE_ID}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_DEALERSHIP_MONTHLY_PRICE_ID=${STRIPE_DEALERSHIP_MONTHLY_PRICE_ID}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_DEALERSHIP_YEARLY_PRICE_ID=${STRIPE_DEALERSHIP_YEARLY_PRICE_ID}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_FACTORY_MONTHLY_PRICE_ID=${STRIPE_FACTORY_MONTHLY_PRICE_ID}"
+SUBSTITUTIONS="${SUBSTITUTIONS},_STRIPE_FACTORY_YEARLY_PRICE_ID=${STRIPE_FACTORY_YEARLY_PRICE_ID}"
 
 echo ""
 echo -e "${BLUE}Step 3: Building and deploying with Cloud Build${NC}"
 echo "This may take 5-10 minutes..."
+echo ""
+echo "  📦 Public vars → baked into Docker image (safe)"
+echo "  🔐 Secrets → set as Cloud Run env vars (secure)"
 
-# Submit the build using cloudbuild.yaml
+# Submit the build with runtime secrets as substitutions
 gcloud builds submit \
   --config=cloudbuild.yaml \
   --substitutions="$SUBSTITUTIONS" \
@@ -88,71 +68,9 @@ SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region $REGION --form
 echo -e "Cloud Run URL: ${BLUE}$SERVICE_URL${NC}"
 
 echo ""
-echo -e "${BLUE}Step 4: Mapping custom domain to Cloud Run${NC}"
-
-# Check if domain mapping already exists
-if gcloud run domain-mappings describe $DOMAIN --region $REGION &>/dev/null; then
-  echo "Domain mapping already exists for $DOMAIN"
-else
-  echo "Creating domain mapping for $DOMAIN..."
-  gcloud run domain-mappings create \
-    --service $SERVICE_NAME \
-    --domain $DOMAIN \
-    --region $REGION
-fi
-
-# Map www subdomain
-if gcloud run domain-mappings describe $WWW_DOMAIN --region $REGION &>/dev/null; then
-  echo "Domain mapping already exists for $WWW_DOMAIN"
-else
-  echo "Creating domain mapping for $WWW_DOMAIN..."
-  gcloud run domain-mappings create \
-    --service $SERVICE_NAME \
-    --domain $WWW_DOMAIN \
-    --region $REGION
-fi
-
-echo ""
-echo -e "${GREEN}✓ Domain mappings created!${NC}"
-
-echo ""
-echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}📋 DNS CONFIGURATION REQUIRED${NC}"
-echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-echo "Please add these DNS records in GoDaddy for tangibel.io:"
-echo ""
-echo -e "${BLUE}A Records (add all 4):${NC}"
-echo "  Type: A, Name: @, Value: 216.239.32.21, TTL: 1 Hour"
-echo "  Type: A, Name: @, Value: 216.239.34.21, TTL: 1 Hour"
-echo "  Type: A, Name: @, Value: 216.239.36.21, TTL: 1 Hour"
-echo "  Type: A, Name: @, Value: 216.239.38.21, TTL: 1 Hour"
-echo ""
-echo -e "${BLUE}AAAA Records (add all 4 for IPv6):${NC}"
-echo "  Type: AAAA, Name: @, Value: 2001:4860:4802:32::15, TTL: 1 Hour"
-echo "  Type: AAAA, Name: @, Value: 2001:4860:4802:34::15, TTL: 1 Hour"
-echo "  Type: AAAA, Name: @, Value: 2001:4860:4802:36::15, TTL: 1 Hour"
-echo "  Type: AAAA, Name: @, Value: 2001:4860:4802:38::15, TTL: 1 Hour"
-echo ""
-echo -e "${BLUE}CNAME Record (for www):${NC}"
-echo "  Type: CNAME, Name: www, Value: ghs.googlehosted.com, TTL: 1 Hour"
-echo ""
-echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-echo -e "${GREEN}⏳ After adding DNS records:${NC}"
-echo "  - DNS propagation takes 10-60 minutes (up to 48 hours)"
-echo "  - SSL certificate will auto-provision (may take 15-30 minutes)"
-echo "  - Check status: gcloud run domain-mappings describe $DOMAIN --region $REGION"
-echo ""
 echo -e "${GREEN}🎉 Deployment complete!${NC}"
 echo ""
-echo "Next steps:"
-echo "  1. Add DNS records to GoDaddy (see above)"
-echo "  2. Set environment variables (see below)"
-echo "  3. Wait for DNS propagation"
-echo "  4. Visit https://tangibel.io"
-echo ""
-echo -e "${BLUE}To set environment variables:${NC}"
-echo "  gcloud run services update $SERVICE_NAME --region $REGION \\"
-echo "    --set-env-vars=\"NEXT_PUBLIC_SUPABASE_URL=your-url,NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key\""
+echo "Your site should be live at:"
+echo "  - $SERVICE_URL"
+echo "  - https://tangibel.io (if DNS is configured)"
 echo ""

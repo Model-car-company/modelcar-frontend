@@ -3,14 +3,15 @@ node_modules
 npm-debug.log
 yarn-error.log
 
-# Next.js
+# Next.js build output (we rebuild in Docker)
 .next
 out
 *.log
 
-# Environment files
+# Environment files - exclude secrets, keep only .env.production (public vars only)
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -20,12 +21,13 @@ out
 .gitignore
 
 # Documentation
-README.md
 docs
 
 # IDE
 .vscode
 .idea
+.cursor
+.windsurf
 *.swp
 *.swo
 
@@ -39,6 +41,3 @@ coverage
 
 # Misc
 *.md
-!README.md
-.prettierrc
-.eslintrc.json

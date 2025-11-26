@@ -1,8 +1,12 @@
 # Tangibel - Next.js Production Dockerfile
 # Multi-stage build for optimal image size
 
+FROM node:18-alpine AS base
+# Install OpenSSL for Prisma/crypto support
+RUN apk add --no-cache openssl
+
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -11,78 +15,46 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Stage 2: Builder
-FROM node:18-alpine AS builder
+FROM base AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Accept build arguments for Next.js public environment variables
-ARG NEXT_PUBLIC_BACKEND_URL
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_SITE_URL
-ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-ARG NEXT_PUBLIC_APP_URL
-ARG STRIPE_GARAGE_MONTHLY_PRICE_ID
-ARG STRIPE_GARAGE_YEARLY_PRICE_ID
-ARG STRIPE_SHOWROOM_MONTHLY_PRICE_ID
-ARG STRIPE_SHOWROOM_YEARLY_PRICE_ID
-ARG STRIPE_DEALERSHIP_MONTHLY_PRICE_ID
-ARG STRIPE_DEALERSHIP_YEARLY_PRICE_ID
-ARG STRIPE_FACTORY_MONTHLY_PRICE_ID
-ARG STRIPE_FACTORY_YEARLY_PRICE_ID
-ARG NEXT_PUBLIC_POSTHOG_KEY
-ARG NEXT_PUBLIC_POSTHOG_HOST
-
-# Set them as environment variables for the build
-ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
-ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-ENV STRIPE_GARAGE_MONTHLY_PRICE_ID=$STRIPE_GARAGE_MONTHLY_PRICE_ID
-ENV STRIPE_GARAGE_YEARLY_PRICE_ID=$STRIPE_GARAGE_YEARLY_PRICE_ID
-ENV STRIPE_SHOWROOM_MONTHLY_PRICE_ID=$STRIPE_SHOWROOM_MONTHLY_PRICE_ID
-ENV STRIPE_SHOWROOM_YEARLY_PRICE_ID=$STRIPE_SHOWROOM_YEARLY_PRICE_ID
-ENV STRIPE_DEALERSHIP_MONTHLY_PRICE_ID=$STRIPE_DEALERSHIP_MONTHLY_PRICE_ID
-ENV STRIPE_DEALERSHIP_YEARLY_PRICE_ID=$STRIPE_DEALERSHIP_YEARLY_PRICE_ID
-ENV STRIPE_FACTORY_MONTHLY_PRICE_ID=$STRIPE_FACTORY_MONTHLY_PRICE_ID
-ENV STRIPE_FACTORY_YEARLY_PRICE_ID=$STRIPE_FACTORY_YEARLY_PRICE_ID
-ENV NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY
-ENV NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
+# Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
 RUN npm run build
 
 # Stage 3: Runner
-FROM node:18-alpine AS runner
+FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built application
+# Copy public assets
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
 
-# Set correct permissions
-RUN chown -R nextjs:nodejs /app
+# Set up .next directory with correct permissions
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Copy standalone build output
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
 
-# Start the application
-CMD ["node", "server.js"]
+# server.js is created by next build from the standalone output
+CMD HOSTNAME="0.0.0.0" node server.js

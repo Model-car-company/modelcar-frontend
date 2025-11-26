@@ -9,7 +9,7 @@ import { createClient } from '../../lib/supabase/client'
 import CollapsibleSidebar from '../../components/CollapsibleSidebar'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ShipDesignModal from '../../components/ShipDesignModal'
-import { Download, Trash2, Eye, Box, Grid3x3, List, Package } from 'lucide-react'
+import { Download, Trash2, Eye, Box, Grid3x3, List, Truck } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 export default function GaragePage() {
@@ -291,7 +291,7 @@ export default function GaragePage() {
                         className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 rounded text-[10px] font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center justify-center gap-1"
                         title="Ship Design to 3D Printing"
                       >
-                        <Package className="w-3 h-3" />
+                        <Truck className="w-3 h-3" />
                         <span className="hidden sm:inline">Ship</span>
                       </button>
                       <button
@@ -359,7 +359,7 @@ export default function GaragePage() {
                       className="px-4 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 rounded text-xs font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center gap-2"
                       title="Ship Design to 3D Printing"
                     >
-                      <Package className="w-3 h-3" />
+                      <Truck className="w-3 h-3" />
                       Ship
                     </button>
                     <button
