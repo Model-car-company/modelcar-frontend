@@ -36,14 +36,14 @@ const resolveTierAndInterval = (
   const explicitPriceId = price?.id || fallbackPriceId || null;
   if (explicitPriceId) {
     const mapped = getTierIntervalByPriceId(explicitPriceId);
-    if (mapped) return mapped;
+    if (mapped) return { tier: mapped.tier, billingInterval: mapped.interval };
   }
 
   // 2) Use product metadata tier_key + recurring interval
   const { interval, tierKey, priceId } = tierIntervalFromPrice(price);
   if (priceId) {
     const mapped = getTierIntervalByPriceId(priceId);
-    if (mapped) return mapped;
+    if (mapped) return { tier: mapped.tier, billingInterval: mapped.interval };
   }
   if (tierKey && interval) {
     return { tier: normalizeTier(tierKey), billingInterval: interval };
@@ -51,7 +51,10 @@ const resolveTierAndInterval = (
 
   // 3) Fallback to metadata
   const tierMeta = metadata?.tier ? normalizeTier(metadata.tier) : 'free';
-  const intervalMeta = (metadata?.billingInterval as BillingInterval) || 'month';
+  const intervalMeta =
+    (priceInterval as BillingInterval) ||
+    (metadata?.billingInterval as BillingInterval) ||
+    'month';
   return { tier: tierMeta, billingInterval: intervalMeta };
 };
 
@@ -129,6 +132,16 @@ const resolveUserId = async (
   return null;
 };
 
+const fetchProfile = async (userId: string) => {
+  const supabase = getAdminSupabase();
+  const { data } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  return data;
+};
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get('stripe-signature');
@@ -194,7 +207,9 @@ export async function POST(req: NextRequest) {
           throw new Error('Invalid subscription period dates');
         }
 
-        // Update subscription in database
+        // If profile is missing subscription linkage or canceled, update it here (first activation)
+        const profile = await fetchProfile(userId);
+        const activeStatuses = ['active', 'trialing'];
         await SubscriptionService.updateSubscription(supabase, userId, {
           stripeSubscriptionId: subCast1.id,
           tier,
@@ -204,6 +219,7 @@ export async function POST(req: NextRequest) {
           billingInterval,
         });
 
+        // Always refresh credits
         await SubscriptionService.updateUserCredits(supabase, userId, tier, billingInterval);
 
         await SubscriptionService.recordSubscriptionSnapshot(supabase, {
@@ -258,15 +274,8 @@ export async function POST(req: NextRequest) {
           throw new Error('Invalid subscription period dates');
         }
 
-        // Update subscription status to past_due
-        await SubscriptionService.updateSubscription(supabase, userId, {
-          stripeSubscriptionId: subCast2.id,
-          tier,
-          status: 'PAST_DUE',
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: periodEnd,
-          billingInterval,
-        });
+        // Update credits/status minimally
+        await SubscriptionService.updateUserCredits(supabase, userId, tier, billingInterval);
 
         await SubscriptionService.recordSubscriptionSnapshot(supabase, {
           userId,

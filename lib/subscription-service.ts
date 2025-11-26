@@ -70,7 +70,8 @@ export class SubscriptionService {
       .from('profiles')
       .update({ 
         credits_remaining: credits,
-        subscription_tier: tier 
+        subscription_tier: tier,
+        subscription_billing_interval: billingInterval,
       })
       .eq('id', userId);
     if (error) {
