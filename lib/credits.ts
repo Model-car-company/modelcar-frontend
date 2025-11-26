@@ -3,6 +3,7 @@ import { createClient } from './supabase/client'
 
 export const CREDIT_COSTS = {
   IMAGE_GENERATION: 3,
+  SKETCH_TO_RENDER: 5,  // ControlNet sketch-to-render (Vizcom-style)
   MODEL_3D_GENERATION: 14,
   MODEL_DOWNLOAD: 0, // Free for now
   PREMIUM_MODEL: 10,

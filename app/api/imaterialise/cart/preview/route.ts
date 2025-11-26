@@ -7,14 +7,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Validate required fields
-    if (!body.model_id || !body.design_name) {
+    if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json(
-        { error: 'model_id and design_name are required' },
+        { error: 'items array is required and must not be empty' },
         { status: 400 }
       )
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/v1/sculpteo/upload`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/imaterialise/cart/preview`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data)
     
   } catch (error: any) {
-    console.error('Error generating Sculpteo upload:', error)
+    console.error('Error previewing cart:', error)
     return NextResponse.json(
-      { error: 'Failed to generate upload URL', details: error.message },
+      { error: 'Failed to preview cart', details: error.message },
       { status: 500 }
     )
   }

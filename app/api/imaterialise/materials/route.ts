@@ -4,7 +4,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:800
 
 export async function GET() {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/v1/sculpteo/materials`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/imaterialise/materials`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -19,7 +19,7 @@ export async function GET() {
     return NextResponse.json(data)
     
   } catch (error: any) {
-    console.error('Error fetching Sculpteo materials:', error)
+    console.error('Error fetching i.materialise materials:', error)
     return NextResponse.json(
       { error: 'Failed to fetch materials', details: error.message },
       { status: 500 }

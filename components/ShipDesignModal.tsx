@@ -5,11 +5,18 @@ import { X, Package, Ruler, DollarSign, Check, Loader2, Box } from 'lucide-react
 import toast from 'react-hot-toast'
 
 interface Material {
-  id: string
-  name: string
+  materialID: string
+  materialName: string
   technology: string
+  finishes: Finish[]
+}
+
+interface Finish {
+  finishID: string
+  finishName: string
   description?: string
   price_per_cm3?: number
+  lead_time_days?: number
 }
 
 interface ShipDesignModalProps {
@@ -31,9 +38,10 @@ export default function ShipDesignModal({
   model,
   userEmail 
 }: ShipDesignModalProps) {
-  const [step, setStep] = useState<'materials' | 'size' | 'quote'>('materials')
+  const [step, setStep] = useState<'materials' | 'size' | 'shipping' | 'review'>('materials')
   const [materials, setMaterials] = useState<Material[]>([])
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
+  const [selectedFinish, setSelectedFinish] = useState<Finish | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadingMaterials, setLoadingMaterials] = useState(true)
   
@@ -41,8 +49,38 @@ export default function ShipDesignModal({
   const [unit, setUnit] = useState<'mm' | 'cm' | 'in'>('mm')
   const [scale, setScale] = useState(1.0)
   
-  // Quote data
+  // Shipping/billing info
+  const [shippingAddress, setShippingAddress] = useState({
+    first_name: '',
+    last_name: '',
+    email: userEmail || '',
+    address_line1: '',
+    city: '',
+    state: '',
+    country_code: 'US',
+    zip_code: '',
+    phone: ''
+  })
+  
+  const [billingAddress, setBillingAddress] = useState({
+    first_name: '',
+    last_name: '',
+    email: userEmail || '',
+    address_line1: '',
+    city: '',
+    state: '',
+    country_code: 'US',
+    zip_code: '',
+    phone: ''
+  })
+  
+  const [sameAsShipping, setSameAsShipping] = useState(true)
+  const [selectedShipping, setSelectedShipping] = useState<string>('')
+  const [shippingOptions, setShippingOptions] = useState<any[]>([])
+  
+  // Quote/preview data
   const [quoteData, setQuoteData] = useState<any>(null)
+  const [orderResult, setOrderResult] = useState<any>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -56,7 +94,7 @@ export default function ShipDesignModal({
   const loadMaterials = async () => {
     setLoadingMaterials(true)
     try {
-      const response = await fetch('/api/sculpteo/materials')
+      const response = await fetch('/api/imaterialise/materials')
       
       if (!response.ok) {
         throw new Error('Failed to load materials')
@@ -81,108 +119,177 @@ export default function ShipDesignModal({
 
   const handleMaterialSelect = (material: Material) => {
     setSelectedMaterial(material)
+    // Auto-select first finish if available
+    if (material.finishes && material.finishes.length > 0) {
+      setSelectedFinish(material.finishes[0])
+    }
+  }
+
+  const handleFinishSelect = (finish: Finish) => {
+    setSelectedFinish(finish)
   }
 
   const handleContinueToSize = () => {
-    if (!selectedMaterial) {
-      toast.error('Please select a material')
+    if (!selectedMaterial || !selectedFinish) {
+      toast.error('Please select a material and finish')
       return
     }
     setStep('size')
   }
 
-  const handleContinueToQuote = async () => {
-    if (!selectedMaterial) return
-    
-    setStep('quote')
+  const handleContinueToShipping = () => {
+    if (!selectedMaterial || !selectedFinish) {
+      toast.error('Please select a material and finish')
+      return
+    }
+    setStep('shipping')
+  }
+
+  const handleContinueToReview = async () => {
+    // Validate shipping address
+    if (!shippingAddress.first_name || !shippingAddress.last_name || 
+        !shippingAddress.email || !shippingAddress.address_line1 || 
+        !shippingAddress.city || !shippingAddress.zip_code) {
+      toast.error('Please fill in all required shipping fields')
+      return
+    }
+
     setLoading(true)
+    setStep('review')
     
     try {
-      // Call backend to generate Sculpteo upload URL
-      const response = await fetch('/api/sculpteo/upload', {
+      // Get cart preview with pricing and shipping options
+      const response = await fetch('/api/imaterialise/cart/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model_id: model.id,
-          design_name: model.name,
-          user_email: userEmail,
-          unit: unit,
-          scale: scale,
-          material: selectedMaterial.id,
-          description: `3D model: ${model.name}`
+          items: [{
+            model_id: model.id,
+            material_id: selectedMaterial!.materialID,
+            finish_id: selectedFinish!.finishID,
+            quantity: 1,
+            scale: scale,
+            file_units: unit
+          }],
+          shipping_country: shippingAddress.country_code,
+          shipping_state: shippingAddress.state,
+          shipping_city: shippingAddress.city,
+          shipping_zip: shippingAddress.zip_code,
+          currency: 'USD'
         })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate quote')
+        throw new Error('Failed to get pricing')
       }
 
       const data = await response.json()
       setQuoteData(data)
+      setShippingOptions(data.shipping_services || [])
+      
+      // Auto-select first shipping option
+      if (data.shipping_services && data.shipping_services.length > 0) {
+        setSelectedShipping(data.shipping_services[0].name)
+      }
       
     } catch (error) {
-      console.error('Error generating quote:', error)
-      toast.error('Failed to generate quote', {
+      console.error('Error getting quote:', error)
+      toast.error('Failed to get pricing quote', {
         style: {
           background: '#0a0a0a',
           color: '#fff',
           border: '1px solid rgba(255, 255, 255, 0.1)',
         },
       })
-      setStep('size')
+      setStep('shipping')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleAcceptQuote = () => {
-    if (!quoteData) return
+  const handlePlaceOrder = async () => {
+    if (!selectedMaterial || !selectedFinish || !selectedShipping) return
     
-    // Create form and submit to Sculpteo
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = quoteData.upload_url
-    form.target = '_blank' // Open in new tab
+    setLoading(true)
     
-    Object.entries(quoteData.form_data).forEach(([key, value]) => {
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = key
-      input.value = value as string
-      form.appendChild(input)
-    })
-    
-    document.body.appendChild(form)
-    form.submit()
-    document.body.removeChild(form)
-    
-    toast.success('Redirecting to Sculpteo...', {
-      style: {
-        background: '#0a0a0a',
-        color: '#fff',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-      },
-    })
-    
-    onClose()
+    try {
+      // Submit full white-label checkout
+      const billing = sameAsShipping ? shippingAddress : billingAddress
+      
+      const response = await fetch('/api/imaterialise/cart/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: [{
+            model_id: model.id,
+            material_id: selectedMaterial.materialID,
+            finish_id: selectedFinish.finishID,
+            quantity: 1,
+            scale: scale,
+            file_units: unit,
+            reference: `ATELIER-${model.id}`
+          }],
+          shipping_address: shippingAddress,
+          billing_address: billing,
+          shipment_service: selectedShipping,
+          order_reference: `ATELIER-${Date.now()}`,
+          allow_direct_mailing: false,
+          currency: 'USD'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to place order')
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setOrderResult(data)
+        toast.success(`Order placed successfully! Order ID: ${data.order_id}`, {
+          duration: 5000,
+          style: {
+            background: '#0a0a0a',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          },
+        })
+        
+        // Keep modal open to show order confirmation
+      } else {
+        throw new Error(data.error || 'Order failed')
+      }
+      
+    } catch (error: any) {
+      console.error('Error placing order:', error)
+      toast.error(`Failed to place order: ${error.message}`, {
+        style: {
+          background: '#0a0a0a',
+          color: '#fff',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        },
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+      <div className="bg-gradient-to-b from-black via-black to-black/95 border border-white/10 rounded w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Package className="w-5 h-5 text-red-500" />
-            <h2 className="text-lg font-light">Ship Design to 3D Printing</h2>
+            <Package className="w-4 h-4 text-white/60" strokeWidth={1.5} />
+            <h2 className="text-lg font-thin tracking-wide">Ship Design to 3D Printing</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/5 rounded transition-colors"
+            className="p-1.5 hover:bg-white/5 rounded transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
 
@@ -191,7 +298,7 @@ export default function ShipDesignModal({
           <div className="grid md:grid-cols-2 gap-6">
             {/* Left: Model Preview */}
             <div className="space-y-4">
-              <div className="aspect-video bg-black rounded-lg overflow-hidden border border-white/10">
+              <div className="aspect-video bg-black rounded overflow-hidden border border-white/10">
                 <img
                   src={model.thumbnail}
                   alt={model.name}
@@ -199,43 +306,50 @@ export default function ShipDesignModal({
                 />
               </div>
               <div>
-                <h3 className="font-medium text-sm mb-1">{model.name}</h3>
-                <p className="text-xs text-gray-400">{model.format} format</p>
+                <h3 className="font-light text-sm mb-1 text-white">{model.name}</h3>
+                <p className="text-[10px] font-light text-gray-500 uppercase tracking-wide">{model.format} format</p>
               </div>
 
               {/* Progress Steps */}
-              <div className="flex items-center gap-2 pt-4">
-                <div className={`flex items-center gap-2 text-xs ${
-                  step === 'materials' ? 'text-red-500' : 'text-gray-500'
-                }`}>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    step !== 'materials' ? 'border-green-500 bg-green-500/10' : 'border-red-500'
+              <div className="grid grid-cols-4 gap-1.5 pt-4">
+                {/* Step 1: Material */}
+                <div className={`text-center ${step === 'materials' ? 'opacity-100' : 'opacity-50'}`}>
+                  <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
+                    step !== 'materials' ? 'border-white/40 bg-white/10' : 'border-red-500/60 bg-red-500/10'
                   }`}>
-                    {step !== 'materials' ? <Check className="w-3 h-3 text-green-500" /> : '1'}
+                    {step !== 'materials' ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '1'}
                   </div>
-                  <span>Material</span>
+                  <p className="text-[9px] font-light tracking-wide uppercase">Material</p>
                 </div>
-                <div className="flex-1 h-px bg-white/10" />
-                <div className={`flex items-center gap-2 text-xs ${
-                  step === 'size' ? 'text-red-500' : 'text-gray-500'
-                }`}>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    step === 'quote' ? 'border-green-500 bg-green-500/10' : step === 'size' ? 'border-red-500' : 'border-white/20'
+
+                {/* Step 2: Size */}
+                <div className={`text-center ${step === 'size' ? 'opacity-100' : 'opacity-50'}`}>
+                  <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
+                    step === 'shipping' || step === 'review' || orderResult ? 'border-white/40 bg-white/10' : step === 'size' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
                   }`}>
-                    {step === 'quote' ? <Check className="w-3 h-3 text-green-500" /> : '2'}
+                    {step === 'shipping' || step === 'review' || orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '2'}
                   </div>
-                  <span>Size</span>
+                  <p className="text-[9px] font-light tracking-wide uppercase">Size</p>
                 </div>
-                <div className="flex-1 h-px bg-white/10" />
-                <div className={`flex items-center gap-2 text-xs ${
-                  step === 'quote' ? 'text-red-500' : 'text-gray-500'
-                }`}>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    step === 'quote' ? 'border-red-500' : 'border-white/20'
+
+                {/* Step 3: Shipping */}
+                <div className={`text-center ${step === 'shipping' ? 'opacity-100' : 'opacity-50'}`}>
+                  <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
+                    step === 'review' || orderResult ? 'border-white/40 bg-white/10' : step === 'shipping' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
                   }`}>
-                    3
+                    {step === 'review' || orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '3'}
                   </div>
-                  <span>Quote</span>
+                  <p className="text-[9px] font-light tracking-wide uppercase">Shipping</p>
+                </div>
+
+                {/* Step 4: Review */}
+                <div className={`text-center ${step === 'review' || orderResult ? 'opacity-100' : 'opacity-50'}`}>
+                  <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
+                    orderResult ? 'border-white/40 bg-white/10' : step === 'review' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
+                  }`}>
+                    {orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '4'}
+                  </div>
+                  <p className="text-[9px] font-light tracking-wide uppercase">Review</p>
                 </div>
               </div>
             </div>
@@ -246,39 +360,39 @@ export default function ShipDesignModal({
               {step === 'materials' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium mb-1 flex items-center gap-2">
-                      <Box className="w-4 h-4" />
+                    <h3 className="text-sm font-light mb-1 flex items-center gap-2 tracking-wide">
+                      <Box className="w-4 h-4" strokeWidth={1.5} />
                       Select Material
                     </h3>
-                    <p className="text-xs text-gray-400">Choose the material for your 3D print</p>
+                    <p className="text-[10px] font-light text-gray-500">Choose the material for your 3D print</p>
                   </div>
 
                   {loadingMaterials ? (
                     <div className="flex items-center justify-center py-12">
-                      <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+                      <Loader2 className="w-6 h-6 animate-spin text-white/40" strokeWidth={1.5} />
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {materials.slice(0, 20).map((material) => (
+                      {materials.map((material) => (
                         <button
-                          key={material.id}
+                          key={material.materialID}
                           onClick={() => handleMaterialSelect(material)}
-                          className={`w-full text-left p-3 rounded-lg border transition-all ${
-                            selectedMaterial?.id === material.id
-                              ? 'border-red-500 bg-red-500/10'
-                              : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
+                          className={`w-full text-left p-3 rounded border transition-all ${
+                            selectedMaterial?.materialID === material.materialID
+                              ? 'border-white/30 bg-white/5'
+                              : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/5'
                           }`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="font-medium text-sm">{material.name}</div>
-                              <div className="text-xs text-gray-400">{material.technology}</div>
-                              {material.description && (
-                                <div className="text-xs text-gray-500 mt-1">{material.description}</div>
-                              )}
+                              <div className="font-light text-sm">{material.materialName}</div>
+                              <div className="text-[10px] font-light text-gray-500 mt-0.5">{material.technology}</div>
+                              <div className="text-[10px] font-light text-gray-600 mt-1">
+                                {material.finishes.length} finish{material.finishes.length !== 1 ? 'es' : ''} available
+                              </div>
                             </div>
-                            {selectedMaterial?.id === material.id && (
-                              <Check className="w-4 h-4 text-red-500 flex-shrink-0 mt-1" />
+                            {selectedMaterial?.materialID === material.materialID && (
+                              <Check className="w-4 h-4 text-white flex-shrink-0 mt-1" strokeWidth={1.5} />
                             )}
                           </div>
                         </button>
@@ -292,30 +406,64 @@ export default function ShipDesignModal({
               {step === 'size' && (
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium mb-1 flex items-center gap-2">
-                      <Ruler className="w-4 h-4" />
-                      Confirm Size
+                    <h3 className="text-sm font-light mb-1 flex items-center gap-2 tracking-wide">
+                      <Ruler className="w-4 h-4" strokeWidth={1.5} />
+                      Confirm Size & Finish
                     </h3>
-                    <p className="text-xs text-gray-400">Adjust the scale and units for your model</p>
+                    <p className="text-[10px] font-light text-gray-500">Select finish and adjust scale for your model</p>
                   </div>
 
-                  <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                    <div className="font-medium text-sm mb-2">Selected Material</div>
-                    <div className="text-sm text-gray-400">{selectedMaterial?.name}</div>
-                    <div className="text-xs text-gray-500">{selectedMaterial?.technology}</div>
+                  <div className="p-4 bg-white/[0.02] rounded border border-white/10 space-y-3">
+                    <div>
+                      <div className="font-light text-xs mb-1 uppercase tracking-wide text-gray-500">Selected Material</div>
+                      <div className="text-sm font-light text-white">{selectedMaterial?.materialName}</div>
+                      <div className="text-[10px] font-light text-gray-600">{selectedMaterial?.technology}</div>
+                    </div>
+                    
+                    <div>
+                      <div className="font-light text-xs mb-2 uppercase tracking-wide text-gray-500">Finish</div>
+                      <div className="space-y-2">
+                        {selectedMaterial?.finishes.map((finish) => (
+                          <button
+                            key={finish.finishID}
+                            onClick={() => handleFinishSelect(finish)}
+                            className={`w-full text-left p-2 rounded border text-xs transition-all ${
+                              selectedFinish?.finishID === finish.finishID
+                                ? 'border-white/30 bg-white/5'
+                                : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="font-light">{finish.finishName}</div>
+                                {finish.description && (
+                                  <div className="text-[10px] text-gray-600 mt-0.5">{finish.description}</div>
+                                )}
+                                {finish.price_per_cm3 && (
+                                  <div className="text-[10px] text-gray-500 mt-1">${finish.price_per_cm3}/cm³</div>
+                                )}
+                              </div>
+                              {selectedFinish?.finishID === finish.finishID && (
+                                <Check className="w-3 h-3 text-white flex-shrink-0" strokeWidth={1.5} />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium mb-2">Unit</label>
+                    <label className="block text-xs font-light mb-2 uppercase tracking-wide text-gray-500">Unit</label>
                     <div className="grid grid-cols-3 gap-2">
                       {(['mm', 'cm', 'in'] as const).map((u) => (
                         <button
                           key={u}
                           onClick={() => setUnit(u)}
-                          className={`py-2 px-4 rounded border text-sm transition-all ${
+                          className={`py-2 px-4 rounded border text-sm font-light transition-all ${
                             unit === u
-                              ? 'border-red-500 bg-red-500/10 text-white'
-                              : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20'
+                              ? 'border-white/30 bg-white/10 text-white'
+                              : 'border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20'
                           }`}
                         >
                           {u}
@@ -325,7 +473,7 @@ export default function ShipDesignModal({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium mb-2">
+                    <label className="block text-xs font-light mb-2 uppercase tracking-wide text-gray-500">
                       Scale: {scale.toFixed(2)}x
                     </label>
                     <input
@@ -335,64 +483,196 @@ export default function ShipDesignModal({
                       step="0.1"
                       value={scale}
                       onChange={(e) => setScale(parseFloat(e.target.value))}
-                      className="w-full"
+                      className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div className="flex justify-between text-[10px] font-light text-gray-600 mt-1">
                       <span>0.1x</span>
                       <span>5x</span>
                     </div>
                   </div>
 
-                  <div className="text-xs text-gray-400 p-3 bg-blue-500/10 border border-blue-500/20 rounded">
-                    💡 The final size will be determined by Sculpteo based on your model's geometry
+                  <div className="text-[10px] font-light text-gray-400 p-3 bg-white/5 border border-white/10 rounded">
+                    💡 The final size will be determined by i.materialise based on your model's geometry
                   </div>
                 </div>
               )}
 
-              {/* Step 3: Quote */}
-              {step === 'quote' && (
-                <div className="space-y-4">
+              {/* Step 3: Shipping Info */}
+              {step === 'shipping' && (
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                   <div>
-                    <h3 className="text-sm font-medium mb-1 flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
-                      Quote & Pricing
+                    <h3 className="text-sm font-light mb-1 flex items-center gap-2 tracking-wide">
+                      <Package className="w-4 h-4" strokeWidth={1.5} />
+                      Shipping Address
                     </h3>
-                    <p className="text-xs text-gray-400">Review and proceed to Sculpteo for final pricing</p>
+                    <p className="text-[10px] font-light text-gray-500">Where should we ship your 3D print?</p>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="First Name"
+                      value={shippingAddress.first_name}
+                      onChange={(e) => setShippingAddress({...shippingAddress, first_name: e.target.value})}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Last Name"
+                      value={shippingAddress.last_name}
+                      onChange={(e) => setShippingAddress({...shippingAddress, last_name: e.target.value})}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
+                    />
+                  </div>
+
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={shippingAddress.email}
+                    onChange={(e) => setShippingAddress({...shippingAddress, email: e.target.value})}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
+                  />
+
+                  <input
+                    type="text"
+                    placeholder="Address"
+                    value={shippingAddress.address_line1}
+                    onChange={(e) => setShippingAddress({...shippingAddress, address_line1: e.target.value})}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
+                  />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={shippingAddress.city}
+                      onChange={(e) => setShippingAddress({...shippingAddress, city: e.target.value})}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="State"
+                      value={shippingAddress.state}
+                      onChange={(e) => setShippingAddress({...shippingAddress, state: e.target.value})}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="ZIP Code"
+                      value={shippingAddress.zip_code}
+                      onChange={(e) => setShippingAddress({...shippingAddress, zip_code: e.target.value})}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
+                    />
+                    <select
+                      value={shippingAddress.country_code}
+                      onChange={(e) => setShippingAddress({...shippingAddress, country_code: e.target.value})}
+                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light focus:border-white/30 focus:outline-none"
+                    >
+                      <option value="US">United States</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="CA">Canada</option>
+                      <option value="DE">Germany</option>
+                      <option value="FR">France</option>
+                    </select>
+                  </div>
+
+                  <input
+                    type="tel"
+                    placeholder="Phone (optional)"
+                    value={shippingAddress.phone}
+                    onChange={(e) => setShippingAddress({...shippingAddress, phone: e.target.value})}
+                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {/* Step 4: Review & Checkout */}
+              {step === 'review' && (
+                <div className="space-y-4">
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-3">
-                      <Loader2 className="w-8 h-8 animate-spin text-red-500" />
-                      <p className="text-sm text-gray-400">Generating quote...</p>
+                      <Loader2 className="w-8 h-8 animate-spin text-white/40" strokeWidth={1.5} />
+                      <p className="text-sm font-light text-gray-500">Getting pricing...</p>
+                    </div>
+                  ) : orderResult ? (
+                    <div className="space-y-4">
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center mx-auto mb-4">
+                          <Check className="w-8 h-8 text-green-400" strokeWidth={1.5} />
+                        </div>
+                        <h3 className="text-lg font-light mb-2">Order Placed!</h3>
+                        <p className="text-sm font-light text-gray-400">Order ID: {orderResult.order_id}</p>
+                        <p className="text-xs font-light text-gray-500 mt-2">${orderResult.total.toFixed(2)} {orderResult.currency}</p>
+                      </div>
                     </div>
                   ) : quoteData ? (
                     <div className="space-y-4">
-                      <div className="p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
+                      <div>
+                        <h3 className="text-sm font-light mb-1 flex items-center gap-2 tracking-wide">
+                          <DollarSign className="w-4 h-4" strokeWidth={1.5} />
+                          Review Order
+                        </h3>
+                        <p className="text-[10px] font-light text-gray-500">Check details before placing order</p>
+                      </div>
+
+                      {/* Order Summary */}
+                      <div className="p-4 bg-white/[0.02] rounded border border-white/10 space-y-3">
                         <div>
-                          <div className="text-xs text-gray-400">Material</div>
-                          <div className="text-sm font-medium">{selectedMaterial?.name}</div>
+                          <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Material</div>
+                          <div className="text-sm font-light text-white">{selectedMaterial?.materialName}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-gray-400">Unit & Scale</div>
-                          <div className="text-sm">{unit} • {scale.toFixed(2)}x</div>
+                          <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Finish</div>
+                          <div className="text-sm font-light text-white">{selectedFinish?.finishName}</div>
                         </div>
-                        <div className="pt-3 border-t border-white/10">
-                          <div className="text-xs text-gray-400 mb-1">Status</div>
-                          <div className="text-sm text-green-400 flex items-center gap-2">
-                            <Check className="w-4 h-4" />
-                            Ready for final quote on Sculpteo
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-[10px] font-light uppercase tracking-wide text-gray-500">Items Total</div>
+                            <div className="text-sm font-light text-white">${quoteData.items_total?.toFixed(2)}</div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-gray-300 space-y-2">
-                        <div className="font-medium">What happens next?</div>
-                        <ul className="space-y-1 text-gray-400">
-                          <li>• You'll be redirected to Sculpteo's platform</li>
-                          <li>• Your model will be automatically loaded</li>
-                          <li>• You'll see the exact price and delivery time</li>
-                          <li>• Complete your order securely on Sculpteo</li>
-                        </ul>
+                      {/* Shipping Options */}
+                      {shippingOptions.length > 0 && (
+                        <div>
+                          <div className="text-[10px] font-light uppercase tracking-wide text-gray-500 mb-2">Shipping</div>
+                          <div className="space-y-2">
+                            {shippingOptions.map((option: any) => (
+                              <button
+                                key={option.name}
+                                onClick={() => setSelectedShipping(option.name)}
+                                className={`w-full text-left p-3 rounded border transition-all text-xs ${
+                                  selectedShipping === option.name
+                                    ? 'border-red-500/60 bg-red-500/10'
+                                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-light">{option.name}</div>
+                                    <div className="text-[10px] text-gray-500">{option.days} days</div>
+                                  </div>
+                                  <div className="font-light">${option.price?.toFixed(2)}</div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Shipping Address */}
+                      <div className="p-4 bg-white/[0.02] rounded border border-white/10">
+                        <div className="text-[10px] font-light uppercase tracking-wide text-gray-500 mb-2">Shipping To</div>
+                        <div className="text-xs font-light text-gray-400 space-y-0.5">
+                          <div>{shippingAddress.first_name} {shippingAddress.last_name}</div>
+                          <div>{shippingAddress.address_line1}</div>
+                          <div>{shippingAddress.city}, {shippingAddress.state} {shippingAddress.zip_code}</div>
+                          <div>{shippingAddress.country_code}</div>
+                        </div>
                       </div>
                     </div>
                   ) : null}
@@ -403,19 +683,23 @@ export default function ShipDesignModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-light text-gray-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-xs font-light text-gray-500 hover:text-white transition-colors uppercase tracking-wide"
           >
             Maybe Later
           </button>
 
           <div className="flex gap-2">
-            {step !== 'materials' && (
+            {step !== 'materials' && !orderResult && (
               <button
-                onClick={() => setStep(step === 'quote' ? 'size' : 'materials')}
-                className="px-4 py-2 bg-white/5 border border-white/10 rounded text-sm font-light hover:bg-white/10 transition-colors"
+                onClick={() => {
+                  if (step === 'review') setStep('shipping')
+                  else if (step === 'shipping') setStep('size')
+                  else if (step === 'size') setStep('materials')
+                }}
+                className="px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors uppercase tracking-wide"
               >
                 Back
               </button>
@@ -424,8 +708,8 @@ export default function ShipDesignModal({
             {step === 'materials' && (
               <button
                 onClick={handleContinueToSize}
-                disabled={!selectedMaterial}
-                className="px-6 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 rounded text-sm font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!selectedMaterial || !selectedFinish}
+                className="px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wide"
               >
                 Continue
               </button>
@@ -433,20 +717,40 @@ export default function ShipDesignModal({
             
             {step === 'size' && (
               <button
-                onClick={handleContinueToQuote}
-                className="px-6 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 rounded text-sm font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all"
+                onClick={handleContinueToShipping}
+                className="px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-all uppercase tracking-wide"
               >
-                Get Quote
+                Continue
               </button>
             )}
             
-            {step === 'quote' && quoteData && !loading && (
+            {step === 'shipping' && (
               <button
-                onClick={handleAcceptQuote}
-                className="px-6 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 rounded text-sm font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center gap-2"
+                onClick={handleContinueToReview}
+                disabled={loading}
+                className="px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-all disabled:opacity-30 uppercase tracking-wide"
               >
-                <Package className="w-4 h-4" />
-                Continue to Sculpteo
+                {loading ? 'Loading...' : 'Review Order'}
+              </button>
+            )}
+            
+            {step === 'review' && quoteData && !loading && !orderResult && (
+              <button
+                onClick={handlePlaceOrder}
+                disabled={!selectedShipping}
+                className="px-6 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-white rounded text-xs font-light hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2 uppercase tracking-wide disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Package className="w-4 h-4" strokeWidth={1.5} />
+                Place Order
+              </button>
+            )}
+
+            {orderResult && (
+              <button
+                onClick={onClose}
+                className="px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-all uppercase tracking-wide"
+              >
+                Done
               </button>
             )}
           </div>

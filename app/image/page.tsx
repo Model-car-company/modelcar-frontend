@@ -30,6 +30,8 @@ export default function ImagePage() {
   const [referencePreviews, setReferencePreviews] = useState<(string | null)[]>([null, null, null])
   const [mode, setMode] = useState<'text' | 'sketch'>('text')
   const [sketchImage, setSketchImage] = useState<string>('')
+  const [drawingInfluence, setDrawingInfluence] = useState(70)
+  const [stylePreset, setStylePreset] = useState<'automotive' | 'vray' | 'keyshot' | 'octane'>('automotive')
   
   // Canvas drawing state
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -575,23 +577,10 @@ export default function ImagePage() {
           {/* Sketch Mode */}
           {mode === 'sketch' && (
             <div className="mb-6 lg:mb-8">
-              <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Sketch Your Design</h3>
+              <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Drawing Tools</h3>
+              <p className="text-xs text-gray-500 mb-3">Use the canvas on the right to draw your design →</p>
               
-              {sketchImage && (
-                <div className="relative mb-4">
-                  <img src={sketchImage} alt="Your sketch" className="w-full rounded-lg border border-white/10" />
-                  <button
-                    onClick={() => setSketchImage('')}
-                    className="absolute top-2 right-2 px-3 py-1.5 bg-red-500/20 text-red-400 text-xs rounded hover:bg-red-500/30"
-                  >
-                    Clear & Redraw
-                  </button>
-                </div>
-              )}
-              
-              {!sketchImage && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-3">Use the canvas on the right to draw your design →</p>
+              <div>
                   
                   {/* Drawing Tools */}
                   <div className="space-y-3">
@@ -714,20 +703,6 @@ export default function ImagePage() {
                     </div>
                   </div>
                 </div>
-              )}
-
-              {sketchImage && (
-                <div>
-                  <h3 className="text-sm font-light text-white mb-2 uppercase tracking-wide">Add Details (Optional)</h3>
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Make it matte black, add carbon fiber spoiler, aggressive stance..."
-                    className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors resize-none h-20"
-                    disabled={generating}
-                  />
-                </div>
-              )}
             </div>
           )}
 
@@ -774,17 +749,15 @@ export default function ImagePage() {
           <button
             onClick={async () => {
               if (mode === 'sketch') {
-                if (!sketchImage && canvasRef.current) {
+                // Save sketch to reference images
+                if (canvasRef.current) {
                   const dataUrl = canvasRef.current.toDataURL('image/png')
-                  setSketchImage(dataUrl)
+                  // Add to first reference image slot
+                  const newPreviews = [dataUrl, ...referencePreviews.slice(1)]
+                  setReferencePreviews(newPreviews as (string | null)[])
+                  toast.success('Sketch saved as reference image!')
                   return
                 }
-                if (!sketchImage) { toast.error('Please draw something first'); return }
-                if (!user) { router.push('/sign-in'); return }
-                // Use sketch as first reference image
-                const newPreviews = [sketchImage, ...referencePreviews.slice(1)]
-                setReferencePreviews(newPreviews as (string | null)[])
-                await generateImage()
               } else {
                 await generateImage()
               }
@@ -799,12 +772,12 @@ export default function ImagePage() {
             {generating ? (
               <>
                 <Loader className="w-4 h-4 animate-spin" />
-                {mode === 'sketch' ? 'Rendering Sketch...' : 'Generating...'}
+                Generating...
               </>
             ) : (
               <>
                 {mode === 'sketch' ? <Paintbrush className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                {mode === 'sketch' ? (sketchImage ? 'Render Sketch' : 'Save Sketch') : 'Generate Image'}
+                {mode === 'sketch' ? 'Save as Reference' : 'Generate Image'}
               </>
             )}
           </button>
@@ -812,8 +785,8 @@ export default function ImagePage() {
 
         {/* Right Panel - Canvas or Gallery */}
         <div className="flex-1 bg-gradient-to-br from-black via-black/95 to-black/90 overflow-y-auto p-6">
-          {mode === 'sketch' && !sketchImage ? (
-            /* Large Sketch Canvas */
+          {mode === 'sketch' ? (
+            /* Sketch Canvas - Always visible in sketch mode */
             <div className="h-full flex flex-col items-center justify-center">
               <div className="w-full max-w-5xl">
                 <div className="mb-4 text-center">
@@ -875,6 +848,134 @@ export default function ImagePage() {
                   className="w-full border border-white/20 rounded-lg cursor-crosshair bg-white shadow-2xl"
                   style={{ maxHeight: 'calc(100vh - 200px)', height: 'auto', aspectRatio: '3/2' }}
                 />
+
+                {/* Render Controls - Simple and minimal */}
+                <div className="mt-4 flex items-center gap-4 max-w-5xl">
+                  {/* Drawing Influence Slider - Compact */}
+                  <div className="flex items-center gap-3 flex-1">
+                    <label className="text-xs text-gray-400 whitespace-nowrap">
+                      Influence: {drawingInfluence}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={drawingInfluence}
+                      onChange={(e) => setDrawingInfluence(Number(e.target.value))}
+                      className="flex-1 h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+                      disabled={generating}
+                    />
+                  </div>
+
+                  {/* Render Button - Same style as Make 3D */}
+                  <button
+                    onClick={async () => {
+                      if (!user) { router.push('/sign-in'); return }
+                      if (!canvasRef.current) { toast.error('No sketch found'); return }
+                      
+                      if (creditsRemaining < 5) {
+                        setShowUpgradeModal(true)
+                        return
+                      }
+                      
+                      setGenerating(true)
+                      const loadingId = `loading-sketch-${Date.now()}`
+                      const loadingAsset = { 
+                        id: loadingId, 
+                        type: 'image' as const, 
+                        url: '', 
+                        prompt: prompt.trim() ? `Sketch: ${prompt}` : 'Sketch rendering', 
+                        timestamp: new Date().toISOString(), 
+                        isGenerating: true 
+                      }
+                      setDesignAssets(prev => [loadingAsset, ...prev])
+                      
+                      try {
+                        // Get current canvas as blob
+                        const canvas = canvasRef.current
+                        const dataUrl = canvas.toDataURL('image/png')
+                        const base64Response = await fetch(dataUrl)
+                        const blob = await base64Response.blob()
+                        const fileName = `sketches/${user.id}/${Date.now()}.png`
+                        
+                        const { data: uploadData, error: uploadError } = await supabase.storage
+                          .from('user-sketches')
+                          .upload(fileName, blob, { contentType: 'image/png' })
+                        
+                        if (uploadError) throw new Error('Failed to upload sketch')
+                        
+                        const { data: { publicUrl } } = supabase.storage
+                          .from('user-sketches')
+                          .getPublicUrl(fileName)
+                        
+                        const { data: { session } } = await supabase.auth.getSession()
+                        const token = session?.access_token
+                        
+                        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/sketch-to-render`, {
+                          method: 'POST',
+                          headers: { 
+                            'Content-Type': 'application/json', 
+                            ...(token ? { Authorization: `Bearer ${token}` } : {}) 
+                          },
+                          body: JSON.stringify({
+                            sketch_image_url: publicUrl,
+                            prompt: prompt.trim() || 'render this sketch as a realistic car design',
+                            drawing_influence: drawingInfluence / 100,
+                            style_preset: stylePreset,
+                            negative_prompt: 'blurry, low quality, distorted, ugly'
+                          })
+                        })
+                        
+                        if (response.status === 402) {
+                          setShowUpgradeModal(true)
+                          setDesignAssets(prev => prev.filter(a => a.id !== loadingId))
+                          setGenerating(false)
+                          return
+                        }
+                        
+                        if (!response.ok) throw new Error('Sketch rendering failed')
+                        
+                        const data = await response.json()
+                        const a = data.asset || {}
+                        const newAsset = { 
+                          id: a.id || Date.now().toString(), 
+                          type: 'image' as const, 
+                          url: data.imageUrl || a.url, 
+                          prompt: a.prompt ? `Sketch: ${a.prompt}` : (prompt.trim() ? `Sketch: ${prompt}` : 'Sketch render'), 
+                          timestamp: new Date().toISOString(), 
+                          isGenerating: false 
+                        }
+                        setDesignAssets(prev => prev.map(asset => asset.id === loadingId ? newAsset : asset))
+                        
+                        await fetchCredits()
+                        toast.success('Rendered! ✨')
+                      } catch (error: any) {
+                        setDesignAssets(prev => prev.filter(asset => asset.id !== loadingId))
+                        toast.error(error.message || 'Failed to render')
+                      } finally {
+                        setGenerating(false)
+                      }
+                    }}
+                    disabled={generating}
+                    className={`px-3 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                      generating
+                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                        : 'bg-white text-black hover:bg-gray-200'
+                    }`}
+                  >
+                    {generating ? (
+                      <>
+                        <Loader className="w-3 h-3 animate-spin" />
+                        Rendering...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3" />
+                        Render Sketch
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           ) :

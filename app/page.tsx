@@ -985,7 +985,7 @@ export default function Home() {
                   <span className="text-lg sm:text-xl font-thin text-red-400">3</span>
                 </div>
               </div>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Download & Own</h3>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Ship Straight to You</h3>
               <p className="text-sm font-extralight text-gray-400 leading-relaxed">
                 Export your 3D model in any format and start 3D printing or rendering immediately.
               </p>
