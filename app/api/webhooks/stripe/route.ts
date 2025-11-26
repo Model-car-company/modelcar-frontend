@@ -52,7 +52,7 @@ const resolveTierAndInterval = (
   // 3) Fallback to metadata
   const tierMeta = metadata?.tier ? normalizeTier(metadata.tier) : 'free';
   const intervalMeta =
-    (priceInterval as BillingInterval) ||
+    (interval as BillingInterval) ||
     (metadata?.billingInterval as BillingInterval) ||
     'month';
   return { tier: tierMeta, billingInterval: intervalMeta };
@@ -118,13 +118,13 @@ const resolveUserId = async (
   // Try to find user by Stripe customer ID
   const customerId = getStripeCustomerId(subscription);
   if (customerId) {
-    const { data: profile } = await supabase
+    const { data: profile } = (await supabase
       .from('profiles')
       .select('id')
       .eq('stripe_customer_id', customerId)
-      .single();
+      .maybeSingle()) as { data: { id: string } | null; error: any };
 
-    if (profile) {
+    if (profile?.id) {
       return profile.id;
     }
   }
