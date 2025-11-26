@@ -118,11 +118,11 @@ const resolveUserId = async (
   // Try to find user by Stripe customer ID
   const customerId = getStripeCustomerId(subscription);
   if (customerId) {
-    const { data: profile } = await supabase
+    const { data: profile } = (await supabase
       .from('profiles')
       .select('id')
       .eq('stripe_customer_id', customerId)
-      .single();
+      .maybeSingle()) as { data: { id: string } | null; error: any };
 
     if (profile && (profile as any).id) {
       return (profile as any).id as string;

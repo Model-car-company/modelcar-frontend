@@ -1,4 +1,4 @@
-# 🚀 V1 Beta Launch Checklist - Atelier (Model Car Platform)
+# 🚀 V1 Beta Launch Checklist - Tangibel (Model Car Platform)
 
 **Last Updated**: 2025-11-24  
 **Status**: Pre-Launch Preparation

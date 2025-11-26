@@ -50,7 +50,7 @@ export default function FeaturesSection() {
         >
           <h2 className="text-4xl md:text-6xl font-bold mb-4">
             Why Choose
-            <span className="block text-gradient">Atelier</span>
+            <span className="block text-gradient">Tangibel</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Excellence in every detail, satisfaction in every delivery

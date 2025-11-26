@@ -395,7 +395,7 @@ export class MeshSegmenter {
   }
 
   private exportToOBJ(): Blob {
-    let objContent = '# Atelier Segmented Mesh\n'
+    let objContent = '# Tangibel Segmented Mesh\n'
     objContent += '# Exported with separate parts\n\n'
     
     let vertexOffset = 1

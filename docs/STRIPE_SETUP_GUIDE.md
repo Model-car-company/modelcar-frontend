@@ -1,4 +1,4 @@
-# 🚀 Stripe Integration Setup Guide - Atelier
+# 🚀 Stripe Integration Setup Guide - Tangibel
 
 ## ✅ Phases 2 & 3 Complete!
 
@@ -14,7 +14,7 @@ Add Stripe columns to your `profiles` table:
 
 1. **Go to Supabase Dashboard**
    - Navigate to: https://supabase.com/dashboard
-   - Select your Atelier project
+   - Select your Tangibel project
    - Click on **SQL Editor** in the left sidebar
 
 2. **Run the migration**

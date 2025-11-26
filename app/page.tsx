@@ -47,7 +47,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-4 sm:py-6">
           <div className="flex justify-between items-center">
             <Link href="/" className="text-lg sm:text-xl font-thin tracking-[0.3em] hover:opacity-60 transition-opacity">
-              ATELIER
+              TANGIBEL
             </Link>
             <div className="flex items-center gap-2 sm:gap-4">
               <Link 

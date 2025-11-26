@@ -57,7 +57,7 @@ All Stripe integration code has been successfully implemented with **maximum sec
 
 - [ ] Run Supabase migration
 - [ ] Add Stripe test keys to `.env.development`
-- [ ] CAtelier products in Stripe Dashboard
+- [ ] Create products in Stripe Dashboard
 - [ ] Add price IDs to `.env.development`
 - [ ] Start Stripe webhook listener
 - [ ] Test subscribe flow with test card
@@ -69,9 +69,9 @@ All Stripe integration code has been successfully implemented with **maximum sec
 ```
 1. User clicks "Subscribe" on pricing page
    ↓
-2. SubscribeButton calls /api/cAtelier-checkout
+2. SubscribeButton calls /api/create-checkout
    ↓
-3. API cAteliers Stripe checkout session
+3. API creates Stripe checkout session
    ↓
 4. User redirected to Stripe hosted checkout
    ↓

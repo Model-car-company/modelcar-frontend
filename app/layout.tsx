@@ -7,10 +7,10 @@ import { Suspense } from 'react'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Atelier - Premium Model Car Creation',
-  description: 'Crafting perfection in miniature. Experience the art of precision model car creation.',
-  keywords: 'model cars, miniature cars, custom models, car replicas, precision crafting',
-  authors: [{ name: 'Atelier' }],
+  title: 'Tangibel - Make Your Dream Tangible',
+  description: 'AI-powered platform that transforms imagination into reality. Upload images, generate production-ready 3D models, and manufacture custom products. Starting with cars.',
+  keywords: 'AI design, 3D modeling, custom products, on-demand manufacturing, custom cars, personalized goods, product creation, physical products, AI manufacturing',
+  authors: [{ name: 'Tangibel' }],
 }
 
 export const viewport: Viewport = {

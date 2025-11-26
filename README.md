@@ -1,4 +1,4 @@
-# Offense - AI-Powered 3D Car Model Platform
+# Tangibel - AI-Powered 3D Car Model Platform
 
 > Transform car images into production-ready 3D models with AI
 
