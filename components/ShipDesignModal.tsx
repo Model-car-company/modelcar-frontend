@@ -49,7 +49,7 @@ export default function ShipDesignModal({
   const [unit, setUnit] = useState<'mm' | 'cm' | 'in'>('mm')
   const [scale, setScale] = useState(1.0)
   
-  // Shipping/billing info
+  // Shipping address
   const [shippingAddress, setShippingAddress] = useState({
     first_name: '',
     last_name: '',
@@ -57,26 +57,14 @@ export default function ShipDesignModal({
     address_line1: '',
     city: '',
     state: '',
-    country_code: 'US',
     zip_code: '',
+    country_code: 'US',
     phone: ''
   })
   
-  const [billingAddress, setBillingAddress] = useState({
-    first_name: '',
-    last_name: '',
-    email: userEmail || '',
-    address_line1: '',
-    city: '',
-    state: '',
-    country_code: 'US',
-    zip_code: '',
-    phone: ''
-  })
-  
-  const [sameAsShipping, setSameAsShipping] = useState(true)
-  const [selectedShipping, setSelectedShipping] = useState<string>('')
+  // Shipping options
   const [shippingOptions, setShippingOptions] = useState<any[]>([])
+  const [selectedShipping, setSelectedShipping] = useState<string>('')
   
   // Quote/preview data
   const [quoteData, setQuoteData] = useState<any>(null)
@@ -125,10 +113,6 @@ export default function ShipDesignModal({
     }
   }
 
-  const handleFinishSelect = (finish: Finish) => {
-    setSelectedFinish(finish)
-  }
-
   const handleContinueToSize = () => {
     if (!selectedMaterial || !selectedFinish) {
       toast.error('Please select a material and finish')
@@ -138,19 +122,27 @@ export default function ShipDesignModal({
   }
 
   const handleContinueToShipping = () => {
-    if (!selectedMaterial || !selectedFinish) {
-      toast.error('Please select a material and finish')
-      return
-    }
     setStep('shipping')
   }
 
   const handleContinueToReview = async () => {
+    if (!selectedMaterial || !selectedFinish) {
+      toast.error('Please select a material and finish')
+      return
+    }
+
     // Validate shipping address
     if (!shippingAddress.first_name || !shippingAddress.last_name || 
         !shippingAddress.email || !shippingAddress.address_line1 || 
-        !shippingAddress.city || !shippingAddress.zip_code) {
-      toast.error('Please fill in all required shipping fields')
+        !shippingAddress.city || !shippingAddress.zip_code || 
+        !shippingAddress.country_code) {
+      toast.error('Please fill in all required shipping fields', {
+        style: {
+          background: '#0a0a0a',
+          color: '#fff',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        },
+      })
       return
     }
 
@@ -158,7 +150,7 @@ export default function ShipDesignModal({
     setStep('review')
     
     try {
-      // Get cart preview with pricing and shipping options
+      // Get cart preview WITH shipping address for accurate pricing
       const response = await fetch('/api/imaterialise/cart/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,8 +164,8 @@ export default function ShipDesignModal({
             file_units: unit
           }],
           shipping_country: shippingAddress.country_code,
-          shipping_state: shippingAddress.state,
           shipping_city: shippingAddress.city,
+          shipping_state: shippingAddress.state,
           shipping_zip: shippingAddress.zip_code,
           currency: 'USD'
         })
@@ -206,16 +198,13 @@ export default function ShipDesignModal({
       setLoading(false)
     }
   }
-
   const handlePlaceOrder = async () => {
-    if (!selectedMaterial || !selectedFinish || !selectedShipping) return
+    if (!selectedMaterial || !selectedFinish) return
     
     setLoading(true)
     
     try {
-      // Submit full white-label checkout
-      const billing = sameAsShipping ? shippingAddress : billingAddress
-      
+      // Submit full white-label checkout (shipping collected later via Stripe)
       const response = await fetch('/api/imaterialise/cart/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -229,9 +218,6 @@ export default function ShipDesignModal({
             file_units: unit,
             reference: `ATELIER-${model.id}`
           }],
-          shipping_address: shippingAddress,
-          billing_address: billing,
-          shipment_service: selectedShipping,
           order_reference: `ATELIER-${Date.now()}`,
           allow_direct_mailing: false,
           currency: 'USD'
@@ -311,7 +297,7 @@ export default function ShipDesignModal({
               </div>
 
               {/* Progress Steps */}
-              <div className="grid grid-cols-4 gap-1.5 pt-4">
+              <div className="grid grid-cols-3 gap-1.5 pt-4">
                 {/* Step 1: Material */}
                 <div className={`text-center ${step === 'materials' ? 'opacity-100' : 'opacity-50'}`}>
                   <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
@@ -325,29 +311,18 @@ export default function ShipDesignModal({
                 {/* Step 2: Size */}
                 <div className={`text-center ${step === 'size' ? 'opacity-100' : 'opacity-50'}`}>
                   <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
-                    step === 'shipping' || step === 'review' || orderResult ? 'border-white/40 bg-white/10' : step === 'size' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
+                    step === 'review' || orderResult ? 'border-white/40 bg-white/10' : step === 'size' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
                   }`}>
-                    {step === 'shipping' || step === 'review' || orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '2'}
+                    {step === 'review' || orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '2'}
                   </div>
                   <p className="text-[9px] font-light tracking-wide uppercase">Size</p>
                 </div>
-
-                {/* Step 3: Shipping */}
-                <div className={`text-center ${step === 'shipping' ? 'opacity-100' : 'opacity-50'}`}>
-                  <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
-                    step === 'review' || orderResult ? 'border-white/40 bg-white/10' : step === 'shipping' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
-                  }`}>
-                    {step === 'review' || orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '3'}
-                  </div>
-                  <p className="text-[9px] font-light tracking-wide uppercase">Shipping</p>
-                </div>
-
-                {/* Step 4: Review */}
+                {/* Step 3: Review */}
                 <div className={`text-center ${step === 'review' || orderResult ? 'opacity-100' : 'opacity-50'}`}>
                   <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
                     orderResult ? 'border-white/40 bg-white/10' : step === 'review' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
                   }`}>
-                    {orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '4'}
+                    {orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '3'}
                   </div>
                   <p className="text-[9px] font-light tracking-wide uppercase">Review</p>
                 </div>
@@ -426,7 +401,7 @@ export default function ShipDesignModal({
                         {selectedMaterial?.finishes.map((finish) => (
                           <button
                             key={finish.finishID}
-                            onClick={() => handleFinishSelect(finish)}
+                            onClick={() => setSelectedFinish(finish)}
                             className={`w-full text-left p-2 rounded border text-xs transition-all ${
                               selectedFinish?.finishID === finish.finishID
                                 ? 'border-white/30 bg-white/5'
@@ -497,97 +472,7 @@ export default function ShipDesignModal({
                 </div>
               )}
 
-              {/* Step 3: Shipping Info */}
-              {step === 'shipping' && (
-                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                  <div>
-                    <h3 className="text-sm font-light mb-1 flex items-center gap-2 tracking-wide">
-                      <Package className="w-4 h-4" strokeWidth={1.5} />
-                      Shipping Address
-                    </h3>
-                    <p className="text-[10px] font-light text-gray-500">Where should we ship your 3D print?</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="First Name"
-                      value={shippingAddress.first_name}
-                      onChange={(e) => setShippingAddress({...shippingAddress, first_name: e.target.value})}
-                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Last Name"
-                      value={shippingAddress.last_name}
-                      onChange={(e) => setShippingAddress({...shippingAddress, last_name: e.target.value})}
-                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
-                    />
-                  </div>
-
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={shippingAddress.email}
-                    onChange={(e) => setShippingAddress({...shippingAddress, email: e.target.value})}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
-                  />
-
-                  <input
-                    type="text"
-                    placeholder="Address"
-                    value={shippingAddress.address_line1}
-                    onChange={(e) => setShippingAddress({...shippingAddress, address_line1: e.target.value})}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
-                  />
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="City"
-                      value={shippingAddress.city}
-                      onChange={(e) => setShippingAddress({...shippingAddress, city: e.target.value})}
-                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      placeholder="State"
-                      value={shippingAddress.state}
-                      onChange={(e) => setShippingAddress({...shippingAddress, state: e.target.value})}
-                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="ZIP Code"
-                      value={shippingAddress.zip_code}
-                      onChange={(e) => setShippingAddress({...shippingAddress, zip_code: e.target.value})}
-                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
-                    />
-                    <select
-                      value={shippingAddress.country_code}
-                      onChange={(e) => setShippingAddress({...shippingAddress, country_code: e.target.value})}
-                      className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light focus:border-white/30 focus:outline-none"
-                    >
-                      <option value="US">United States</option>
-                      <option value="GB">United Kingdom</option>
-                      <option value="CA">Canada</option>
-                      <option value="DE">Germany</option>
-                      <option value="FR">France</option>
-                    </select>
-                  </div>
-
-                  <input
-                    type="tel"
-                    placeholder="Phone (optional)"
-                    value={shippingAddress.phone}
-                    onChange={(e) => setShippingAddress({...shippingAddress, phone: e.target.value})}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light placeholder:text-gray-600 focus:border-white/30 focus:outline-none"
-                  />
-                </div>
-              )}
+              {/* Shipping step removed: Stripe will collect shipping details */}
 
               {/* Step 4: Review & Checkout */}
               {step === 'review' && (
@@ -636,44 +521,7 @@ export default function ShipDesignModal({
                         </div>
                       </div>
 
-                      {/* Shipping Options */}
-                      {shippingOptions.length > 0 && (
-                        <div>
-                          <div className="text-[10px] font-light uppercase tracking-wide text-gray-500 mb-2">Shipping</div>
-                          <div className="space-y-2">
-                            {shippingOptions.map((option: any) => (
-                              <button
-                                key={option.name}
-                                onClick={() => setSelectedShipping(option.name)}
-                                className={`w-full text-left p-3 rounded border transition-all text-xs ${
-                                  selectedShipping === option.name
-                                    ? 'border-red-500/60 bg-red-500/10'
-                                    : 'border-white/10 bg-white/5 hover:border-white/20'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="font-light">{option.name}</div>
-                                    <div className="text-[10px] text-gray-500">{option.days} days</div>
-                                  </div>
-                                  <div className="font-light">${option.price?.toFixed(2)}</div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Shipping Address */}
-                      <div className="p-4 bg-white/[0.02] rounded border border-white/10">
-                        <div className="text-[10px] font-light uppercase tracking-wide text-gray-500 mb-2">Shipping To</div>
-                        <div className="text-xs font-light text-gray-400 space-y-0.5">
-                          <div>{shippingAddress.first_name} {shippingAddress.last_name}</div>
-                          <div>{shippingAddress.address_line1}</div>
-                          <div>{shippingAddress.city}, {shippingAddress.state} {shippingAddress.zip_code}</div>
-                          <div>{shippingAddress.country_code}</div>
-                        </div>
-                      </div>
+                      {/* Shipping details removed: handled by Stripe */}
                     </div>
                   ) : null}
                 </div>
@@ -695,8 +543,7 @@ export default function ShipDesignModal({
             {step !== 'materials' && !orderResult && (
               <button
                 onClick={() => {
-                  if (step === 'review') setStep('shipping')
-                  else if (step === 'shipping') setStep('size')
+                  if (step === 'review') setStep('size')
                   else if (step === 'size') setStep('materials')
                 }}
                 className="px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors uppercase tracking-wide"
@@ -717,15 +564,6 @@ export default function ShipDesignModal({
             
             {step === 'size' && (
               <button
-                onClick={handleContinueToShipping}
-                className="px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-all uppercase tracking-wide"
-              >
-                Continue
-              </button>
-            )}
-            
-            {step === 'shipping' && (
-              <button
                 onClick={handleContinueToReview}
                 disabled={loading}
                 className="px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-all disabled:opacity-30 uppercase tracking-wide"
@@ -737,7 +575,6 @@ export default function ShipDesignModal({
             {step === 'review' && quoteData && !loading && !orderResult && (
               <button
                 onClick={handlePlaceOrder}
-                disabled={!selectedShipping}
                 className="px-6 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-white rounded text-xs font-light hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2 uppercase tracking-wide disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Package className="w-4 h-4" strokeWidth={1.5} />

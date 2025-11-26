@@ -339,7 +339,7 @@ export default function PricingPage() {
               href="/contact"
               className="inline-block px-8 py-3 bg-white text-black text-sm font-light tracking-[0.1em] rounded hover:bg-white/90 transition-all"
             >
-              Contact Sales
+              Own the lot
             </Link>
           </motion.div>
         </div>
