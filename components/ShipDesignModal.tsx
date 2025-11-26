@@ -38,7 +38,7 @@ export default function ShipDesignModal({
   model,
   userEmail 
 }: ShipDesignModalProps) {
-  const [step, setStep] = useState<'materials' | 'size' | 'shipping' | 'review'>('materials')
+  const [step, setStep] = useState<'materials' | 'size' | 'invoice'>('materials')
   const [materials, setMaterials] = useState<Material[]>([])
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null)
   const [selectedFinish, setSelectedFinish] = useState<Finish | null>(null)
@@ -49,26 +49,8 @@ export default function ShipDesignModal({
   const [unit, setUnit] = useState<'mm' | 'cm' | 'in'>('mm')
   const [scale, setScale] = useState(1.0)
   
-  // Shipping address
-  const [shippingAddress, setShippingAddress] = useState({
-    first_name: '',
-    last_name: '',
-    email: userEmail || '',
-    address_line1: '',
-    city: '',
-    state: '',
-    zip_code: '',
-    country_code: 'US',
-    phone: ''
-  })
-  
-  // Shipping options
-  const [shippingOptions, setShippingOptions] = useState<any[]>([])
-  const [selectedShipping, setSelectedShipping] = useState<string>('')
-  
   // Quote/preview data
   const [quoteData, setQuoteData] = useState<any>(null)
-  const [orderResult, setOrderResult] = useState<any>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -121,36 +103,17 @@ export default function ShipDesignModal({
     setStep('size')
   }
 
-  const handleContinueToShipping = () => {
-    setStep('shipping')
-  }
-
-  const handleContinueToReview = async () => {
+  const handleContinueToInvoice = async () => {
     if (!selectedMaterial || !selectedFinish) {
       toast.error('Please select a material and finish')
       return
     }
 
-    // Validate shipping address
-    if (!shippingAddress.first_name || !shippingAddress.last_name || 
-        !shippingAddress.email || !shippingAddress.address_line1 || 
-        !shippingAddress.city || !shippingAddress.zip_code || 
-        !shippingAddress.country_code) {
-      toast.error('Please fill in all required shipping fields', {
-        style: {
-          background: '#0a0a0a',
-          color: '#fff',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        },
-      })
-      return
-    }
-
     setLoading(true)
-    setStep('review')
+    setStep('invoice')
     
     try {
-      // Get cart preview WITH shipping address for accurate pricing
+      // Get cart preview (pricing) with default US location
       const response = await fetch('/api/imaterialise/cart/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,10 +126,10 @@ export default function ShipDesignModal({
             scale: scale,
             file_units: unit
           }],
-          shipping_country: shippingAddress.country_code,
-          shipping_city: shippingAddress.city,
-          shipping_state: shippingAddress.state,
-          shipping_zip: shippingAddress.zip_code,
+          shipping_country: 'US',
+          shipping_city: 'New York',
+          shipping_state: 'NY',
+          shipping_zip: '10001',
           currency: 'USD'
         })
       })
@@ -177,87 +140,30 @@ export default function ShipDesignModal({
 
       const data = await response.json()
       setQuoteData(data)
-      setShippingOptions(data.shipping_services || [])
-      
-      // Auto-select first shipping option
-      if (data.shipping_services && data.shipping_services.length > 0) {
-        setSelectedShipping(data.shipping_services[0].name)
-      }
       
     } catch (error) {
-      console.error('Error getting quote:', error)
-      toast.error('Failed to get pricing quote', {
+      console.error('Error getting pricing:', error)
+      toast.error('Failed to get pricing', {
         style: {
           background: '#0a0a0a',
           color: '#fff',
           border: '1px solid rgba(255, 255, 255, 0.1)',
         },
       })
-      setStep('shipping')
+      setStep('size')
     } finally {
       setLoading(false)
     }
   }
-  const handlePlaceOrder = async () => {
-    if (!selectedMaterial || !selectedFinish) return
-    
-    setLoading(true)
-    
-    try {
-      // Submit full white-label checkout (shipping collected later via Stripe)
-      const response = await fetch('/api/imaterialise/cart/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: [{
-            model_id: model.id,
-            material_id: selectedMaterial.materialID,
-            finish_id: selectedFinish.finishID,
-            quantity: 1,
-            scale: scale,
-            file_units: unit,
-            reference: `ATELIER-${model.id}`
-          }],
-          order_reference: `ATELIER-${Date.now()}`,
-          allow_direct_mailing: false,
-          currency: 'USD'
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to place order')
-      }
-
-      const data = await response.json()
-      
-      if (data.success) {
-        setOrderResult(data)
-        toast.success(`Order placed successfully! Order ID: ${data.order_id}`, {
-          duration: 5000,
-          style: {
-            background: '#0a0a0a',
-            color: '#fff',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-          },
-        })
-        
-        // Keep modal open to show order confirmation
-      } else {
-        throw new Error(data.error || 'Order failed')
-      }
-      
-    } catch (error: any) {
-      console.error('Error placing order:', error)
-      toast.error(`Failed to place order: ${error.message}`, {
-        style: {
-          background: '#0a0a0a',
-          color: '#fff',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        },
-      })
-    } finally {
-      setLoading(false)
-    }
+  const handleContinueToPayment = () => {
+    // TODO: Integrate with Stripe or payment provider
+    toast.success('Payment integration coming soon!', {
+      style: {
+        background: '#0a0a0a',
+        color: '#fff',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+      },
+    })
   }
 
   if (!isOpen) return null
@@ -311,20 +217,21 @@ export default function ShipDesignModal({
                 {/* Step 2: Size */}
                 <div className={`text-center ${step === 'size' ? 'opacity-100' : 'opacity-50'}`}>
                   <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
-                    step === 'review' || orderResult ? 'border-white/40 bg-white/10' : step === 'size' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
+                    step === 'invoice' ? 'border-white/40 bg-white/10' : step === 'size' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
                   }`}>
-                    {step === 'review' || orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '2'}
+                    {step === 'invoice' ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '2'}
                   </div>
                   <p className="text-[9px] font-light tracking-wide uppercase">Size</p>
                 </div>
-                {/* Step 3: Review */}
-                <div className={`text-center ${step === 'review' || orderResult ? 'opacity-100' : 'opacity-50'}`}>
+
+                {/* Step 3: Invoice */}
+                <div className={`text-center ${step === 'invoice' ? 'opacity-100' : 'opacity-50'}`}>
                   <div className={`w-6 h-6 rounded-full border mx-auto mb-1 flex items-center justify-center text-[10px] ${
-                    orderResult ? 'border-white/40 bg-white/10' : step === 'review' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
+                    step === 'invoice' ? 'border-red-500/60 bg-red-500/10' : 'border-white/20'
                   }`}>
-                    {orderResult ? <Check className="w-3 h-3" strokeWidth={1.5} /> : '3'}
+                    3
                   </div>
-                  <p className="text-[9px] font-light tracking-wide uppercase">Review</p>
+                  <p className="text-[9px] font-light tracking-wide uppercase">Invoice</p>
                 </div>
               </div>
             </div>
@@ -472,35 +379,22 @@ export default function ShipDesignModal({
                 </div>
               )}
 
-              {/* Shipping step removed: Stripe will collect shipping details */}
-
-              {/* Step 4: Review & Checkout */}
-              {step === 'review' && (
+              {/* Step 3: Invoice (Pricing) */}
+              {step === 'invoice' && (
                 <div className="space-y-4">
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-3">
                       <Loader2 className="w-8 h-8 animate-spin text-white/40" strokeWidth={1.5} />
                       <p className="text-sm font-light text-gray-500">Getting pricing...</p>
                     </div>
-                  ) : orderResult ? (
-                    <div className="space-y-4">
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center mx-auto mb-4">
-                          <Check className="w-8 h-8 text-green-400" strokeWidth={1.5} />
-                        </div>
-                        <h3 className="text-lg font-light mb-2">Order Placed!</h3>
-                        <p className="text-sm font-light text-gray-400">Order ID: {orderResult.order_id}</p>
-                        <p className="text-xs font-light text-gray-500 mt-2">${orderResult.total.toFixed(2)} {orderResult.currency}</p>
-                      </div>
-                    </div>
                   ) : quoteData ? (
                     <div className="space-y-4">
                       <div>
                         <h3 className="text-sm font-light mb-1 flex items-center gap-2 tracking-wide">
                           <DollarSign className="w-4 h-4" strokeWidth={1.5} />
-                          Review Order
+                          Invoice & Pricing
                         </h3>
-                        <p className="text-[10px] font-light text-gray-500">Check details before placing order</p>
+                        <p className="text-[10px] font-light text-gray-500">Review pricing estimate for your print</p>
                       </div>
 
                       {/* Order Summary */}
@@ -521,7 +415,10 @@ export default function ShipDesignModal({
                         </div>
                       </div>
 
-                      {/* Shipping details removed: handled by Stripe */}
+                      {/* Info note */}
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded text-xs font-light text-blue-200">
+                        💳 Payment and shipping details will be collected securely in the next step
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -540,10 +437,10 @@ export default function ShipDesignModal({
           </button>
 
           <div className="flex gap-2">
-            {step !== 'materials' && !orderResult && (
+            {step !== 'materials' && (
               <button
                 onClick={() => {
-                  if (step === 'review') setStep('size')
+                  if (step === 'invoice') setStep('size')
                   else if (step === 'size') setStep('materials')
                 }}
                 className="px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors uppercase tracking-wide"
@@ -564,30 +461,21 @@ export default function ShipDesignModal({
             
             {step === 'size' && (
               <button
-                onClick={handleContinueToReview}
+                onClick={handleContinueToInvoice}
                 disabled={loading}
                 className="px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-all disabled:opacity-30 uppercase tracking-wide"
               >
-                {loading ? 'Loading...' : 'Review Order'}
+                {loading ? 'Loading...' : 'Get Invoice'}
               </button>
             )}
             
-            {step === 'review' && quoteData && !loading && !orderResult && (
+            {step === 'invoice' && quoteData && !loading && (
               <button
-                onClick={handlePlaceOrder}
-                className="px-6 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-white rounded text-xs font-light hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2 uppercase tracking-wide disabled:opacity-30 disabled:cursor-not-allowed"
+                onClick={handleContinueToPayment}
+                className="px-6 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-white rounded text-xs font-light hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2 uppercase tracking-wide"
               >
-                <Package className="w-4 h-4" strokeWidth={1.5} />
-                Place Order
-              </button>
-            )}
-
-            {orderResult && (
-              <button
-                onClick={onClose}
-                className="px-6 py-2 bg-white text-black rounded text-xs font-light hover:bg-gray-200 transition-all uppercase tracking-wide"
-              >
-                Done
+                <DollarSign className="w-4 h-4" strokeWidth={1.5} />
+                Continue to Payment
               </button>
             )}
           </div>
