@@ -12,22 +12,33 @@ interface SubscribeButtonProps {
   label: string
   popular?: boolean
   className?: string
+  disabled?: boolean
+  blocked?: boolean
+  onBlocked?: () => void
 }
 
 // Initialize Stripe with public key (safe for client-side)
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-export default function SubscribeButton({ 
-  tier, 
-  billingInterval, 
-  label, 
+export default function SubscribeButton({
+  tier,
+  billingInterval,
+  label,
   popular = false,
-  className 
+  className,
+  disabled = false,
+  blocked = false,
+  onBlocked,
 }: SubscribeButtonProps) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
   const handleSubscribe = async () => {
+    if (disabled) return
+    if (blocked) {
+      onBlocked?.()
+      return
+    }
     if (tier === 'free') {
       router.push('/sign-up')
       return
@@ -55,23 +66,13 @@ export default function SubscribeButton({
         throw new Error(data.error || 'Failed to create checkout session')
       }
 
-      // Redirect to Stripe checkout
-      const stripeClient = await stripePromise
-      if (!stripeClient) {
-        throw new Error('Stripe failed to load')
-      }
+      window.location.href = data.url;
 
-      const { error } = await (stripeClient as any).redirectToCheckout({
-        sessionId: data.sessionId,
-      })
 
-      if (error) {
-        throw new Error(error.message)
-      }
     } catch (error: any) {
       console.error('Subscription error:', error)
       toast.dismiss(loadingToast)
-      
+
       if (error.message === 'Unauthorized') {
         toast.error('Please sign in to subscribe')
         router.push('/sign-in?redirect=/pricing')
@@ -88,12 +89,13 @@ export default function SubscribeButton({
   return (
     <button
       onClick={handleSubscribe}
-      disabled={loading}
-      className={className || `w-full py-3 rounded border text-sm font-light tracking-[0.1em] transition-all ${
-        popular
-          ? 'bg-white text-black border-white hover:bg-white/90'
-          : 'border-white/10 hover:border-white/30 hover:bg-white/5'
-      } disabled:opacity-50 disabled:cursor-not-allowed`}
+      disabled={loading || disabled}
+      className={className || `w-full py-3 rounded border text-sm font-light tracking-[0.1em] transition-all ${blocked
+          ? 'border-green-400/50 text-green-300 bg-green-500/5'
+          : popular
+            ? 'bg-white text-black border-white hover:bg-white/90'
+            : 'border-white/10 hover:border-white/30 hover:bg-white/5'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
     >
       {loading ? 'Loading...' : label}
     </button>

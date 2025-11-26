@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '../../../lib/supabase/server';
 import getStripe from '../../../lib/stripe';
-import { SUBSCRIPTION_TIERS, SubscriptionTier, BillingInterval } from '../../../lib/subscription-config';
+import { SUBSCRIPTION_TIERS, SubscriptionTier, BillingInterval, getPriceId } from '../../../lib/subscription-config';
 import { SubscriptionService } from '../../../lib/subscription-service';
 
 export async function POST(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // Get authenticated user
     const supabase = createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       .select('*')
       .eq('id', user.id)
       .single();
-    
+
     if (!profile) {
       return NextResponse.json(
         { error: 'Profile not found' },
@@ -54,10 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get tier configuration
-    const tierConfig = SUBSCRIPTION_TIERS[tier];
-    const priceId = billingInterval === 'year'
-      ? tierConfig.yearly?.stripePriceId
-      : tierConfig.stripePriceId;
+    const priceId = getPriceId(tier, billingInterval);
 
     if (!priceId) {
       return NextResponse.json(
@@ -68,6 +65,7 @@ export async function POST(req: NextRequest) {
 
     // Create or get Stripe customer
     const customerId = await SubscriptionService.createOrGetCustomer(
+      supabase,
       user.id,
       user.email || profile.email
     );
@@ -96,10 +94,11 @@ export async function POST(req: NextRequest) {
           tier,
           billingInterval,
         },
+        trial_period_days: undefined, // explicit to avoid null vs undefined issues
       },
     });
 
-    return NextResponse.json({ sessionId: session.id });
+    return NextResponse.json({ url: session.url });
   } catch (error: any) {
     console.error('Error creating checkout session:', error);
     return NextResponse.json(
