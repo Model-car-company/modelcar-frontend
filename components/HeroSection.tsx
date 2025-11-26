@@ -237,7 +237,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={inView ? { opacity: 1, scale: 1 } : {}}
         transition={{ duration: 1, delay: 1.2 }}
-        className="absolute top-32 left-8 w-64 h-40 md:w-72 md:h-44 lg:w-80 lg:h-48"
+        className="absolute top-32 left-8 w-56 h-36 md:w-64 md:h-40 lg:w-72 lg:h-44"
       >
         <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
           <Image
@@ -265,7 +265,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={inView ? { opacity: 1, scale: 1 } : {}}
         transition={{ duration: 1, delay: 1.5 }}
-        className="absolute bottom-8 right-8 w-64 h-40 md:w-72 md:h-44 lg:w-80 lg:h-48"
+        className="absolute bottom-8 right-8 w-56 h-36 md:w-64 md:h-40 lg:w-72 lg:h-44"
       >
         <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
           <Image
