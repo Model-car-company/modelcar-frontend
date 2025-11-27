@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Download, Wrench, Loader2, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import * as THREE from 'three'
 import { smoothMesh, repairMesh } from '../../lib/meshUtils'
@@ -28,8 +29,19 @@ const EditableStudio3DViewer = dynamic(() => import('../../components/studio/Edi
 })
 
 export default function StudioPage() {
+  const searchParams = useSearchParams()
+  const modelFromUrl = searchParams?.get('model')
+
   const [activeTab, setActiveTab] = useState<'customize' | 'export'>('customize')
-  const [currentModel, setCurrentModel] = useState<string>('')
+  const [currentModel, setCurrentModel] = useState<string>(modelFromUrl || '')
+  
+  // Update model if URL param changes
+  useEffect(() => {
+    if (modelFromUrl) {
+      setCurrentModel(modelFromUrl)
+    }
+  }, [modelFromUrl])
+
   const [showGrid, setShowGrid] = useState(true)
   const [viewMode, setViewMode] = useState<'solid' | 'wireframe' | 'normal' | 'uv'>('solid')
   const [material, setMaterial] = useState({
