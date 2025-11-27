@@ -382,12 +382,18 @@ export default function ImagePage() {
     setDesignAssets(prev => [loadingAsset, ...prev])
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
       // Collect all non-null reference images
       const referenceImagesList = referencePreviews.filter(preview => preview !== null)
 
       const response = await fetch('/api/generate-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           prompt,
           reference_images: referenceImagesList.length > 0 ? referenceImagesList : undefined,

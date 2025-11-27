@@ -29,9 +29,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Call backend external endpoint
+    const authHeader = request.headers.get('Authorization')
+    const headers: Record<string, string> = { 
+      'Content-Type': 'application/json' 
+    }
+    if (authHeader) {
+      headers['Authorization'] = authHeader
+    }
+
     const resp = await fetch(`${BACKEND_URL}/api/v1/external/generate-image`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ 
         prompt, 
         previousImage,
