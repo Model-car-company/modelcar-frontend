@@ -37,12 +37,16 @@ export async function POST(request: NextRequest) {
       headers['Authorization'] = authHeader
     }
 
+    // Backend expects previousImage for reference-based generation
+    // If previousImage not provided but reference_images array exists, use the first one
+    const imageForReference = previousImage || (reference_images?.length > 0 ? reference_images[0] : undefined)
+
     const resp = await fetch(`${BACKEND_URL}/api/v1/external/generate-image`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ 
         prompt, 
-        previousImage,
+        previousImage: imageForReference,
         reference_images,
         aspect_ratio: aspect_ratio || '16:9', 
         output_format: output_format || 'jpg' 
