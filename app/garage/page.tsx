@@ -59,10 +59,6 @@ export default function GaragePage() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Failed to load assets:', error)
-      }
-
       if (assets) {
         // Transform assets to model format
         const transformedModels = assets.map(asset => ({

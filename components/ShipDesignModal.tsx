@@ -80,8 +80,7 @@ export default function ShipDesignModal({
       const data = await response.json()
       setMaterials(data.materials || [])
 
-    } catch (error) {
-      console.error('Error loading materials:', error)
+    } catch {
       toast.error('Failed to load materials', {
         style: {
           background: '#0a0a0a',
@@ -141,9 +140,7 @@ export default function ShipDesignModal({
       const data = await response.json()
       setQuoteData(data)
 
-    } catch (error) {
-      console.error('Error getting invoice:', error)
-
+    } catch {
       // Show placeholder data so UI is still visible
       setQuoteData({
         success: false,

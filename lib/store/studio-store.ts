@@ -147,7 +147,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       set({ currentAssembly: saved })
       
     } catch (error) {
-      console.error('Save error:', error)
       throw error
     }
   },
@@ -181,7 +180,6 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       window.URL.revokeObjectURL(url)
       
     } catch (error) {
-      console.error('Export error:', error)
       throw error
     }
   },

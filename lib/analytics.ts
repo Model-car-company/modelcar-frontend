@@ -16,8 +16,8 @@ export const analytics = {
     
     try {
       posthog.capture(eventName, properties)
-    } catch (error) {
-      console.error('Analytics tracking error:', error)
+    } catch {
+      // Analytics error - fail silently
     }
   },
 
@@ -31,8 +31,8 @@ export const analytics = {
     
     try {
       posthog.identify(userId, properties)
-    } catch (error) {
-      console.error('Analytics identify error:', error)
+    } catch {
+      // Analytics error - fail silently
     }
   },
 
@@ -44,8 +44,8 @@ export const analytics = {
     
     try {
       posthog.reset()
-    } catch (error) {
-      console.error('Analytics reset error:', error)
+    } catch {
+      // Analytics error - fail silently
     }
   },
 
@@ -59,8 +59,8 @@ export const analytics = {
       posthog.capture('$pageview', {
         $current_url: url || window.location.href,
       })
-    } catch (error) {
-      console.error('Analytics pageview error:', error)
+    } catch {
+      // Analytics error - fail silently
     }
   },
 }

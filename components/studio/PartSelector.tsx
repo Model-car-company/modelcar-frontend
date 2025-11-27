@@ -54,8 +54,8 @@ export default function PartSelector({
       }
       
       setParts(detectedParts)
-    } catch (error) {
-      console.error('Part detection failed:', error)
+    } catch {
+      // Detection failed silently
     } finally {
       setIsDetecting(false)
     }

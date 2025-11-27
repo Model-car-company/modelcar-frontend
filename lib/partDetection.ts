@@ -100,8 +100,7 @@ export class PartDetector {
         boundingBox: new THREE.Box3(),
         color: this.getColorForType(this.classifyPartType(seg.label))
       }))
-    } catch (error) {
-      console.error('AI detection failed:', error)
+    } catch {
       return []
     }
   }

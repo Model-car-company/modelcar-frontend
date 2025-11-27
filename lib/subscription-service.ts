@@ -28,9 +28,8 @@ export class SubscriptionService {
       try {
         await stripe.customers.retrieve(profile.stripe_customer_id);
         return profile.stripe_customer_id;
-      } catch (error) {
-        // Customer doesn't exist, create new one
-        console.log('Stripe customer not found, creating new one');
+      } catch {
+        // Customer doesn't exist, will create new one below
       }
     }
     

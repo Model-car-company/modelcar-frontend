@@ -70,7 +70,6 @@ export default function SubscribeButton({
 
 
     } catch (error: any) {
-      console.error('Subscription error:', error)
       toast.dismiss(loadingToast)
 
       if (error.message === 'Unauthorized') {

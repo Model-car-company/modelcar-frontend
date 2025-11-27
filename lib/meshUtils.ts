@@ -48,8 +48,6 @@ export function smoothMesh(
       adjacency.get(v2)!.add(v0)
       adjacency.get(v2)!.add(v1)
     }
-  } else {
-    console.warn('No index buffer - smoothing may be limited')
   }
 
   // Normalize strength (0-1 range, but limit to 0.5 max for stability)

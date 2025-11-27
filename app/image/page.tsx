@@ -251,7 +251,6 @@ export default function ImagePage() {
 
 
       if (assetsResponse.error) {
-        console.error('Failed to load assets:', assetsResponse.error);
         setLoading(false);
         return;
       }
@@ -260,7 +259,6 @@ export default function ImagePage() {
 
       // Only seed if user has absolutely no assets at all
       if (!finalAssets || finalAssets.length === 0) {
-        console.log('No assets found, seeding examples...');
         const exampleAssetsToSeed = getExampleAssets().map(asset => ({
           user_id: user.id,
           type: 'image' as const,
@@ -282,7 +280,6 @@ export default function ImagePage() {
             .select();
 
           if (seedError) {
-            console.error('Failed to seed example assets:', seedError);
             setDesignAssets(getExampleAssets());
           } else if (seededAssets) {
             finalAssets = seededAssets;
@@ -463,10 +460,6 @@ export default function ImagePage() {
           })
           .select()
           .single()
-
-        if (saveError) {
-          console.error('Failed to save 3D asset:', saveError)
-        }
 
         // Add 3D model to design assets feed (at the top)
         const newAsset = {
