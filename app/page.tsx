@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '../lib/supabase/client'
 import HeroSection from '../components/HeroSection'
 import Landing3DViewer from '../components/Landing3DViewer'
+import PublicNav from '../components/PublicNav'
 
 export default function Home() {
   const router = useRouter()
@@ -43,38 +44,7 @@ export default function Home() {
       <div className="relative z-10">
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-black/50 backdrop-blur-sm border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16 py-4 sm:py-6">
-          <div className="flex justify-between items-center">
-            <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity">
-              <div className="relative w-8 h-8">
-                <Image
-                  src="/logo/Tangibellight.png"
-                  alt="Tangibel"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <span className="text-lg sm:text-xl font-thin tracking-[0.3em]">TANGIBEL</span>
-            </Link>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <Link 
-                href="/sign-in"
-                className="text-[10px] sm:text-[11px] font-extralight tracking-[0.2em] uppercase hover:opacity-60 transition-opacity"
-              >
-                SIGN IN
-              </Link>
-              <Link 
-                href="/sign-up"
-                className="px-3 sm:px-6 py-1.5 sm:py-2 bg-white text-black text-[10px] sm:text-[11px] font-light tracking-[0.2em] uppercase hover:bg-gray-100 transition-colors"
-              >
-                START FREE
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* Hero Section */}
       <HeroSection y1={y1} y2={y2} opacity={opacity} />
@@ -352,7 +322,7 @@ export default function Home() {
               </ul>
             </motion.div>
 
-            {/* Feature 4: Model Library */}
+            {/* Feature 4: Ship Your Designs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -364,23 +334,23 @@ export default function Home() {
                 <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" strokeWidth={1.5} />
               </div>
               
-              <h3 className="text-lg sm:text-xl font-light mb-3">Premium Model Library</h3>
+              <h3 className="text-lg sm:text-xl font-light mb-3">We Ship Your Designs</h3>
               <p className="text-sm font-extralight text-gray-400 mb-6 leading-relaxed">
-                Access a curated collection of premium car models. Supercars, classics, JDM legends — all optimized for 3D printing.
+                Don't have a 3D printer? No problem. We'll print your custom model in premium materials and ship it straight to your door.
               </p>
               
               <ul className="space-y-2 text-xs font-light text-gray-500">
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
-                  <span>10+ premium models</span>
+                  <span>Professional-grade printing</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
-                  <span>Print-ready with specs</span>
+                  <span>Multiple materials & finishes</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-white flex-shrink-0 mt-0.5" />
-                  <span>Instant downloads</span>
+                  <span>Worldwide shipping</span>
                 </li>
               </ul>
             </motion.div>
@@ -1133,7 +1103,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* This Month's Drops Section */}
+      {/* This Month's Drops Section - COMMENTED OUT FOR NOW
       <section className="min-h-screen relative py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
           <div className="mb-12 sm:mb-20 text-center">
@@ -1149,7 +1119,6 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-            {/* Model Image Area */}
             <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-900/10 to-black rounded overflow-hidden border border-white/10">
               <motion.div 
                 className="absolute inset-0"
@@ -1158,14 +1127,13 @@ export default function Home() {
                 transition={{ duration: 0.6 }}
               >
                 <img 
-                  src="/features/i_want_you_to_create_a_card_design_very_similar_to_this_car_design_09wtxux3n4byspgmqcwp_3.png"
+                  src="/features/i_want_you_to_create_a_card_design_very_similar_to_this_car_design_09wtxup3n4byspgmqcwp_3.png"
                   alt="GRANBEAT"
                   className="w-full h-full object-cover"
                 />
               </motion.div>
             </div>
 
-            {/* Model Details */}
             <div className="flex flex-col justify-between">
               <div>
                 <motion.div
@@ -1196,7 +1164,6 @@ export default function Home() {
                 </motion.div>
               </div>
 
-              {/* Navigation */}
               <div className="flex items-center justify-between mt-8 lg:mt-0">
                 <div className="flex items-center gap-4">
                   <button className="p-2 border border-white/10 hover:bg-white/5 transition-all">
@@ -1216,6 +1183,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      */}
 
       {/* FAQ Section */}
       <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
