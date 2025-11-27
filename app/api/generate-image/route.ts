@@ -62,7 +62,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Backend image generation failed', details: text }, { status: resp.status })
     }
 
-    const { imageUrl, prompt: enhancedPrompt } = await resp.json()
+    const data = await resp.json()
+    
+    // Handle both response formats: {imageUrl} or {images: [{url}]}
+    const imageUrl = data.imageUrl || data.images?.[0]?.url
+    const enhancedPrompt = data.prompt || data.description || prompt
+    
+    if (!imageUrl) {
+      return NextResponse.json({ 
+        error: 'No image URL in backend response', 
+        details: JSON.stringify(data) 
+      }, { status: 500 })
+    }
     
     // Download the image from the generated URL
     const imageResponse = await fetch(imageUrl)
