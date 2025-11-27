@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
 
+// Disable caching for this route
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET() {
   try {
     const response = await fetch(`${BACKEND_URL}/api/v1/imaterialise/materials`, {
@@ -9,6 +13,7 @@ export async function GET() {
       headers: {
         'Content-Type': 'application/json',
       },
+      cache: 'no-store', // Disable Next.js fetch cache
     })
 
     if (!response.ok) {
@@ -16,7 +21,15 @@ export async function GET() {
     }
 
     const data = await response.json()
-    return NextResponse.json(data)
+    
+    // Return with no-cache headers
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
     
   } catch (error: any) {
     console.error('Error fetching i.materialise materials:', error)
