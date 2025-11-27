@@ -1,91 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const REPLICATE_API_KEY = process.env.REPLICATE_API_KEY
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(req: NextRequest) {
   try {
-    const { sketchImage, prompt, drawingInfluence = 0.7 } = await req.json()
+    const body = await req.json()
 
-    if (!sketchImage) {
+    if (!BACKEND_URL) {
       return NextResponse.json(
-        { error: 'Sketch image is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!REPLICATE_API_KEY) {
-      return NextResponse.json(
-        { error: 'No API key configured. Set REPLICATE_API_KEY in .env' },
+        { error: 'Backend URL not configured' },
         { status: 500 }
       )
     }
 
-    // Use ControlNet + Stable Diffusion for sketch-to-render
-    // This uses Canny edge detection to follow the sketch lines
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
+    // Forward authorization header if present
+    const authHeader = req.headers.get('Authorization')
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (authHeader) {
+      headers['Authorization'] = authHeader
+    }
+
+    // Proxy to backend sketch-to-render endpoint
+    const response = await fetch(`${BACKEND_URL}/api/v1/external/sketch-to-render`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Token ${REPLICATE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        version: 'aff48af9c68d162388d230a2ab003f68d2638d88307bdaf1c2f1ac95079c9613',
-        input: {
-          image: sketchImage,
-          prompt: prompt || "photorealistic car render, studio lighting, high detail, 4K, professional automotive photography, metallic paint, reflective surfaces",
-          negative_prompt: "low quality, blurry, distorted, ugly, bad anatomy, deformed, draft, sketch, unfinished, watermark, text, signature",
-          num_outputs: 1,
-          guidance_scale: 7.5,
-          controlnet_conditioning_scale: drawingInfluence,
-          num_inference_steps: 30,
-        }
-      })
+      headers,
+      body: JSON.stringify(body)
     })
 
     if (!response.ok) {
-      throw new Error('Replicate API request failed')
-    }
-
-    const prediction = await response.json()
-    
-    // Poll for completion
-    let status = prediction.status
-    let predictionData = prediction
-    
-    while (status !== 'succeeded' && status !== 'failed') {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const text = await response.text()
       
-      const statusResponse = await fetch(
-        `https://api.replicate.com/v1/predictions/${prediction.id}`,
-        {
-          headers: {
-            'Authorization': `Token ${REPLICATE_API_KEY}`,
-          },
-        }
-      )
+      if (response.status === 401) {
+        return NextResponse.json({ 
+          error: 'Backend Authentication Failed', 
+          details: 'The backend rejected the authentication token (401).' 
+        }, { status: 401 })
+      }
       
-      predictionData = await statusResponse.json()
-      status = predictionData.status
+      return NextResponse.json({ error: 'Backend sketch-to-render failed', details: text }, { status: response.status })
     }
 
-    if (status === 'failed') {
-      throw new Error('Image generation failed')
+    const data = await response.json()
+    
+    // Handle different response formats
+    const imageUrl = data.imageUrl || data.image_url || data.url || data.images?.[0]?.url
+    
+    if (!imageUrl) {
+      return NextResponse.json({ 
+        error: 'No image URL in backend response', 
+        details: JSON.stringify(data) 
+      }, { status: 500 })
     }
-
-    // Output is an array of URLs
-    const imageUrl = Array.isArray(predictionData.output) 
-      ? predictionData.output[0] 
-      : predictionData.output
 
     return NextResponse.json({
       success: true,
       imageUrl,
+      asset: data.asset,
+      ...data
     })
 
-  } catch (error: any) {
-    console.error('Sketch-to-render error:', error)
+  } catch {
     return NextResponse.json(
-      { error: error.message || 'Failed to render sketch' },
+      { error: 'Failed to render sketch' },
       { status: 500 }
     )
   }

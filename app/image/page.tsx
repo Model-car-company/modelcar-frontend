@@ -169,7 +169,7 @@ export default function ImagePage() {
     const doServerSplit = async () => {
       try {
         setServerSplitLoading(true)
-        const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/split-3d`, {
+        const resp = await fetch('/api/split-3d', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ model_url: modelUrlOverride || asset.url, mode: 'by-node', explode: sep }),
@@ -911,7 +911,7 @@ export default function ImagePage() {
                         const { data: { session } } = await supabase.auth.getSession()
                         const token = session?.access_token
 
-                        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/sketch-to-render`, {
+                        const response = await fetch('/api/sketch-to-render', {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
