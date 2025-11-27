@@ -19,7 +19,7 @@ function getSupabase() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, previousImage } = await request.json()
+    const { prompt, previousImage, reference_images, aspect_ratio, output_format } = await request.json()
 
     if (!BACKEND_URL) {
       return NextResponse.json(
@@ -32,7 +32,13 @@ export async function POST(request: NextRequest) {
     const resp = await fetch(`${BACKEND_URL}/api/v1/external/generate-image`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, previousImage, aspect_ratio: '16:9', output_format: 'jpg' })
+      body: JSON.stringify({ 
+        prompt, 
+        previousImage,
+        reference_images,
+        aspect_ratio: aspect_ratio || '16:9', 
+        output_format: output_format || 'jpg' 
+      })
     })
 
     if (!resp.ok) {
