@@ -119,10 +119,13 @@ export default function ImagePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/external/generate-3d`, {
+      const response = await fetch('/api/generate-3d', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ image_url: imageUrl, provider: 'hyper3d' })
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ image: imageUrl, provider: 'hyper3d' })
       })
       if (response.status === 402) {
         if (!isPaidActive) setShowUpgradeModal(true)

@@ -48,19 +48,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'image must be a public URL string' }, { status: 400 })
     }
 
+    // Forward authorization header if present
+    const authHeader = request.headers.get('Authorization')
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (authHeader) {
+      headers['Authorization'] = authHeader
+    }
+
     const resp = await fetch(`${BACKEND_URL}/api/v1/external/generate-3d`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ image_url: image, prompt, provider })
     })
 
     if (!resp.ok) {
       const text = await resp.text()
+      
+      if (resp.status === 401) {
+        return NextResponse.json({ 
+          error: 'Backend Authentication Failed', 
+          details: 'The backend rejected the authentication token (401).' 
+        }, { status: 401 })
+      }
+      
       return NextResponse.json({ error: 'Backend 3D generation failed', details: text }, { status: resp.status })
     }
 
     const data = await resp.json()
-    return NextResponse.json(data)
+    
+    // Handle different response formats from backend
+    // Backend might return: {modelUrl} or {model_url} or {url} or {models: [{url}]}
+    const modelUrl = data.modelUrl || data.model_url || data.url || data.models?.[0]?.url
+    const format = data.format || 'glb'
+    
+    if (!modelUrl) {
+      return NextResponse.json({ 
+        error: 'No model URL in backend response', 
+        details: JSON.stringify(data) 
+      }, { status: 500 })
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      modelUrl, 
+      format,
+      ...data 
+    })
 
   } catch (error) {
     return NextResponse.json(

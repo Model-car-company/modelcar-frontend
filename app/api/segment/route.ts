@@ -20,10 +20,17 @@ export async function POST(request: NextRequest) {
       label: p.label 
     })) || []
 
+    // Forward authorization header if present
+    const authHeader = request.headers.get('Authorization')
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (authHeader) {
+      headers['Authorization'] = authHeader
+    }
+
     // Call backend segmentation endpoint
     const response = await fetch(`${BACKEND_URL}/api/v1/external/segment-image`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         image_url: image,
         points: normalizedPoints
@@ -32,19 +39,36 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const err = await response.text()
+      
+      if (response.status === 401) {
+        return NextResponse.json({ 
+          error: 'Backend Authentication Failed', 
+          details: 'The backend rejected the authentication token (401).' 
+        }, { status: 401 })
+      }
+      
       return NextResponse.json({ error: 'Backend segmentation failed', details: err }, { status: response.status })
     }
 
     const data = await response.json()
     
+    // Handle different response formats
+    const segmentedImage = data.maskUrl || data.mask_url || data.segmentedImage || data.url
+    
+    if (!segmentedImage) {
+      return NextResponse.json({ 
+        error: 'No mask URL in backend response', 
+        details: JSON.stringify(data) 
+      }, { status: 500 })
+    }
+    
     // Return in format expected by frontend (segmentedImage = mask URL)
     return NextResponse.json({ 
-      segmentedImage: data.maskUrl,
+      segmentedImage,
       provider: data.provider
     })
     
-  } catch (error) {
-    console.error('Segmentation error:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to segment image' },
       { status: 500 }
