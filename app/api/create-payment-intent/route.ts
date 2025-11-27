@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
       scale = 1,
       totalPrice,
       currency = 'USD',
+      fileId,
     } = await req.json() as {
       model: { id: string; name: string }
       material: { id: string; name: string }
@@ -20,6 +21,7 @@ export async function POST(req: NextRequest) {
       scale?: number
       totalPrice: number
       currency?: string
+      fileId?: string
     }
 
     if (!model?.id || !material?.id || !finish?.id || !totalPrice || totalPrice <= 0) {
@@ -47,6 +49,7 @@ export async function POST(req: NextRequest) {
         scale: String(scale),
         totalPrice: String(totalPrice),
         currency,
+        fileId: fileId || '',
       },
       automatic_payment_methods: { enabled: true },
     })

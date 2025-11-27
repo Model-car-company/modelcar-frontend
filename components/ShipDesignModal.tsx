@@ -125,6 +125,7 @@ export default function ShipDesignModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model_id: model.id,
+          model_url: model.url, // Pass URL for Slant3D upload
           material_id: selectedMaterial!.materialID,
           finish_id: selectedFinish!.finishID,
           quantity: 1,
@@ -181,6 +182,7 @@ export default function ShipDesignModal({
         scale,
         totalPrice: quoteData.total_price,
         currency: quoteData.currency || 'USD',
+        fileId: quoteData.file_id,
       }),
     })
       .then(async (resp) => {

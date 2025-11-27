@@ -18,16 +18,49 @@ export async function GET() {
     }
 
     const data = await response.json()
+    const filaments = data.filaments || []
     
-    // Transform to generic materials format (no provider info)
-    const materials = (data.filaments || []).map((f: any) => ({
-      id: f.publicId,
-      name: f.name,
-      type: f.profile || f.type,
-      color: f.color,
-      hexValue: f.hexValue,
-      available: f.available
-    }))
+    // Group filaments by profile (PLA, PETG, etc.)
+    const materialsMap = new Map()
+
+    filaments.forEach((f: any) => {
+      const materialType = f.profile || 'Standard'
+      
+      if (!materialsMap.has(materialType)) {
+        materialsMap.set(materialType, {
+          materialID: materialType,
+          materialName: materialType,
+          technology: 'FDM 3D Printing',
+          finishes: []
+        })
+      }
+
+      const material = materialsMap.get(materialType)
+      
+      // Clean up finish name
+      let finishName = f.color || f.name
+      // Remove prefix if present (e.g. "PLA BROWN" -> "Brown")
+      if (f.name && f.name.toUpperCase().startsWith(materialType.toUpperCase() + ' ')) {
+        finishName = f.name.substring(materialType.length + 1)
+      } else if (f.color) {
+          finishName = f.color
+      }
+      
+      // Title case
+      finishName = finishName.toLowerCase().split(' ').map((word: string) => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ')
+
+      material.finishes.push({
+        finishID: f.publicId, // This is the filament UUID we need for ordering
+        finishName: finishName,
+        description: f.name,
+        hexValue: f.hexValue,
+        lead_time_days: 4
+      })
+    })
+
+    const materials = Array.from(materialsMap.values())
     
     return NextResponse.json({ 
       materials,

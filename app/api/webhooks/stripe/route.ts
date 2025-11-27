@@ -7,6 +7,7 @@ import { fetchSubscriptionWithPrices, tierIntervalFromPrice } from '../../../../
 import { getAdminSupabase } from '../../../../lib/supabase/admin';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 const log = (message: string, context: Record<string, any> = {}) => {
   console.log('[stripe-webhook]', message, JSON.stringify(context));
@@ -474,6 +475,71 @@ export async function POST(req: NextRequest) {
           })
         } catch (err) {
           console.warn('ship_orders insert skipped/failed (pi)', (err as any)?.message)
+        }
+
+        // Create order in Slant3D via Backend
+        if (metadata.fileId && metadata.finishId) {
+            try {
+                const shippingAddress = shipping?.address
+                const orderData = {
+                    customer_email: pi.receipt_email || 'no-email@tangibel.io',
+                    shipping_address: {
+                        name: shipping?.name || 'Valued Customer',
+                        line1: shippingAddress?.line1 || '',
+                        line2: shippingAddress?.line2 || '',
+                        city: shippingAddress?.city || '',
+                        state: shippingAddress?.state || '',
+                        zip: shippingAddress?.postal_code || '',
+                        country: shippingAddress?.country || 'US'
+                    },
+                    items: [{
+                        file_id: metadata.fileId,
+                        filament_id: metadata.finishId,
+                        quantity: Number(metadata.quantity || 1)
+                    }],
+                    metadata: {
+                        stripe_pi: pi.id,
+                        user_id: metadata.userId,
+                        model_id: metadata.modelId
+                    }
+                }
+
+                log('Drafting Slant3D order...', { fileId: metadata.fileId });
+                
+                const draftRes = await fetch(`${BACKEND_URL}/api/v1/printing/draft-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                })
+                
+                if (!draftRes.ok) {
+                    const errText = await draftRes.text();
+                    throw new Error(`Draft failed: ${draftRes.status} ${errText}`);
+                }
+                
+                const draftJson = await draftRes.json()
+                
+                if (draftJson.success && draftJson.order_id) {
+                    log('Processing Slant3D order...', { orderId: draftJson.order_id });
+                    
+                    const procRes = await fetch(`${BACKEND_URL}/api/v1/printing/process-order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: draftJson.order_id })
+                    })
+                    
+                    if (!procRes.ok) {
+                         const errText = await procRes.text();
+                         throw new Error(`Process failed: ${procRes.status} ${errText}`);
+                    }
+                    
+                    log('Slant3D order processed successfully', { orderId: draftJson.order_id });
+                }
+            } catch (err: any) {
+                console.error('Failed to create Slant3D order:', err.message)
+                // We don't fail the webhook response here because the payment succeeded
+                // We should probably alert admin/developer
+            }
         }
         break;
       }
