@@ -2,12 +2,12 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Download, Wand2, Wrench, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Download, Wrench, Loader2, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import * as THREE from 'three'
 import { smoothMesh, repairMesh } from '../../lib/meshUtils'
-import GenerationPanel from '../../components/studio/GenerationPanel'
+// GenerationPanel removed - generation is now in /image page
 import CustomizePanel from '../../components/studio/CustomizePanel'
 import ExportPanel from '../../components/studio/ExportPanel'
 // WIND TUNNEL COMMENTED OUT
@@ -28,7 +28,7 @@ const EditableStudio3DViewer = dynamic(() => import('../../components/studio/Edi
 })
 
 export default function StudioPage() {
-  const [activeTab, setActiveTab] = useState<'generate' | 'customize' | 'export'>('generate')
+  const [activeTab, setActiveTab] = useState<'customize' | 'export'>('customize')
   const [currentModel, setCurrentModel] = useState<string>('')
   const [showGrid, setShowGrid] = useState(true)
   const [viewMode, setViewMode] = useState<'solid' | 'wireframe' | 'normal' | 'uv'>('solid')
@@ -170,18 +170,7 @@ export default function StudioPage() {
           </Link>
 
           {/* Tab Navigation */}
-          <div className="grid grid-cols-2 lg:grid-cols-2 gap-2 mb-4 lg:mb-6 p-1 bg-white/5 rounded-lg">
-            <button
-              onClick={() => setActiveTab('generate')}
-              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded text-xs font-light ${
-                activeTab === 'generate'
-                  ? 'bg-red-500/20 text-red-400'
-                  : 'text-gray-400 hover:bg-white/5'
-              }`}
-            >
-              <Wand2 className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">Generate</span>
-            </button>
+          <div className="grid grid-cols-2 gap-2 mb-4 lg:mb-6 p-1 bg-white/5 rounded-lg">
             <button
               onClick={() => setActiveTab('customize')}
               className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded text-xs font-light ${
@@ -223,9 +212,6 @@ export default function StudioPage() {
 
           {/* Panel Content */}
           <div>
-            {activeTab === 'generate' && (
-              <GenerationPanel onGenerate={(modelUrl) => setCurrentModel(modelUrl)} />
-            )}
             {activeTab === 'customize' && (
               <CustomizePanel 
                 onSmooth={handleSmooth}
