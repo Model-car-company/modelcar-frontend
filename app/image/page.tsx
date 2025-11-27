@@ -125,7 +125,7 @@ export default function ImagePage() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ image: imageUrl, provider: 'hyper3d' })
+        body: JSON.stringify({ image: imageUrl })
       })
       if (response.status === 402) {
         if (!isPaidActive) setShowUpgradeModal(true)
@@ -452,7 +452,7 @@ export default function ImagePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: segmentData.segmentedImage,
-          provider: 'hyper3d'  // Use Hyper3D for best quality with part separation
+          // Uses backend default provider
         })
       })
 

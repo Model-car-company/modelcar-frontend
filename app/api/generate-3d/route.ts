@@ -9,20 +9,20 @@ export async function POST(request: NextRequest) {
     let image: string | File | null = null
     let prompt: string = ''
     let quality: string = 'standard'
-    let provider: string = 'replicate'
+    let provider: string = 'synexa'
     
     if (contentType?.includes('multipart/form-data')) {
       const formData = await request.formData()
       image = formData.get('image') as File
       prompt = formData.get('prompt') as string || ''
       quality = formData.get('quality') as string || 'standard'
-      provider = formData.get('provider') as string || 'meshy'
+      provider = formData.get('provider') as string || 'synexa'
     } else {
       const json = await request.json()
       image = json.image // Base64 string
       prompt = json.prompt || ''
       quality = json.quality || 'standard'
-      provider = json.provider || 'meshy'
+      provider = json.provider || 'synexa'
     }
 
     if (!image && !prompt) {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const resp = await fetch(`${BACKEND_URL}/api/v1/external/generate-3d`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ image_url: image, prompt, provider })
+      body: JSON.stringify({ image_url: image, prompt })
     })
 
     if (!resp.ok) {
