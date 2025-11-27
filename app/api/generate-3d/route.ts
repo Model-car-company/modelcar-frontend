@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,14 +81,55 @@ export async function POST(request: NextRequest) {
     
     // Handle different response formats from backend
     // Backend might return: {modelUrl} or {model_url} or {url} or {models: [{url}]}
-    const modelUrl = data.modelUrl || data.model_url || data.url || data.models?.[0]?.url
+    const externalModelUrl = data.modelUrl || data.model_url || data.url || data.models?.[0]?.url
     const format = data.format || 'glb'
     
-    if (!modelUrl) {
+    if (!externalModelUrl) {
       return NextResponse.json({ 
         error: 'No model URL in backend response', 
         details: JSON.stringify(data) 
       }, { status: 500 })
+    }
+    
+    // Download the model from external provider and re-upload to Supabase storage
+    // This hides the external provider URL from the client
+    let modelUrl = externalModelUrl
+    
+    if (SUPABASE_SERVICE_KEY) {
+      try {
+        // Download the GLB file
+        const modelResponse = await fetch(externalModelUrl)
+        if (modelResponse.ok) {
+          const modelBlob = await modelResponse.blob()
+          const modelBuffer = Buffer.from(await modelBlob.arrayBuffer())
+          
+          // Create Supabase admin client
+          const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+          
+          // Generate unique filename
+          const fileName = `models/${Date.now()}_${Math.random().toString(36).substring(7)}.${format}`
+          
+          // Upload to Supabase storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('assets')
+            .upload(fileName, modelBuffer, {
+              contentType: format === 'glb' ? 'model/gltf-binary' : 'application/octet-stream',
+              upsert: false
+            })
+          
+          if (!uploadError && uploadData) {
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('assets')
+              .getPublicUrl(fileName)
+            
+            modelUrl = publicUrl
+          }
+        }
+      } catch (uploadErr) {
+        // If upload fails, fall back to external URL (not ideal but keeps things working)
+        console.error('Failed to re-upload model to Supabase:', uploadErr)
+      }
     }
     
     return NextResponse.json({ 

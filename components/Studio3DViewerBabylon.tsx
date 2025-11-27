@@ -159,15 +159,37 @@ export default function Studio3DViewerBabylon({
 
     // Load model
     if (modelUrl) {
-      const extension = modelUrl.split('.').pop()?.toLowerCase()
+      // For external URLs, use empty root and full URL as filename
+      // For local files, use the path split approach
+      const isExternal = modelUrl.startsWith('http://') || modelUrl.startsWith('https://')
+      const rootUrl = isExternal ? '' : modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1)
+      const fileName = isExternal ? modelUrl : modelUrl.substring(modelUrl.lastIndexOf('/') + 1)
       
-      BABYLON.SceneLoader.LoadAssetContainer(
-        modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1),
-        modelUrl.substring(modelUrl.lastIndexOf('/') + 1),
-        scene,
-        (container) => {
-          container.addAllToScene()
-          const loadedMesh = container.meshes[0] as BABYLON.Mesh
+      // Detect file extension for plugin hint
+      const urlWithoutParams = modelUrl.split('?')[0]
+      const extension = urlWithoutParams.split('.').pop()?.toLowerCase()
+      const pluginExtension = extension === 'glb' || extension === 'gltf' ? '.glb' : 
+                               extension === 'stl' ? '.stl' : 
+                               extension === 'obj' ? '.obj' : undefined
+      
+      console.log('Loading model:', { isExternal, rootUrl, fileName, pluginExtension, modelUrl })
+      
+      // Use ImportMeshAsync for better external URL handling
+      BABYLON.SceneLoader.ImportMeshAsync('', rootUrl, fileName, scene, undefined, pluginExtension)
+        .then((result) => {
+          console.log('Model loaded:', result.meshes.length, 'meshes')
+          
+          if (result.meshes.length === 0) {
+            console.error('No meshes found in loaded model')
+            return
+          }
+          
+          const loadedMesh = result.meshes[0] as BABYLON.Mesh
+          
+          if (!loadedMesh) {
+            console.error('Failed to get mesh from result')
+            return
+          }
           
           // Auto-scale based on bounding box
           const bounds = loadedMesh.getBoundingInfo()
@@ -222,7 +244,7 @@ export default function Studio3DViewerBabylon({
           loadedMesh.material = mat
           const selectableParts: BABYLON.Mesh[] = []
           
-          container.meshes.forEach(mesh => {
+          result.meshes.forEach((mesh: BABYLON.AbstractMesh) => {
             mesh.material = mat
             mesh.isPickable = true
             // Ensure all parts are visible
@@ -529,8 +551,10 @@ export default function Studio3DViewerBabylon({
           if (onGeometryUpdate) {
             onGeometryUpdate(loadedMesh)
           }
-        }
-      )
+        })
+        .catch((error) => {
+          console.error('Failed to load model:', { error, modelUrl, fileName, rootUrl })
+        })
     }
 
     // Handle view mode changes
