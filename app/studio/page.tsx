@@ -8,7 +8,6 @@ import { useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import * as THREE from 'three'
 import { smoothMesh, repairMesh } from '../../lib/meshUtils'
-import { createClient } from '../../lib/supabase/client'
 // GenerationPanel removed - generation is now in /image page
 import CustomizePanel from '../../components/studio/CustomizePanel'
 import ExportPanel from '../../components/studio/ExportPanel'
@@ -32,37 +31,18 @@ const EditableStudio3DViewer = dynamic(() => import('../../components/studio/Edi
 export default function StudioPage() {
   const searchParams = useSearchParams()
   const assetId = searchParams?.get('asset')
-  const supabase = createClient()
 
   const [activeTab, setActiveTab] = useState<'customize' | 'export'>('customize')
   const [currentModel, setCurrentModel] = useState<string>('')
-  const [isLoadingAsset, setIsLoadingAsset] = useState(false)
   
-  // Fetch model URL from database when asset ID is provided
+  // Use proxy URL when asset ID is provided - this avoids CORS issues
+  // and keeps external provider URLs hidden from the client
   useEffect(() => {
-    const fetchAsset = async () => {
-      if (!assetId) return
-      
-      setIsLoadingAsset(true)
-      try {
-        const { data, error } = await supabase
-          .from('user_assets')
-          .select('url')
-          .eq('id', assetId)
-          .single()
-        
-        if (!error && data?.url) {
-          setCurrentModel(data.url)
-        }
-      } catch (err) {
-        console.error('Failed to fetch asset:', err)
-      } finally {
-        setIsLoadingAsset(false)
-      }
+    if (assetId) {
+      // Use our API proxy which fetches the model server-side
+      setCurrentModel(`/api/models/${assetId}`)
     }
-    
-    fetchAsset()
-  }, [assetId, supabase])
+  }, [assetId])
 
   const [showGrid, setShowGrid] = useState(true)
   const [viewMode, setViewMode] = useState<'solid' | 'wireframe' | 'normal' | 'uv'>('solid')
@@ -349,7 +329,7 @@ export default function StudioPage() {
             <div className="flex items-center gap-4 text-xs font-light text-gray-400">
               <span>Ready</span>
               <span className="w-px h-4 bg-white/10" />
-              <span>{isLoadingAsset ? 'Loading...' : currentModel ? 'Model Loaded' : 'No Model'}</span>
+              <span>{currentModel ? 'Model Loaded' : 'No Model'}</span>
               <span className="w-px h-4 bg-white/10" />
               <button
                 onClick={() => setShowGrid(!showGrid)}

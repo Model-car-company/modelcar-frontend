@@ -159,20 +159,21 @@ export default function Studio3DViewerBabylon({
 
     // Load model
     if (modelUrl) {
-      // For external URLs, use empty root and full URL as filename
-      // For local files, use the path split approach
-      const isExternal = modelUrl.startsWith('http://') || modelUrl.startsWith('https://')
-      const rootUrl = isExternal ? '' : modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1)
-      const fileName = isExternal ? modelUrl : modelUrl.substring(modelUrl.lastIndexOf('/') + 1)
+      // For proxy URLs (/api/models/...) or external URLs, use empty root
+      const isProxyOrExternal = modelUrl.startsWith('/api/') || modelUrl.startsWith('http://') || modelUrl.startsWith('https://')
+      const rootUrl = isProxyOrExternal ? '' : modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1)
+      const fileName = isProxyOrExternal ? modelUrl : modelUrl.substring(modelUrl.lastIndexOf('/') + 1)
       
       // Detect file extension for plugin hint
+      // For proxy URLs without extension, default to GLB since that's what we generate
       const urlWithoutParams = modelUrl.split('?')[0]
       const extension = urlWithoutParams.split('.').pop()?.toLowerCase()
-      const pluginExtension = extension === 'glb' || extension === 'gltf' ? '.glb' : 
-                               extension === 'stl' ? '.stl' : 
-                               extension === 'obj' ? '.obj' : undefined
+      const hasValidExtension = ['glb', 'gltf', 'stl', 'obj'].includes(extension || '')
+      const pluginExtension = hasValidExtension ? 
+        (extension === 'glb' || extension === 'gltf' ? '.glb' : `.${extension}`) :
+        '.glb' // Default to GLB for proxy URLs
       
-      console.log('Loading model:', { isExternal, rootUrl, fileName, pluginExtension, modelUrl })
+      console.log('Loading model:', { isProxyOrExternal, rootUrl, fileName, pluginExtension, modelUrl })
       
       // Use ImportMeshAsync for better external URL handling
       BABYLON.SceneLoader.ImportMeshAsync('', rootUrl, fileName, scene, undefined, pluginExtension)
