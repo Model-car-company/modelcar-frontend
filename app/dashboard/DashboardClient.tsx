@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, Box, Image as ImageIcon } from 'lucide-react'
 import CollapsibleSidebar from '../../components/CollapsibleSidebar'
-import { RoughNotation } from 'react-rough-notation'
+import { RoughNotation } from '../../components/ClientRoughNotation'
 import dynamic from 'next/dynamic'
 
 const Model3DShowcase = dynamic(() => import('../../components/Model3DShowcase'), {

@@ -25,9 +25,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Public Supabase envs needed by @supabase/ssr during build
+# Public envs needed at build time (Next.js inlines NEXT_PUBLIC_* during build)
 ENV NEXT_PUBLIC_SUPABASE_URL="https://mwyzvpadlfroamzjxlex.supabase.co"
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13eXp2cGFkbGZyb2Ftemp4bGV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NzY1MzYsImV4cCI6MjA3OTI1MjUzNn0.ZA1_vrD_80TAV6ETmA_bHViNPMxvylwLyB41oumvbjA"
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_51SXeSIFyrFgnlnr09e6QZEKqJcguJuuL9B9RoiL6Ua8eNu9RjtksNifIZU5QNqMg2XAzN3FsLE2aHjPWRoZaYymH00HvvS5kwP"
+ENV NEXT_PUBLIC_SITE_URL="https://tangibel.io"
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -46,9 +48,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Public Supabase envs for runtime as well
+# Public envs for runtime
 ENV NEXT_PUBLIC_SUPABASE_URL="https://mwyzvpadlfroamzjxlex.supabase.co"
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13eXp2cGFkbGZyb2Ftemp4bGV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NzY1MzYsImV4cCI6MjA3OTI1MjUzNn0.ZA1_vrD_80TAV6ETmA_bHViNPMxvylwLyB41oumvbjA"
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_51SXeSIFyrFgnlnr09e6QZEKqJcguJuuL9B9RoiL6Ua8eNu9RjtksNifIZU5QNqMg2XAzN3FsLE2aHjPWRoZaYymH00HvvS5kwP"
+ENV NEXT_PUBLIC_SITE_URL="https://tangibel.io"
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
