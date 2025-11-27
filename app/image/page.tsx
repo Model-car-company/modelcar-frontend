@@ -27,7 +27,7 @@ export default function ImagePage() {
   const requiredTier: SubscriptionTier = 'showroom' // starter paid plan
   const activeStatuses = ['active', 'trialing', 'past_due']
   const IMAGE_COST = 3
-  const MODEL3D_COST = 14
+  const MODEL3D_COST = 40
 
   // Form states
   const [prompt, setPrompt] = useState('')
