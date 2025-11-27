@@ -137,10 +137,26 @@ export default function ImagePage() {
       if (!response.ok) throw new Error(data?.error || data.detail || '3D generation failed')
 
       const a = data.asset || {}
+      const modelUrl = data.modelUrl || a.url
+      
+      // Save to user_assets database table
+      const { data: savedAsset } = await supabase
+        .from('user_assets')
+        .insert({
+          user_id: user.id,
+          type: 'model3d',
+          url: modelUrl,
+          prompt: a.prompt || '3D model',
+          format: data.format || a.format || 'glb',
+          thumbnail_url: imageUrl
+        })
+        .select()
+        .single()
+
       const finalized = {
-        id: a.id || Date.now().toString(),
+        id: savedAsset?.id || a.id || Date.now().toString(),
         type: 'model3d' as const,
-        url: data.modelUrl || a.url,
+        url: modelUrl,
         prompt: a.prompt || '3D model',
         timestamp: new Date().toISOString(),
         format: data.format || a.format || 'glb',
@@ -159,32 +175,8 @@ export default function ImagePage() {
     }
   }
 
-  // Small inline component to render a model with split controls
+  // Small inline component to render a model with Studio link
   const ModelAssetCard = ({ asset }: { asset: { id: string; url: string; prompt: string; format?: string; isGenerating?: boolean } }) => {
-    const [split, setSplit] = useState(false)
-    const [sep, setSep] = useState(0.8)
-    const [serverSplitLoading, setServerSplitLoading] = useState(false)
-    const [modelUrlOverride, setModelUrlOverride] = useState<string | null>(null)
-
-    const doServerSplit = async () => {
-      try {
-        setServerSplitLoading(true)
-        const resp = await fetch('/api/split-3d', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model_url: modelUrlOverride || asset.url, mode: 'by-node', explode: sep }),
-        })
-        const data = await resp.json()
-        if (!resp.ok) throw new Error(data?.detail || data?.error || 'Split failed')
-        setModelUrlOverride(data.modelUrl)
-        setSplit(true)
-      } catch (e) {
-        // No toast; silent failure could be confusing. Minimal alert for now.
-        alert('Server-side split failed')
-      } finally {
-        setServerSplitLoading(false)
-      }
-    }
     return (
       <div className="border border-white/10 rounded-lg overflow-hidden bg-black/50">
         <div className="p-3 flex items-center justify-between">
@@ -193,11 +185,13 @@ export default function ImagePage() {
             <p className="text-xs text-gray-500">{asset.prompt}</p>
           </div>
           <div className="flex gap-2">
-            <Link href={`/studio?model=${encodeURIComponent(asset.url)}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200">View in Studio</Link>
+            <Link href={`/studio?model=${encodeURIComponent(asset.url)}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200 font-medium">
+              View in Studio
+            </Link>
           </div>
         </div>
         <div className="h-[360px] border-t border-white/10">
-          {asset.isGenerating || !(modelUrlOverride || asset.url) ? (
+          {asset.isGenerating || !asset.url ? (
             <div className="w-full h-full flex items-center justify-center">
               <div className="text-center">
                 <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto" />
@@ -205,19 +199,8 @@ export default function ImagePage() {
               </div>
             </div>
           ) : (
-            <ModelViewer3D modelUrl={modelUrlOverride || asset.url} explode={split} explodeFactor={sep} className="w-full h-full" />
+            <ModelViewer3D modelUrl={asset.url} className="w-full h-full" />
           )}
-        </div>
-        <div className="p-3 flex items-center gap-3 border-t border-white/10 flex-wrap">
-          <label className="flex items-center gap-2 text-xs text-gray-300">
-            <input type="checkbox" checked={split} onChange={(e) => setSplit(e.target.checked)} />
-            Split parts
-          </label>
-          <input type="range" min={0} max={2} step={0.1} value={sep} onChange={(e) => setSep(parseFloat(e.target.value))} className="flex-1" />
-          <span className="text-[10px] text-gray-500 w-8 text-right">{sep.toFixed(1)}</span>
-          <button onClick={doServerSplit} disabled={serverSplitLoading} className={`px-3 py-1.5 text-xs rounded ${serverSplitLoading ? 'bg-white/10 text-gray-400' : 'bg-white text-black hover:bg-gray-200'}`}>
-            {serverSplitLoading ? 'Splitting…' : 'Request server-side split'}
-          </button>
         </div>
       </div>
     )
