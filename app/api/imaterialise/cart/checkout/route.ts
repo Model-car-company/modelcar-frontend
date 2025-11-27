@@ -6,7 +6,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Validate required fields
     if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json(
         { error: 'items array is required and must not be empty' },
@@ -14,35 +13,75 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!body.shipping_address || !body.billing_address) {
+    if (!body.shipping_address) {
       return NextResponse.json(
-        { error: 'shipping_address and billing_address are required' },
+        { error: 'shipping_address is required' },
         { status: 400 }
       )
     }
 
-    if (!body.shipment_service) {
-      return NextResponse.json(
-        { error: 'shipment_service is required' },
-        { status: 400 }
-      )
-    }
+    const items = body.items.map((item: any) => ({
+      file_id: item.file_id || item.model_id || item.publicFileServiceId,
+      filament_id: item.filament_id || item.material_id,
+      quantity: item.quantity || 1,
+      name: item.name
+    }))
 
-    const response = await fetch(`${BACKEND_URL}/api/v1/imaterialise/cart/checkout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const orderBody = {
+      customer_email: body.email || body.customer_email || body.billing_address?.email,
+      shipping_address: {
+        name: body.shipping_address.name || body.shipping_address.full_name,
+        line1: body.shipping_address.line1 || body.shipping_address.address_line1,
+        line2: body.shipping_address.line2 || body.shipping_address.address_line2 || '',
+        city: body.shipping_address.city,
+        state: body.shipping_address.state || body.shipping_address.region,
+        zip: body.shipping_address.zip || body.shipping_address.postal_code,
+        country: body.shipping_address.country || 'US'
       },
-      body: JSON.stringify(body),
+      items,
+      metadata: { source: 'tangibel' }
+    }
+
+    const draftResponse = await fetch(`${BACKEND_URL}/api/v1/printing/draft-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderBody),
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-      throw new Error(errorData.error || `Backend returned ${response.status}`)
+    if (!draftResponse.ok) {
+      const errorData = await draftResponse.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(errorData.detail || errorData.error || `Failed: ${draftResponse.status}`)
     }
 
-    const data = await response.json()
-    return NextResponse.json(data)
+    const draftData = await draftResponse.json()
+
+    if (body.auto_process) {
+      const processResponse = await fetch(`${BACKEND_URL}/api/v1/printing/process-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: draftData.order_id }),
+      })
+
+      if (!processResponse.ok) {
+        const errorData = await processResponse.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.detail || errorData.error || `Process failed`)
+      }
+
+      const processData = await processResponse.json()
+      return NextResponse.json({
+        success: true,
+        order_id: draftData.order_id,
+        status: 'processing',
+        order: processData.order
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      order_id: draftData.order_id,
+      status: 'drafted',
+      order: draftData.order
+    })
     
   } catch (error: any) {
     console.error('Error processing checkout:', error)

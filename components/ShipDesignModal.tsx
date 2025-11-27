@@ -199,7 +199,7 @@ export default function ShipDesignModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/90 backdrop-blur-md overflow-y-auto p-4 sm:p-6">
-      <div className="bg-gradient-to-b from-black via-black to-black/95 border border-white/10 rounded-lg sm:rounded-2xl w-full max-w-4xl max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] overflow-hidden flex flex-col shadow-2xl">
+      <div className="bg-gradient-to-b from-black via-black to-black/95 border border-white/10 w-full max-w-4xl max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
         <div className="px-4 py-3 sm:px-6 sm:py-5 border-b border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -346,8 +346,8 @@ export default function ShipDesignModal({
                                   {material.technology}
                                 </div>
                                 <div className="text-[10px] font-light text-gray-600 mt-1">
-                                  {material.finishes.length} finish
-                                  {material.finishes.length !== 1 ? "es" : ""} available
+                                  {material.finishes?.length || 0} finish
+                                  {(material.finishes?.length || 0) !== 1 ? "es" : ""} available
                                 </div>
                               </div>
                               {selectedMaterial?.materialID ===
