@@ -9,6 +9,7 @@ import { createClient } from '../../lib/supabase/client'
 import CollapsibleSidebar from '../../components/CollapsibleSidebar'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ShipDesignModal from '../../components/ShipDesignModal'
+import ModelViewer3D from '../../components/ModelViewer3D'
 import { Download, Trash2, Eye, Box, Grid3x3, List, Truck } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
@@ -254,12 +255,16 @@ export default function GaragePage() {
                 >
                   {/* Thumbnail */}
                   <div className="relative aspect-video bg-black overflow-hidden rounded-t">
-                    <img
-                      src={model.thumbnail}
-                      alt={model.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {model.type === 'model3d' ? (
+                      <ModelViewer3D modelUrl={model.url} className="w-full h-full" />
+                    ) : (
+                      <img
+                        src={model.thumbnail}
+                        alt={model.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   </div>
 
                   {/* Details */}
@@ -320,11 +325,15 @@ export default function GaragePage() {
                 >
                   {/* Thumbnail */}
                   <div className="w-24 h-16 bg-black rounded overflow-hidden flex-shrink-0">
-                    <img
-                      src={model.thumbnail}
-                      alt={model.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {model.type === 'model3d' ? (
+                      <ModelViewer3D modelUrl={model.url} className="w-full h-full" />
+                    ) : (
+                      <img
+                        src={model.thumbnail}
+                        alt={model.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    )}
                   </div>
 
                   {/* Details */}
