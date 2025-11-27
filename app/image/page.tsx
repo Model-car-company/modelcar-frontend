@@ -408,8 +408,31 @@ export default function ImagePage() {
       if (!response.ok) throw new Error('Generation failed')
       const data = await response.json()
       const a = data.asset || {}
-      const newAsset = { id: a.id || Date.now().toString(), type: 'image' as const, url: data.imageUrl || a.url, prompt: a.prompt || prompt, timestamp: new Date().toISOString(), isGenerating: false }
+      const imageUrl = data.imageUrl || a.url
+      
+      // Save to user_assets database table for persistence
+      const { data: savedAsset } = await supabase
+        .from('user_assets')
+        .insert({
+          user_id: user.id,
+          type: 'image',
+          url: imageUrl,
+          prompt: a.prompt || prompt,
+          thumbnail_url: imageUrl
+        })
+        .select()
+        .single()
+      
+      const newAsset = { 
+        id: savedAsset?.id || a.id || Date.now().toString(), 
+        type: 'image' as const, 
+        url: imageUrl, 
+        prompt: a.prompt || prompt, 
+        timestamp: new Date().toISOString(), 
+        isGenerating: false 
+      }
       setDesignAssets(prev => prev.map(asset => asset.id === loadingId ? newAsset : asset))
+      
       // Deduct credits locally and persist
       const newCredits = Math.max(0, creditsRemaining - IMAGE_COST)
       setCreditsRemaining(newCredits)
