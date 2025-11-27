@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   description: 'AI-powered platform that transforms imagination into reality. Upload images, generate production-ready 3D models, and manufacture custom products. Starting with cars.',
   keywords: 'AI design, 3D modeling, custom products, on-demand manufacturing, custom cars, personalized goods, product creation, physical products, AI manufacturing',
   authors: [{ name: 'Tangibel' }],
+  icons: {
+    icon: '/logo/Tangibellight.png',
+    shortcut: '/logo/Tangibellight.png',
+    apple: '/logo/Tangibellight.png',
+  },
 }
 
 export const viewport: Viewport = {
