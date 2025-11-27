@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, memo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../../lib/supabase/client'
@@ -13,6 +13,38 @@ import ImageCard from '../../components/ImageCard'
 import ModelViewer3D from '../../components/ModelViewer3D'
 import UpgradeModal from '../../components/UpgradeModal'
 import { SubscriptionTier } from '../../lib/subscription-config'
+
+// Memoized component to prevent 3D viewer re-renders when typing in prompt
+const ModelAssetCard = memo(({ asset }: { asset: { id: string; url: string; prompt: string; format?: string; isGenerating?: boolean } }) => {
+  return (
+    <div className="border border-white/10 rounded-lg overflow-hidden bg-black/50">
+      <div className="p-3 flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-200">3D Model</p>
+          <p className="text-xs text-gray-500">{asset.prompt}</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href={`/studio?model=${encodeURIComponent(asset.url)}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200 font-medium">
+            View in Studio
+          </Link>
+        </div>
+      </div>
+      <div className="h-[360px] border-t border-white/10">
+        {asset.isGenerating || !asset.url ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-gray-500 mt-2">Generating 3D model…</p>
+            </div>
+          </div>
+        ) : (
+          <ModelViewer3D modelUrl={asset.url} className="w-full h-full" />
+        )}
+      </div>
+    </div>
+  )
+})
+ModelAssetCard.displayName = 'ModelAssetCard'
 
 export default function ImagePage() {
   const router = useRouter()
@@ -173,37 +205,6 @@ export default function ImagePage() {
       toast.error(e.message)
       setDesignAssets(prev => prev.filter(a => a.id !== tempId))
     }
-  }
-
-  // Small inline component to render a model with Studio link
-  const ModelAssetCard = ({ asset }: { asset: { id: string; url: string; prompt: string; format?: string; isGenerating?: boolean } }) => {
-    return (
-      <div className="border border-white/10 rounded-lg overflow-hidden bg-black/50">
-        <div className="p-3 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-200">3D Model</p>
-            <p className="text-xs text-gray-500">{asset.prompt}</p>
-          </div>
-          <div className="flex gap-2">
-            <Link href={`/studio?model=${encodeURIComponent(asset.url)}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200 font-medium">
-              View in Studio
-            </Link>
-          </div>
-        </div>
-        <div className="h-[360px] border-t border-white/10">
-          {asset.isGenerating || !asset.url ? (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto" />
-                <p className="text-xs text-gray-500 mt-2">Generating 3D model…</p>
-              </div>
-            </div>
-          ) : (
-            <ModelViewer3D modelUrl={asset.url} className="w-full h-full" />
-          )}
-        </div>
-      </div>
-    )
   }
 
   useEffect(() => {
