@@ -51,6 +51,14 @@ export async function POST(request: NextRequest) {
 
     if (!resp.ok) {
       const text = await resp.text()
+      
+      if (resp.status === 401) {
+        return NextResponse.json({ 
+          error: 'Backend Authentication Failed', 
+          details: 'The backend rejected the authentication token (401). This likely means the Backend is configured with a different Supabase Project/Secret than the Frontend.' 
+        }, { status: 401 })
+      }
+
       return NextResponse.json({ error: 'Backend image generation failed', details: text }, { status: resp.status })
     }
 
