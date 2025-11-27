@@ -24,7 +24,7 @@ const ModelAssetCard = memo(({ asset }: { asset: { id: string; url: string; prom
           <p className="text-xs text-gray-500">{asset.prompt}</p>
         </div>
         <div className="flex gap-2">
-          <Link href={`/studio?model=${encodeURIComponent(asset.url)}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200 font-medium">
+          <Link href={`/studio?asset=${asset.id}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200 font-medium">
             View in Studio
           </Link>
         </div>
