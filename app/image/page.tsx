@@ -304,21 +304,21 @@ export default function ImagePage() {
     {
       id: '1',
       type: 'image' as const,
-      url: '/image/_m9z719mqsvg3fznyh33l_0.webp',
+      url: 'https://storage.googleapis.com/atelier-assets/demo-images/_m9z719mqsvg3fznyh33l_0.webp',
       prompt: 'Metallic silver hypercar with aggressive aerodynamic body kit, large rear wing, angular design, yellow brake calipers, modern track-focused styling, outdoor concrete setting',
       timestamp: new Date().toISOString()
     },
     {
       id: '2',
       type: 'image' as const,
-      url: '/image/_rflke8qieluposl2cjot_0.webp',
+      url: 'https://storage.googleapis.com/atelier-assets/demo-images/_rflke8qieluposl2cjot_0.webp',
       prompt: 'Coral pink sports car with sleek modern design, dramatic studio lighting, dark moody atmosphere, top-down angle view, LED taillights, positioned on curved surface with pink accent lighting',
       timestamp: new Date().toISOString()
     },
     {
       id: '3',
       type: 'image' as const,
-      url: '/image/create_a_very_very_beautiful_aesthetically_pleasing_image_that_looks_exactly_like_this_where_its_ci_2vhr50z6s676wi5g7f13_1.webp',
+      url: 'https://storage.googleapis.com/atelier-assets/demo-images/create_a_very_very_beautiful_aesthetically_pleasing_image_that_looks_exactly_like_this_where_its_ci_2vhr50z6s676wi5g7f13_1.webp',
       prompt: 'Classic 1970s American muscle car in dark olive green, rear spoiler, chrome details, studio photography with clean gray background, vintage automotive design',
       timestamp: new Date().toISOString()
     }
