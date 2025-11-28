@@ -471,6 +471,8 @@ export async function POST(req: NextRequest) {
             shipping_address: shipping?.address ?? null,
             shipping_name: shipping?.name ?? null,
             shipping_phone: shipping?.phone ?? null,
+            status: 'paid', // Initial status after payment
+            file_id: metadata.fileId || null,
             raw_session: pi as any,
           })
         } catch (err) {
@@ -534,6 +536,20 @@ export async function POST(req: NextRequest) {
                     }
                     
                     log('Slant3D order processed successfully', { orderId: draftJson.order_id });
+                    
+                    // Update ship_orders with Slant3D order ID for tracking
+                    try {
+                        await (supabase as any).from('ship_orders')
+                            .update({ 
+                                slant3d_order_id: draftJson.order_id,
+                                status: 'processing',
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('payment_intent_id', pi.id)
+                        log('Updated ship_orders with Slant3D order ID', { orderId: draftJson.order_id });
+                    } catch (updateErr) {
+                        console.warn('Failed to update ship_orders with order_id', (updateErr as any)?.message)
+                    }
                 }
             } catch (err: any) {
                 console.error('Failed to create Slant3D order:', err.message)
