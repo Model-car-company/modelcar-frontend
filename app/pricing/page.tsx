@@ -316,7 +316,7 @@ export default function PricingPage() {
                 },
                 {
                   q: 'Is there a free trial?',
-                  a: 'All new users receive 10 free AI generations to test the platform. No credit card required.',
+                  a: 'All new users receive 6 free AI generations to test the platform. No credit card required.',
                 },
               ].map((faq, index) => (
                 <div
