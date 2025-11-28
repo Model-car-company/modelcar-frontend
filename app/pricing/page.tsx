@@ -171,13 +171,13 @@ export default function PricingPage() {
                 {/* Popular / Current Badge */}
                 {isCurrent ? (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <div className="px-4 py-1 bg-green-400 text-black text-[10px] font-semibold tracking-[0.2em] uppercase rounded-full">
+                    <div className="px-4 py-1.5 bg-green-400/90 backdrop-blur-sm text-black text-[10px] font-medium tracking-[0.15em] uppercase rounded-sm shadow-lg shadow-green-400/20">
                       Current Plan
                     </div>
                   </div>
                 ) : tier.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <div className="px-4 py-1 bg-white text-black text-[10px] font-light tracking-[0.2em] uppercase rounded-full">
+                    <div className="px-4 py-1.5 bg-white/90 backdrop-blur-sm text-black text-[10px] font-medium tracking-[0.15em] uppercase rounded-sm shadow-lg shadow-white/10">
                       Most Popular
                     </div>
                   </div>

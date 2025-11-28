@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Package, Layers, Loader2 } from 'lucide-react'
+import { Download, Box, Layers, Loader2, ArrowDownToLine } from 'lucide-react'
 import * as THREE from 'three'
 
 interface ExportPanelProps {
@@ -17,18 +17,12 @@ export default function ExportPanel({ modelUrl, geometry }: ExportPanelProps) {
     { 
       format: 'STL', 
       desc: '3D Printing Ready', 
-      icon: Package,
-      color: 'text-blue-400',
-      bgColor: 'from-blue-500/20 to-blue-600/10',
-      borderColor: 'border-blue-500/30'
+      icon: Box,
     },
     { 
       format: 'OBJ', 
       desc: 'Universal Format', 
       icon: Layers,
-      color: 'text-green-400',
-      bgColor: 'from-green-500/20 to-green-600/10',
-      borderColor: 'border-green-500/30'
     }
   ]
 
@@ -54,8 +48,9 @@ export default function ExportPanel({ modelUrl, geometry }: ExportPanelProps) {
       // Export as binary STL
       const stlData = exporter.parse(mesh, { binary: true })
       
-      // Create blob and download
-      const blob = new Blob([stlData], { type: 'application/sla' })
+      // Create blob and download - handle both DataView and string outputs
+      const blobPart = stlData instanceof DataView ? new Uint8Array(stlData.buffer) : stlData
+      const blob = new Blob([blobPart], { type: 'application/sla' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -126,52 +121,69 @@ export default function ExportPanel({ modelUrl, geometry }: ExportPanelProps) {
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="space-y-4"
+      className="space-y-5"
     >
       {/* Status */}
       {!hasModel && (
-        <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-400">
+        <div className="p-3 bg-white/[0.03] border border-white/10 rounded-lg text-xs text-gray-400 font-light tracking-wide">
           Load a model to enable export
         </div>
       )}
 
       {/* Export Formats */}
       <div>
-        <h3 className="text-xs font-light text-gray-400 mb-3">Download Format</h3>
+        <h3 className="text-[10px] font-extralight tracking-[0.2em] text-gray-500 uppercase mb-4">Download Format</h3>
         <div className="space-y-3">
-          {exportFormats.map((item) => (
-            <button
+          {exportFormats.map((item, index) => (
+            <motion.button
               key={item.format}
               onClick={() => handleExport(item.format)}
               disabled={!hasModel || exporting !== null}
-              className={`w-full flex items-center justify-between p-4 bg-gradient-to-r ${item.bgColor} border ${item.borderColor} rounded-lg hover:brightness-110 transition-all group disabled:opacity-50 disabled:cursor-not-allowed`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="w-full group relative overflow-hidden"
             >
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg bg-black/30 ${item.color}`}>
-                  <item.icon className="w-5 h-5" />
+              <div className={`
+                flex items-center justify-between p-4
+                bg-white/[0.02] hover:bg-white/[0.06]
+                border border-white/10 hover:border-white/20
+                rounded-lg transition-all duration-300
+                disabled:opacity-40 disabled:cursor-not-allowed
+              `}>
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 rounded-lg bg-white/[0.05] border border-white/10 group-hover:bg-white/10 group-hover:border-white/20 transition-all">
+                    <item.icon className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" strokeWidth={1.5} />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-light tracking-wide text-white group-hover:text-white transition-colors">{item.format}</div>
+                    <div className="text-[10px] font-extralight text-gray-500 tracking-wide">{item.desc}</div>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <div className="text-sm font-medium text-white">{item.format}</div>
-                  <div className="text-xs text-gray-400">{item.desc}</div>
+                <div className="flex items-center">
+                  {exporting === item.format ? (
+                    <div className="p-2">
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="p-2 rounded-lg bg-white/0 group-hover:bg-white/10 transition-all">
+                      <ArrowDownToLine className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" strokeWidth={1.5} />
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {exporting === item.format ? (
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
-                ) : (
-                  <Download className={`w-5 h-5 ${item.color} group-hover:scale-110 transition-transform`} />
-                )}
-              </div>
-            </button>
+              {/* Subtle hover glow */}
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-white/0 via-white/[0.02] to-white/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            </motion.button>
           ))}
         </div>
       </div>
 
       {/* Info */}
-      <div className="pt-4 border-t border-white/10">
-        <div className="text-[10px] text-gray-500 space-y-1">
-          <p><span className="text-blue-400">STL</span> - Best for 3D printing. Single color, no textures.</p>
-          <p><span className="text-green-400">OBJ</span> - Universal format. Works with most 3D software.</p>
+      <div className="pt-4 border-t border-white/5">
+        <div className="text-[10px] text-gray-600 space-y-1.5 font-extralight tracking-wide">
+          <p><span className="text-gray-400">STL</span> — Best for 3D printing</p>
+          <p><span className="text-gray-400">OBJ</span> — Universal format</p>
         </div>
       </div>
     </motion.div>
