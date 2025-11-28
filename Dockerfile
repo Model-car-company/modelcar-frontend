@@ -31,6 +31,7 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_51Ons8KFjPH43v1P3k8o2x8H5Eh6IhAkekT8ldC8zgQaucDNxs55Iar4dZeoqXNhyDgBlboxuBSRNSUSrPEtXqQvq004uQKZMLp"
 ENV NEXT_PUBLIC_SITE_URL="https://tangibel.io"
 ENV NEXT_PUBLIC_BACKEND_URL="https://atelier-backend-362062855771.us-central1.run.app"
+ENV NEXT_PUBLIC_APP_URL="https://www.tangibel.io"
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -55,6 +56,7 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_51Ons8KFjPH43v1P3k8o2x8H5Eh6IhAkekT8ldC8zgQaucDNxs55Iar4dZeoqXNhyDgBlboxuBSRNSUSrPEtXqQvq004uQKZMLp"
 ENV NEXT_PUBLIC_SITE_URL="https://tangibel.io"
 ENV NEXT_PUBLIC_BACKEND_URL="https://atelier-backend-362062855771.us-central1.run.app"
+ENV NEXT_PUBLIC_APP_URL="https://www.tangibel.io"
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
