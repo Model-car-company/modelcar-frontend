@@ -5,9 +5,6 @@ import { createClient } from '@supabase/supabase-js'
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -19,8 +16,19 @@ export async function GET(
       return NextResponse.json({ error: 'Asset ID required' }, { status: 400 })
     }
 
+    // Initialize Supabase client inside handler
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing Supabase keys' },
+        { status: 500 }
+      )
+    }
+
     // Create Supabase client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
     // Fetch the asset URL from database
     const { data, error } = await supabase
