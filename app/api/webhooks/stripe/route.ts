@@ -13,6 +13,60 @@ const log = (message: string, context: Record<string, any> = {}) => {
   console.log('[stripe-webhook]', message, JSON.stringify(context));
 };
 
+type ShipOrderIdentifiers = {
+  payment_intent_id?: string | null;
+  session_id?: string | null;
+};
+
+const upsertShipOrder = async (
+  supabase: ReturnType<typeof getAdminSupabase>,
+  identifiers: ShipOrderIdentifiers,
+  payload: Record<string, any>
+): Promise<string | null> => {
+  const filters: string[] = [];
+  if (identifiers.payment_intent_id) {
+    filters.push(`payment_intent_id.eq.${identifiers.payment_intent_id}`);
+  }
+  if (identifiers.session_id) {
+    filters.push(`session_id.eq.${identifiers.session_id}`);
+  }
+
+  let existingId: string | null = null;
+
+  if (filters.length) {
+    const { data } = await (supabase as any)
+      .from('ship_orders')
+      .select('id')
+      .or(filters.join(','))
+      .limit(1)
+      .maybeSingle();
+
+    existingId = (data as any)?.id ?? null;
+  }
+
+  if (existingId) {
+    await (supabase as any)
+      .from('ship_orders')
+      .update(payload)
+      .eq('id', existingId);
+    return existingId;
+  }
+
+  const insertPayload = {
+    ...payload,
+    payment_intent_id: identifiers.payment_intent_id ?? payload.payment_intent_id ?? null,
+    session_id: identifiers.session_id ?? payload.session_id ?? null,
+  };
+
+  const { data } = await (supabase as any)
+    .from('ship_orders')
+    .insert(insertPayload)
+    .select('id')
+    .maybeSingle();
+
+  return (data as any)?.id ?? null;
+};
+
 // Helper to convert Unix timestamp to Date
 const toDateOrNull = (timestamp?: number | string | null) => {
   const n = typeof timestamp === 'string' ? Number(timestamp) : timestamp;
@@ -399,6 +453,7 @@ export async function POST(req: NextRequest) {
         if (session.mode === 'payment') {
           // One-time payment (shipping flow)
           const metadata = session.metadata ?? {}
+          const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : null
           // shipping_details exists in API but may not be in type definitions
           const shipping = (session as any).shipping_details as {
             address?: Stripe.Address | null;
@@ -416,22 +471,27 @@ export async function POST(req: NextRequest) {
 
           // Best-effort insert into ship_orders table if it exists
           try {
-            // Use type assertion since ship_orders may not be in generated types
-            await (supabase as any).from('ship_orders').insert({
-              user_id: metadata.userId || null,
-              session_id: session.id,
-              model_id: metadata.modelId || null,
-              material_id: metadata.materialId || null,
-              finish_id: metadata.finishId || null,
-              quantity: metadata.quantity ? Number(metadata.quantity) : 1,
-              scale: metadata.scale ? Number(metadata.scale) : null,
-              total_price: session.amount_total ? session.amount_total / 100 : null,
-              currency: session.currency,
-              shipping_address: shipping?.address ?? null,
-              shipping_name: shipping?.name ?? null,
-              shipping_phone: shipping?.phone ?? null,
-              raw_session: session as any,
-            })
+            await upsertShipOrder(
+              supabase,
+              { payment_intent_id: paymentIntentId, session_id: session.id },
+              {
+                user_id: metadata.userId || null,
+                session_id: session.id,
+                payment_intent_id: paymentIntentId,
+                model_id: metadata.modelId || null,
+                material_id: metadata.materialId || null,
+                finish_id: metadata.finishId || null,
+                quantity: metadata.quantity ? Number(metadata.quantity) : 1,
+                scale: metadata.scale ? Number(metadata.scale) : null,
+                total_price: session.amount_total ? session.amount_total / 100 : null,
+                currency: session.currency,
+                shipping_address: shipping?.address ?? null,
+                shipping_name: shipping?.name ?? null,
+                shipping_phone: shipping?.phone ?? null,
+                status: session.payment_status || 'pending',
+                raw_session: session as any,
+              }
+            )
           } catch (err) {
             console.warn('ship_orders insert skipped/failed', (err as any)?.message)
           }
@@ -446,6 +506,7 @@ export async function POST(req: NextRequest) {
         const pi = event.data.object as Stripe.PaymentIntent
         const shipping = pi.shipping
         const metadata = pi.metadata ?? {}
+        let orderRecordId: string | null = null
 
         log('payment_intent.succeeded', {
           intentId: pi.id,
@@ -457,24 +518,27 @@ export async function POST(req: NextRequest) {
 
         // Persist order if table exists
         try {
-          // Use type assertion since ship_orders may not be in generated types
-          await (supabase as any).from('ship_orders').insert({
-            user_id: metadata.userId || null,
-            payment_intent_id: pi.id,
-            model_id: metadata.modelId || null,
-            material_id: metadata.materialId || null,
-            finish_id: metadata.finishId || null,
-            quantity: metadata.quantity ? Number(metadata.quantity) : 1,
-            scale: metadata.scale ? Number(metadata.scale) : null,
-            total_price: pi.amount ? pi.amount / 100 : null,
-            currency: pi.currency,
-            shipping_address: shipping?.address ?? null,
-            shipping_name: shipping?.name ?? null,
-            shipping_phone: shipping?.phone ?? null,
-            status: 'paid', // Initial status after payment
-            file_id: metadata.fileId || null,
-            raw_session: pi as any,
-          })
+          orderRecordId = await upsertShipOrder(
+            supabase,
+            { payment_intent_id: pi.id },
+            {
+              user_id: metadata.userId || null,
+              payment_intent_id: pi.id,
+              model_id: metadata.modelId || null,
+              material_id: metadata.materialId || null,
+              finish_id: metadata.finishId || null,
+              quantity: metadata.quantity ? Number(metadata.quantity) : 1,
+              scale: metadata.scale ? Number(metadata.scale) : null,
+              total_price: pi.amount ? pi.amount / 100 : null,
+              currency: pi.currency,
+              shipping_address: shipping?.address ?? null,
+              shipping_name: shipping?.name ?? null,
+              shipping_phone: shipping?.phone ?? null,
+              status: 'paid',
+              file_id: metadata.fileId || null,
+              raw_session: pi as any,
+            }
+          )
         } catch (err) {
           console.warn('ship_orders insert skipped/failed (pi)', (err as any)?.message)
         }
@@ -539,13 +603,19 @@ export async function POST(req: NextRequest) {
                     
                     // Update ship_orders with Slant3D order ID for tracking
                     try {
-                        await (supabase as any).from('ship_orders')
-                            .update({ 
-                                slant3d_order_id: draftJson.order_id,
-                                status: 'processing',
-                                updated_at: new Date().toISOString()
-                            })
-                            .eq('payment_intent_id', pi.id)
+                        const updateQuery = (supabase as any)
+                          .from('ship_orders')
+                          .update({ 
+                              slant3d_order_id: draftJson.order_id,
+                              status: 'processing'
+                          });
+                        
+                        if (orderRecordId) {
+                          await updateQuery.eq('id', orderRecordId)
+                        } else {
+                          await updateQuery.eq('payment_intent_id', pi.id)
+                        }
+                        
                         log('Updated ship_orders with Slant3D order ID', { orderId: draftJson.order_id });
                     } catch (updateErr) {
                         console.warn('Failed to update ship_orders with order_id', (updateErr as any)?.message)
