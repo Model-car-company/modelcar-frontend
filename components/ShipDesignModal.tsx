@@ -533,22 +533,45 @@ export default function ShipDesignModal({
                               {quoteData.quantity || 1}
                             </div>
                           </div>
-                          <div className="pt-3 border-t border-white/10">
+                          <div className="pt-3 border-t border-white/10 space-y-2">
+                            {/* Printing cost */}
                             <div className="flex items-center justify-between">
+                              <div className="text-xs font-light text-gray-400">
+                                Printing
+                              </div>
+                              <div className="text-sm font-light text-white">
+                                {quoteData.printing_price != null
+                                  ? `$${quoteData.printing_price.toFixed(2)}`
+                                  : quoteData.total_price != null
+                                  ? `$${quoteData.total_price.toFixed(2)}`
+                                  : "--"}
+                              </div>
+                            </div>
+                            {/* Shipping cost */}
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs font-light text-gray-400">
+                                Shipping (US)
+                              </div>
+                              <div className="text-sm font-light text-white">
+                                {quoteData.shipping_price != null
+                                  ? `$${quoteData.shipping_price.toFixed(2)}`
+                                  : "$5.99"}
+                              </div>
+                            </div>
+                            {/* Total */}
+                            <div className="flex items-center justify-between pt-2 border-t border-white/10">
                               <div className="text-sm font-light uppercase tracking-wide text-gray-400">
-                                Total Price
+                                Total
                               </div>
                               <div className="text-xl font-light text-white">
                                 {quoteData.total_price != null
-                                  ? `$${quoteData.total_price.toFixed(
-                                    2
-                                  )} ${quoteData.currency}`
+                                  ? `$${quoteData.total_price.toFixed(2)} ${quoteData.currency}`
                                   : "--"}
                               </div>
                             </div>
                             {quoteData.unit_price != null && (
-                              <div className="text-[10px] font-light text-gray-500 mt-1">
-                                ${quoteData.unit_price.toFixed(2)} per item
+                              <div className="text-[10px] font-light text-gray-500">
+                                ${quoteData.unit_price.toFixed(2)} per item + shipping
                               </div>
                             )}
                           </div>

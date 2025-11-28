@@ -63,18 +63,22 @@ export async function POST(request: NextRequest) {
     const estimateData = await estimateResponse.json()
     const estimate = estimateData.estimate
     
-    // 3. Format response to match what frontend expects
-    // Frontend expects: total_price, unit_price, currency, valid_until
+    // 3. Format response with flat shipping
+    const FLAT_SHIPPING = 5.99
+    const printingPrice = estimate.totalPrice
+    const totalWithShipping = Math.round((printingPrice + FLAT_SHIPPING) * 100) / 100
     
     return NextResponse.json({
         success: true,
-        total_price: estimate.totalPrice,
-        unit_price: estimate.totalPrice / (body.quantity || 1),
+        printing_price: printingPrice,
+        shipping_price: FLAT_SHIPPING,
+        total_price: totalWithShipping,
+        unit_price: printingPrice / (body.quantity || 1),
         currency: estimate.currency || 'USD',
         quantity: body.quantity || 1,
         material_id: body.material_id,
         finish_id: body.finish_id,
-        file_id: fileId, // Return this so frontend can use it for checkout? (Not currently stored in frontend state, but useful)
+        file_id: fileId,
         valid_until: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
     })
     
