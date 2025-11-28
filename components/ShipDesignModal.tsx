@@ -134,15 +134,43 @@ export default function ShipDesignModal({
         })
       })
 
+      const data = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Failed to get invoice')
+        // Extract friendly message from error response
+        const errorMessage = data.friendly_message || 'Unable to fetch pricing. Please try again later.'
+        const errorCode = data.error_code || 'UNKNOWN'
+        
+        setQuoteData({
+          success: false,
+          material_id: selectedMaterial!.materialID,
+          finish_id: selectedFinish!.finishID,
+          quantity: 1,
+          total_price: null,
+          unit_price: null,
+          currency: 'USD',
+          error: true,
+          error_code: errorCode,
+          error_message: errorMessage
+        })
+
+        toast.error(errorMessage, {
+          style: {
+            background: '#0a0a0a',
+            color: '#fff',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          },
+          duration: 5000,
+        })
+        return
       }
 
-      const data = await response.json()
       setQuoteData(data)
 
-    } catch {
-      // Show placeholder data so UI is still visible
+    } catch (err: any) {
+      // Network error or other failure
+      const errorMessage = 'Unable to connect to printing service. Please check your connection and try again.'
+      
       setQuoteData({
         success: false,
         material_id: selectedMaterial!.materialID,
@@ -151,15 +179,18 @@ export default function ShipDesignModal({
         total_price: null,
         unit_price: null,
         currency: 'USD',
-        error: true
+        error: true,
+        error_code: 'NETWORK_ERROR',
+        error_message: errorMessage
       })
 
-      toast.error('Failed to get invoice - showing placeholder', {
+      toast.error(errorMessage, {
         style: {
           background: '#0a0a0a',
           color: '#fff',
           border: '1px solid rgba(255, 255, 255, 0.1)',
         },
+        duration: 5000,
       })
     } finally {
       setLoading(false)
@@ -584,9 +615,13 @@ export default function ShipDesignModal({
                             </div>
                           )}
                           {quoteData.error && (
-                            <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-xs font-light text-red-300">
-                              ⚠️ Unable to fetch pricing. Please try again or
-                              contact support.
+                            <div className={`p-3 rounded text-xs font-light ${
+                              quoteData.error_code === 'HIGH_DEMAND' 
+                                ? 'bg-amber-500/10 border border-amber-500/20 text-amber-200'
+                                : 'bg-red-500/10 border border-red-500/20 text-red-300'
+                            }`}>
+                              {quoteData.error_code === 'HIGH_DEMAND' ? '🕐' : '⚠️'}{' '}
+                              {quoteData.error_message || 'Unable to fetch pricing. Please try again or contact support.'}
                             </div>
                           )}
                         </div>

@@ -29,8 +29,17 @@ export async function POST(request: NextRequest) {
         })
         
         if (!uploadResponse.ok) {
-             console.error("Upload failed", await uploadResponse.text())
-             throw new Error("Failed to upload model to printing service")
+             const errorData = await uploadResponse.json().catch(() => null)
+             console.error("Upload failed", errorData)
+             
+             // Check for specific error codes
+             if (errorData?.detail?.error_code === "HIGH_DEMAND") {
+                 throw new Error("HIGH_DEMAND:Our printers are in high demand right now. Please try again later.")
+             } else if (errorData?.detail?.error_code === "FILE_TOO_LARGE") {
+                 throw new Error("FILE_TOO_LARGE:This model is too large for printing. Please try a smaller design.")
+             } else {
+                 throw new Error("UPLOAD_FAILED:Unable to process your model right now. Please try again later.")
+             }
         }
         
         const uploadData = await uploadResponse.json()
@@ -84,9 +93,21 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     console.error('Error getting invoice:', error)
+    
+    // Parse error code from message (format: "ERROR_CODE:message")
+    const errorMessage = error.message || ''
+    const [errorCode, friendlyMessage] = errorMessage.includes(':') 
+      ? errorMessage.split(':') 
+      : ['UNKNOWN', errorMessage]
+    
     return NextResponse.json(
-      { error: 'Failed to get invoice', details: error.message },
-      { status: 500 }
+      { 
+        error: 'Failed to get invoice', 
+        error_code: errorCode,
+        friendly_message: friendlyMessage || 'Something went wrong. Please try again later.',
+        details: error.message 
+      },
+      { status: errorCode === 'HIGH_DEMAND' ? 503 : 500 }
     )
   }
 }
