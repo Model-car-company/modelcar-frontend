@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Studio3DViewerBabylon from '../Studio3DViewerBabylon'
 import EditModeToolbar from './EditModeToolbar'
 import ComponentLibraryPanel from './ComponentLibraryPanel'
@@ -32,7 +32,9 @@ export default function EditableStudio3DViewer(props: EditableStudio3DViewerProp
   const [selectedFaces, setSelectedFaces] = useState<Set<number>>(new Set())
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
-  const [currentGeometry, setCurrentGeometry] = useState<any>(props.geometry || null)
+  
+  // Use geometry from props (managed by parent component)
+  const currentGeometry = props.geometry
   
   // Component library state
   const [showComponentLibrary, setShowComponentLibrary] = useState(false)
@@ -52,31 +54,29 @@ export default function EditableStudio3DViewer(props: EditableStudio3DViewerProp
     setHistoryIndex((prev) => prev + 1)
   }, [historyIndex])
 
-  // Undo
+  // Undo (local history, calls parent to apply)
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
       setHistoryIndex((prev) => prev - 1)
       const prevGeometry = history[historyIndex - 1].geometry
-      setCurrentGeometry(prevGeometry)
       props.onGeometryUpdate?.(prevGeometry)
     }
   }, [historyIndex, history, props])
 
-  // Redo
+  // Redo (local history, calls parent to apply)
   const handleRedo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex((prev) => prev + 1)
       const nextGeometry = history[historyIndex + 1].geometry
-      setCurrentGeometry(nextGeometry)
       props.onGeometryUpdate?.(nextGeometry)
     }
   }, [historyIndex, history, props])
 
-  // Handle geometry loaded from viewer
+  // Handle geometry loaded from viewer - pass to parent
   const handleGeometryLoaded = useCallback((geometry: any) => {
-    setCurrentGeometry(geometry)
     saveToHistory(geometry)
-  }, [saveToHistory])
+    props.onGeometryUpdate?.(geometry)
+  }, [saveToHistory, props])
 
   // Babylon.js operations
   const handleDelete = useCallback(() => {

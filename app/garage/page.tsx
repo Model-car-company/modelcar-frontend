@@ -10,8 +10,9 @@ import CollapsibleSidebar from '../../components/CollapsibleSidebar'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ShipDesignModal from '../../components/ShipDesignModal'
 import ModelViewer3D from '../../components/ModelViewer3D'
-import { Download, Trash2, Eye, Box, Grid3x3, List, Truck } from 'lucide-react'
+import { Download, Trash2, Eye, Box, Grid3x3, List, Truck, X } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
+import { AnimatePresence, motion } from 'framer-motion'
 
 export default function GaragePage() {
   const router = useRouter()
@@ -27,6 +28,8 @@ export default function GaragePage() {
   const [modelToDelete, setModelToDelete] = useState<any>(null)
   const [showShipModal, setShowShipModal] = useState(false)
   const [modelToShip, setModelToShip] = useState<any>(null)
+  const [showImagePreview, setShowImagePreview] = useState(false)
+  const [imageToPreview, setImageToPreview] = useState<any>(null)
 
   useEffect(() => {
     loadUserData()
@@ -125,21 +128,61 @@ export default function GaragePage() {
     setModelToDelete(null)
   }
 
-  const handleDownload = (model: any) => {
-    toast.success(`Downloading ${model.name}`, {
-      style: {
-        background: '#0a0a0a',
-        color: '#fff',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        fontSize: '12px',
-        fontWeight: '300',
-      },
-    })
+  const handleDownload = async (model: any) => {
+    try {
+      toast.loading(`Downloading ${model.name}...`, { id: 'download' })
+      
+      // Fetch the file
+      const response = await fetch(model.url)
+      if (!response.ok) throw new Error('Failed to fetch file')
+      
+      const blob = await response.blob()
+      
+      // Determine filename and extension
+      const isModel = model.type === 'model3d'
+      const extension = isModel ? '.glb' : '.jpg'
+      const sanitizedName = (model.name || 'download').replace(/[^a-zA-Z0-9-_]/g, '_')
+      const filename = `${sanitizedName}${extension}`
+      
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      toast.success(`Downloaded ${filename}`, {
+        id: 'download',
+        style: {
+          background: '#0a0a0a',
+          color: '#fff',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          fontSize: '12px',
+          fontWeight: '300',
+        },
+      })
+    } catch (error) {
+      toast.error('Failed to download file', { id: 'download' })
+    }
   }
 
   const handleShipClick = (model: any) => {
     setModelToShip(model)
     setShowShipModal(true)
+  }
+
+  const handleView = (model: any) => {
+    if (model.type === 'model3d') {
+      // Navigate to Studio for 3D models
+      router.push(`/studio?asset=${model.id}`)
+    } else {
+      // Open image preview modal for images
+      setImageToPreview(model)
+      setShowImagePreview(true)
+    }
   }
 
   if (loading) {
@@ -179,6 +222,68 @@ export default function GaragePage() {
           userEmail={user?.email}
         />
       )}
+
+      {/* Image Preview Modal */}
+      <AnimatePresence>
+        {showImagePreview && imageToPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md"
+            onClick={() => {
+              setShowImagePreview(false)
+              setImageToPreview(null)
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowImagePreview(false)
+                setImageToPreview(null)
+              }}
+              className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+
+            {/* Image container */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative max-w-5xl max-h-[85vh] mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={imageToPreview.url || imageToPreview.thumbnail}
+                alt={imageToPreview.name}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+              />
+              
+              {/* Image info bar */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 rounded-b-lg">
+                <h3 className="text-lg font-light text-white mb-1">{imageToPreview.name}</h3>
+                <p className="text-xs text-gray-400">
+                  Created {new Date(imageToPreview.created_at).toLocaleDateString()}
+                </p>
+                
+                {/* Quick actions */}
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() => handleDownload(imageToPreview)}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded text-sm font-light text-white transition-colors flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Sidebar */}
       <CollapsibleSidebar
@@ -280,13 +385,13 @@ export default function GaragePage() {
 
                     {/* Actions */}
                     <div className="flex gap-2">
-                      <Link
-                        href={`/studio?model=${model.id}`}
+                      <button
+                        onClick={() => handleView(model)}
                         className="flex-1 px-2 sm:px-3 py-2 bg-white/5 border border-white/10 rounded text-[10px] font-light hover:bg-white/10 transition-colors flex items-center justify-center gap-1"
                       >
                         <Eye className="w-3 h-3" />
                         <span className="hidden sm:inline">View</span>
-                      </Link>
+                      </button>
                       {model.type === 'model3d' && (
                         <button
                           onClick={() => handleShipClick(model)}
@@ -354,13 +459,13 @@ export default function GaragePage() {
 
                   {/* Actions */}
                   <div className="flex gap-2 flex-shrink-0">
-                    <Link
-                      href={`/studio?model=${model.id}`}
+                    <button
+                      onClick={() => handleView(model)}
                       className="px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors flex items-center gap-2"
                     >
                       <Eye className="w-3 h-3" />
                       View
-                    </Link>
+                    </button>
                     {model.type === 'model3d' && (
                       <button
                         onClick={() => handleShipClick(model)}

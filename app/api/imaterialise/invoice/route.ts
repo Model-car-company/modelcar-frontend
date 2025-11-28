@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
         
         if (!uploadResponse.ok) {
              const errorData = await uploadResponse.json().catch(() => null)
-             console.error("Upload failed", errorData)
              
              // Check for specific error codes
              if (errorData?.detail?.error_code === "HIGH_DEMAND") {
@@ -92,7 +91,6 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error: any) {
-    console.error('Error getting invoice:', error)
     
     // Parse error code from message (format: "ERROR_CODE:message")
     const errorMessage = error.message || ''

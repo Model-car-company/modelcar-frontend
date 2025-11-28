@@ -10,7 +10,6 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 const log = (message: string, context: Record<string, any> = {}) => {
-  console.log('[stripe-webhook]', message, JSON.stringify(context));
 };
 
 type ShipOrderIdentifiers = {
@@ -202,7 +201,6 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get('stripe-signature');
 
   if (!signature || !webhookSecret) {
-    console.error('Missing stripe signature or webhook secret');
     return NextResponse.json(
       { error: 'Webhook authentication failed' },
       { status: 400 }
@@ -216,7 +214,6 @@ export async function POST(req: NextRequest) {
     // Verify webhook signature
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
     return NextResponse.json(
       { error: `Webhook Error: ${err.message}` },
       { status: 400 }
@@ -418,7 +415,6 @@ export async function POST(req: NextRequest) {
 
         const userId = await resolveUserId(subscription, metadata);
         if (!userId) {
-          console.warn('Unable to resolve user ID for subscription deletion');
           break;
         }
 
@@ -493,7 +489,6 @@ export async function POST(req: NextRequest) {
               }
             )
           } catch (err) {
-            console.warn('ship_orders insert skipped/failed', (err as any)?.message)
           }
         } else {
           // Subscription lifecycle handled by invoice events
@@ -540,7 +535,6 @@ export async function POST(req: NextRequest) {
             }
           )
         } catch (err) {
-          console.warn('ship_orders insert skipped/failed (pi)', (err as any)?.message)
         }
 
         // Create order in Slant3D via Backend
@@ -618,11 +612,9 @@ export async function POST(req: NextRequest) {
                         
                         log('Updated ship_orders with Slant3D order ID', { orderId: draftJson.order_id });
                     } catch (updateErr) {
-                        console.warn('Failed to update ship_orders with order_id', (updateErr as any)?.message)
                     }
                 }
             } catch (err: any) {
-                console.error('Failed to create Slant3D order:', err.message)
                 // We don't fail the webhook response here because the payment succeeded
                 // We should probably alert admin/developer
             }
@@ -637,9 +629,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error(`Error processing webhook ${event.type}:`, error.message, {
-      stack: error.stack,
-    });
     return NextResponse.json(
       { error: error.message },
       { status: 500 }

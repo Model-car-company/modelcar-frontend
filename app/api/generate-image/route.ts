@@ -95,7 +95,6 @@ export async function POST(request: NextRequest) {
       .from('car-images')
       .upload(fileName, imageBuffer, { contentType: 'image/jpeg', cacheControl: '3600' })
     if (uploadError) {
-      console.error('Storage upload error:', uploadError)
       // Fall back to returning the external URL
       return NextResponse.json({ success: true, imageUrl, prompt: enhancedPrompt, model: 'flux-1.1-pro' })
     }

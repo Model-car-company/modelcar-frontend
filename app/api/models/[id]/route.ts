@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Disable Next.js caching for this route (large files)
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
@@ -29,35 +33,90 @@ export async function GET(
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 })
     }
 
+
     // Fetch the model from the external URL
-    const modelResponse = await fetch(data.url)
+    const modelResponse = await fetch(data.url, {
+      headers: {
+        'Accept': '*/*',
+        'User-Agent': 'Tangibel-Studio/1.0'
+      }
+    })
     
     if (!modelResponse.ok) {
-      return NextResponse.json({ error: 'Failed to fetch model' }, { status: 502 })
+      return NextResponse.json({ 
+        error: 'Failed to fetch model from source',
+        details: `Status ${modelResponse.status}: ${modelResponse.statusText}`
+      }, { status: 502 })
     }
 
     // Get the model data
     const modelBuffer = await modelResponse.arrayBuffer()
+
+    // Check if the file is valid (has content)
+    if (modelBuffer.byteLength < 100) {
+      return NextResponse.json({ 
+        error: 'Model file appears to be empty or invalid' 
+      }, { status: 502 })
+    }
     
-    // Determine content type
-    const format = data.format || 'glb'
+    // Determine format from URL if not in database
+    let format = data.format
+    if (!format) {
+      const urlLower = data.url.toLowerCase()
+      if (urlLower.includes('.glb') || urlLower.includes('glb')) {
+        format = 'glb'
+      } else if (urlLower.includes('.gltf')) {
+        format = 'gltf'
+      } else if (urlLower.includes('.stl')) {
+        format = 'stl'
+      } else if (urlLower.includes('.obj')) {
+        format = 'obj'
+      } else {
+        // Check magic bytes for GLB (starts with 'glTF')
+        const header = new Uint8Array(modelBuffer.slice(0, 4))
+        const magic = String.fromCharCode.apply(null, Array.from(header))
+        if (magic === 'glTF') {
+          format = 'glb'
+        } else {
+          format = 'glb' // Default assumption for AI-generated models
+        }
+      }
+    }
+    
     const contentType = format === 'glb' ? 'model/gltf-binary' : 
                         format === 'gltf' ? 'model/gltf+json' :
                         format === 'stl' ? 'application/sla' :
                         format === 'obj' ? 'text/plain' :
                         'application/octet-stream'
 
-    // Return the model with proper headers
+    // Return the model with proper headers for Babylon.js
     return new NextResponse(modelBuffer, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="model.${format}"`,
-        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        'Content-Length': modelBuffer.byteLength.toString(),
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     })
 
   } catch (error) {
-    console.error('Model proxy error:', error)
-    return NextResponse.json({ error: 'Failed to proxy model' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to proxy model',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
+}
+
+// Handle CORS preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  })
 }

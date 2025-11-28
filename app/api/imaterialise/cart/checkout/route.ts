@@ -84,7 +84,6 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error: any) {
-    console.error('Error processing checkout:', error)
     return NextResponse.json(
       { error: 'Failed to process checkout', details: error.message },
       { status: 500 }

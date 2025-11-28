@@ -161,7 +161,6 @@ export default function OrdersPage() {
             )
           }
         } catch (err) {
-          console.warn('ship_order_events fetch skipped', (err as any)?.message)
         } finally {
           setLoadingEvents(false)
         }

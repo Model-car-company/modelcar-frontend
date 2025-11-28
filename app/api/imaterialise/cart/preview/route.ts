@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data)
     
   } catch (error: any) {
-    console.error('Error previewing cart:', error)
     return NextResponse.json(
       { error: 'Failed to preview cart', details: error.message },
       { status: 500 }

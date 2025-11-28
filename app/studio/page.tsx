@@ -2,14 +2,24 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Download, Wrench, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Download, Wrench, Loader2, CheckCircle2, Box } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import * as THREE from 'three'
-import { smoothMesh, repairMesh } from '../../lib/meshUtils'
+import { createClient } from '../../lib/supabase/client'
+import { smoothMesh, repairMesh, scaleMesh, centerMesh, decimateMesh, subdivideMesh, getMeshStats } from '../../lib/meshUtils'
 // GenerationPanel removed - generation is now in /image page
 import CustomizePanel from '../../components/studio/CustomizePanel'
+
+// Type for user models
+interface UserModel {
+  id: string
+  name: string
+  thumbnail: string | null
+  url: string
+  created_at: string
+}
 import ExportPanel from '../../components/studio/ExportPanel'
 // WIND TUNNEL COMMENTED OUT
 // import { Wind } from 'lucide-react'
@@ -31,9 +41,53 @@ const EditableStudio3DViewer = dynamic(() => import('../../components/studio/Edi
 export default function StudioPage() {
   const searchParams = useSearchParams()
   const assetId = searchParams?.get('asset')
+  const supabase = createClient()
 
   const [activeTab, setActiveTab] = useState<'customize' | 'export'>('customize')
   const [currentModel, setCurrentModel] = useState<string>('')
+  const [currentModelId, setCurrentModelId] = useState<string | null>(null)
+  
+  // User models state
+  const [userModels, setUserModels] = useState<UserModel[]>([])
+  const [loadingModels, setLoadingModels] = useState(true)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  
+  // Fetch user's 3D models on mount
+  useEffect(() => {
+    const fetchUserModels = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setLoadingModels(false)
+          return
+        }
+
+        const { data: assets } = await supabase
+          .from('user_assets')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('type', 'model3d')
+          .order('created_at', { ascending: false })
+
+        if (assets) {
+          const models: UserModel[] = assets.map(asset => ({
+            id: asset.id,
+            name: asset.prompt || 'Untitled Model',
+            thumbnail: asset.thumbnail_url || null,
+            url: asset.url,
+            created_at: asset.created_at
+          }))
+          setUserModels(models)
+        }
+      } catch (error) {
+      } finally {
+        setLoadingModels(false)
+      }
+    }
+
+    fetchUserModels()
+  }, [supabase])
   
   // Use proxy URL when asset ID is provided - this avoids CORS issues
   // and keeps external provider URLs hidden from the client
@@ -41,6 +95,7 @@ export default function StudioPage() {
     if (assetId) {
       // Use our API proxy which fetches the model server-side
       setCurrentModel(`/api/models/${assetId}`)
+      setCurrentModelId(assetId)
     }
   }, [assetId])
 
@@ -135,6 +190,7 @@ export default function StudioPage() {
       }
       
       addToHistory(smoothed)
+      setHasUnsavedChanges(true)
       showToast(`Smoothing applied (${strength}%)`)
     } catch (error) {
       showToast('Smoothing failed', 'error')
@@ -163,6 +219,7 @@ export default function StudioPage() {
       }
       
       addToHistory(repaired)
+      setHasUnsavedChanges(true)
       showToast('Mesh repaired successfully!')
     } catch (error) {
       showToast('Repair failed', 'error')
@@ -170,6 +227,187 @@ export default function StudioPage() {
       setIsProcessing(false)
     }
   }, [currentGeometry, addToHistory, showToast])
+
+  // Handle scale operation
+  const handleScale = useCallback(async (scale: number | { x: number; y: number; z: number }) => {
+    if (!currentGeometry) {
+      showToast('No model loaded', 'error')
+      return
+    }
+    
+    setIsProcessing(true)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const scaled = scaleMesh(currentGeometry, scale)
+      
+      if (!scaled || !scaled.getAttribute('position')) {
+        throw new Error('Scaling produced invalid geometry')
+      }
+      
+      addToHistory(scaled)
+      setHasUnsavedChanges(true)
+      const scaleLabel = typeof scale === 'number' 
+        ? `${(scale * 100).toFixed(0)}%` 
+        : `X:${(scale.x * 100).toFixed(0)}% Y:${(scale.y * 100).toFixed(0)}% Z:${(scale.z * 100).toFixed(0)}%`
+      showToast(`Scaled to ${scaleLabel}`)
+    } catch (error) {
+      showToast('Scale failed', 'error')
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [currentGeometry, addToHistory, showToast])
+
+  // Handle decimate operation
+  const handleDecimate = useCallback(async (ratio: number) => {
+    if (!currentGeometry) {
+      showToast('No model loaded', 'error')
+      return
+    }
+    
+    setIsProcessing(true)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const decimated = decimateMesh(currentGeometry, ratio)
+      
+      if (!decimated || !decimated.getAttribute('position')) {
+        throw new Error('Decimation produced invalid geometry')
+      }
+      
+      addToHistory(decimated)
+      setHasUnsavedChanges(true)
+      showToast(`Reduced to ${(ratio * 100).toFixed(0)}% polygons`)
+    } catch (error) {
+      showToast('Decimation failed', 'error')
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [currentGeometry, addToHistory, showToast])
+
+  // Handle subdivide operation
+  const handleSubdivide = useCallback(async (levels: number) => {
+    if (!currentGeometry) {
+      showToast('No model loaded', 'error')
+      return
+    }
+    
+    setIsProcessing(true)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const subdivided = subdivideMesh(currentGeometry, levels)
+      
+      if (!subdivided || !subdivided.getAttribute('position')) {
+        throw new Error('Subdivision produced invalid geometry')
+      }
+      
+      addToHistory(subdivided)
+      setHasUnsavedChanges(true)
+      showToast(`Subdivided ${levels}x`)
+    } catch (error) {
+      showToast('Subdivision failed', 'error')
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [currentGeometry, addToHistory, showToast])
+
+  // Handle center operation
+  const handleCenter = useCallback(async () => {
+    if (!currentGeometry) {
+      showToast('No model loaded', 'error')
+      return
+    }
+    
+    setIsProcessing(true)
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      const centered = centerMesh(currentGeometry)
+      
+      if (!centered || !centered.getAttribute('position')) {
+        throw new Error('Centering produced invalid geometry')
+      }
+      
+      addToHistory(centered)
+      setHasUnsavedChanges(true)
+      showToast('Centered at origin')
+    } catch (error) {
+      showToast('Center failed', 'error')
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [currentGeometry, addToHistory, showToast])
+
+  // Handle loading a model from user's library
+  const handleLoadModel = useCallback((model: UserModel) => {
+    setCurrentModel(`/api/models/${model.id}`)
+    setCurrentModelId(model.id)
+    setHasUnsavedChanges(false)
+    setGeometryHistory([])
+    setHistoryIndex(-1)
+    setCurrentGeometry(null)
+    showToast(`Loaded: ${model.name}`)
+  }, [showToast])
+
+  // Handle saving model changes to Supabase
+  const handleSaveModel = useCallback(async () => {
+    if (!currentModelId || !currentGeometry) {
+      showToast('No model to save', 'error')
+      return
+    }
+    
+    setIsSaving(true)
+    
+    try {
+      // Export geometry to GLB format
+      const { GLTFExporter } = await import('three/examples/jsm/exporters/GLTFExporter.js')
+      const exporter = new GLTFExporter()
+      
+      // Create a mesh from the geometry for export
+      const mesh = new THREE.Mesh(
+        currentGeometry,
+        new THREE.MeshStandardMaterial({ color: 0x808080 })
+      )
+      
+      const glb = await new Promise<ArrayBuffer>((resolve, reject) => {
+        exporter.parse(
+          mesh,
+          (result) => resolve(result as ArrayBuffer),
+          (error) => reject(error),
+          { binary: true }
+        )
+      })
+      
+      // Upload to API which will handle Supabase update
+      const formData = new FormData()
+      formData.append('file', new Blob([glb], { type: 'model/gltf-binary' }), 'model.glb')
+      formData.append('assetId', currentModelId)
+      
+      const response = await fetch('/api/models/save', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to save model')
+      }
+      
+      setHasUnsavedChanges(false)
+      showToast('Model saved successfully!')
+    } catch (error) {
+      showToast('Failed to save model', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [currentModelId, currentGeometry, showToast])
+
+  // Get current mesh stats
+  const meshStats = currentGeometry ? getMeshStats(currentGeometry) : null
 
   return (
     <div className="h-screen bg-black text-white overflow-hidden">
@@ -230,6 +468,29 @@ export default function StudioPage() {
               <CustomizePanel 
                 onSmooth={handleSmooth}
                 onRepair={handleRepair}
+                onScale={handleScale}
+                onDecimate={handleDecimate}
+                onSubdivide={handleSubdivide}
+                onCenter={handleCenter}
+                onLoadModel={handleLoadModel}
+                onSaveModel={handleSaveModel}
+                meshStats={meshStats ? {
+                  vertexCount: meshStats.vertexCount,
+                  triangleCount: meshStats.triangleCount,
+                  boundingBox: meshStats.boundingBox ? {
+                    size: {
+                      x: meshStats.boundingBox.size.x,
+                      y: meshStats.boundingBox.size.y,
+                      z: meshStats.boundingBox.size.z
+                    }
+                  } : null
+                } : null}
+                isProcessing={isProcessing}
+                userModels={userModels}
+                loadingModels={loadingModels}
+                currentModelId={currentModelId}
+                hasUnsavedChanges={hasUnsavedChanges}
+                isSaving={isSaving}
               />
             )}
             {/* WIND TUNNEL PANEL COMMENTED OUT */}
@@ -247,24 +508,49 @@ export default function StudioPage() {
                 onVorticesToggle={setShowVortices}
             )} */}
             {activeTab === 'export' && (
-              <ExportPanel modelUrl={currentModel} />
+              <ExportPanel modelUrl={currentModel} geometry={currentGeometry} />
             )}
           </div>
         </div>
 
         {/* 3D Viewport */}
         <div className="flex-1 relative bg-gradient-to-br from-black via-gray-900 to-black h-screen overflow-hidden">
-          <EditableStudio3DViewer
-            showGrid={showGrid}
-            viewMode={viewMode}
-            material={material}
-            modelUrl={currentModel || '/models/gta-pegassi-zentorno.stl'}
-            geometry={currentGeometry}
-            onGeometryUpdate={handleGeometryLoaded}
-            // WIND TUNNEL PROPS COMMENTED OUT
-            // windSpeed={windSpeed}
-            // showStreamlines={showStreamlines}
-          />
+          {currentModel ? (
+            <EditableStudio3DViewer
+              showGrid={showGrid}
+              viewMode={viewMode}
+              material={material}
+              modelUrl={currentModel}
+              geometry={currentGeometry}
+              onGeometryUpdate={handleGeometryLoaded}
+              // WIND TUNNEL PROPS COMMENTED OUT
+              // windSpeed={windSpeed}
+              // showStreamlines={showStreamlines}
+            />
+          ) : (
+            /* Empty State - No Model Selected */
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center max-w-md px-6">
+                <div className="w-20 h-20 mx-auto mb-6 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center">
+                  <Box className="w-10 h-10 text-gray-600" />
+                </div>
+                <h2 className="text-xl font-light text-white mb-2">No Model Selected</h2>
+                <p className="text-sm text-gray-500 mb-6">
+                  Select a 3D model from your library to start editing. You can scale, smooth, and customize your designs.
+                </p>
+                <div className="flex flex-col gap-2 text-xs text-gray-600">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 bg-green-500/50 rounded-full"></span>
+                    <span>Select from "My Models" panel</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500/50 rounded-full"></span>
+                    <span>Or create new designs in the Design page</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
           
           {/* Processing Overlay */}

@@ -3,8 +3,81 @@
 import { useEffect, useRef, useState } from 'react'
 import * as BABYLON from 'babylonjs'
 import 'babylonjs-loaders'
+import * as THREE from 'three'
 import { MeshSegmenter, type CarPart } from '../lib/mesh-segmentation'
 import { SAMSegmenter, type SAMPoint, type SAMSegment } from '../lib/sam-integration'
+
+// Convert Babylon.js mesh to Three.js BufferGeometry
+function babylonToThreeGeometry(babylonMeshes: BABYLON.AbstractMesh[]): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry()
+  
+  // Collect all vertices and indices from all meshes
+  const allPositions: number[] = []
+  const allNormals: number[] = []
+  const allIndices: number[] = []
+  let vertexOffset = 0
+  
+  babylonMeshes.forEach(mesh => {
+    if (!(mesh instanceof BABYLON.Mesh)) return
+    
+    const positions = mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind)
+    const normals = mesh.getVerticesData(BABYLON.VertexBuffer.NormalKind)
+    const indices = mesh.getIndices()
+    
+    if (!positions) return
+    
+    // Apply world matrix to positions
+    const worldMatrix = mesh.getWorldMatrix()
+    for (let i = 0; i < positions.length; i += 3) {
+      const vec = BABYLON.Vector3.TransformCoordinates(
+        new BABYLON.Vector3(positions[i], positions[i + 1], positions[i + 2]),
+        worldMatrix
+      )
+      allPositions.push(vec.x, vec.y, vec.z)
+    }
+    
+    // Transform normals
+    if (normals) {
+      const normalMatrix = worldMatrix.clone()
+      normalMatrix.invert()
+      normalMatrix.transpose()
+      
+      for (let i = 0; i < normals.length; i += 3) {
+        const vec = BABYLON.Vector3.TransformNormal(
+          new BABYLON.Vector3(normals[i], normals[i + 1], normals[i + 2]),
+          normalMatrix
+        )
+        vec.normalize()
+        allNormals.push(vec.x, vec.y, vec.z)
+      }
+    }
+    
+    // Offset indices
+    if (indices) {
+      for (let i = 0; i < indices.length; i++) {
+        allIndices.push(indices[i] + vertexOffset)
+      }
+    }
+    
+    vertexOffset += positions.length / 3
+  })
+  
+  if (allPositions.length > 0) {
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(allPositions, 3))
+    
+    if (allNormals.length > 0) {
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(allNormals, 3))
+    } else {
+      geometry.computeVertexNormals()
+    }
+    
+    if (allIndices.length > 0) {
+      geometry.setIndex(allIndices)
+    }
+  }
+  
+  return geometry
+}
 
 interface Studio3DViewerBabylonProps {
   showGrid?: boolean
@@ -24,7 +97,7 @@ export default function Studio3DViewerBabylon({
   showGrid = true,
   viewMode = 'solid',
   material,
-  modelUrl = '/models/gta-pegassi-zentorno.stl',
+  modelUrl,
   onGeometryUpdate,
   geometry,
   isEditMode = false,
@@ -45,6 +118,7 @@ export default function Studio3DViewerBabylon({
   const highlightLayerRef = useRef<BABYLON.HighlightLayer | null>(null)
   const segmenterRef = useRef<MeshSegmenter | null>(null)
   const samSegmenterRef = useRef<SAMSegmenter | null>(null)
+  const loadedMeshesRef = useRef<BABYLON.AbstractMesh[]>([])
   const [carParts, setCarParts] = useState<CarPart[]>([])
   const [isSegmented, setIsSegmented] = useState(false)
   const [samPoints, setSamPoints] = useState<SAMPoint[]>([])
@@ -159,13 +233,10 @@ export default function Studio3DViewerBabylon({
 
     // Load model
     if (modelUrl) {
-      // For proxy URLs (/api/models/...) or external URLs, use empty root
-      const isProxyOrExternal = modelUrl.startsWith('/api/') || modelUrl.startsWith('http://') || modelUrl.startsWith('https://')
-      const rootUrl = isProxyOrExternal ? '' : modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1)
-      const fileName = isProxyOrExternal ? modelUrl : modelUrl.substring(modelUrl.lastIndexOf('/') + 1)
+      // For proxy URLs, we need to fetch and convert to blob for reliable loading
+      const isProxyUrl = modelUrl.startsWith('/api/')
       
       // Detect file extension for plugin hint
-      // For proxy URLs without extension, default to GLB since that's what we generate
       const urlWithoutParams = modelUrl.split('?')[0]
       const extension = urlWithoutParams.split('.').pop()?.toLowerCase()
       const hasValidExtension = ['glb', 'gltf', 'stl', 'obj'].includes(extension || '')
@@ -173,90 +244,161 @@ export default function Studio3DViewerBabylon({
         (extension === 'glb' || extension === 'gltf' ? '.glb' : `.${extension}`) :
         '.glb' // Default to GLB for proxy URLs
       
-      console.log('Loading model:', { isProxyOrExternal, rootUrl, fileName, pluginExtension, modelUrl })
       
-      // Use ImportMeshAsync for better external URL handling
-      BABYLON.SceneLoader.ImportMeshAsync('', rootUrl, fileName, scene, undefined, pluginExtension)
+      // For proxy URLs, fetch as blob first for more reliable loading
+      let blobUrlToRevoke: string | null = null
+      
+      const loadFromUrl = async (url: string): Promise<string> => {
+        if (isProxyUrl) {
+          const response = await fetch(url)
+          
+          if (!response.ok) {
+            const errorText = await response.text()
+            throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`)
+          }
+          
+          const blob = await response.blob()
+          
+          if (blob.size < 100) {
+            throw new Error('Received empty or invalid blob')
+          }
+          
+          blobUrlToRevoke = URL.createObjectURL(blob)
+          return blobUrlToRevoke
+        }
+        return url
+      }
+      
+      loadFromUrl(modelUrl)
+        .then(blobUrl => {
+          const rootUrl = ''
+          const fileName = blobUrl
+          
+          return BABYLON.SceneLoader.ImportMeshAsync('', rootUrl, fileName, scene, undefined, pluginExtension)
+        })
         .then((result) => {
-          console.log('Model loaded:', result.meshes.length, 'meshes')
           
           if (result.meshes.length === 0) {
-            console.error('No meshes found in loaded model')
             return
           }
           
-          const loadedMesh = result.meshes[0] as BABYLON.Mesh
+          // Log all mesh names for debugging
+          let totalVertices = 0
+          result.meshes.forEach((m, i) => {
+            const verts = m.getTotalVertices?.() || 0
+            totalVertices += verts
+            // Force visibility
+            m.isVisible = true
+          })
           
-          if (!loadedMesh) {
-            console.error('Failed to get mesh from result')
-            return
+          if (totalVertices === 0) {
           }
           
-          // Auto-scale based on bounding box
-          const bounds = loadedMesh.getBoundingInfo()
-          const size = bounds.boundingBox.maximum.subtract(bounds.boundingBox.minimum)
-          const maxDim = Math.max(size.x, size.y, size.z)
+          // The root mesh is usually the container, find the actual visible meshes
+          const rootMesh = result.meshes[0] as BABYLON.Mesh
+          
+          // Calculate bounding box for ALL meshes combined
+          let minX = Infinity, minY = Infinity, minZ = Infinity
+          let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity
+          
+          result.meshes.forEach(mesh => {
+            if (mesh.getTotalVertices && mesh.getTotalVertices() > 0) {
+              mesh.computeWorldMatrix(true)
+              const bounds = mesh.getBoundingInfo()
+              const worldMin = bounds.boundingBox.minimumWorld
+              const worldMax = bounds.boundingBox.maximumWorld
+              
+              minX = Math.min(minX, worldMin.x)
+              minY = Math.min(minY, worldMin.y)
+              minZ = Math.min(minZ, worldMin.z)
+              maxX = Math.max(maxX, worldMax.x)
+              maxY = Math.max(maxY, worldMax.y)
+              maxZ = Math.max(maxZ, worldMax.z)
+            }
+          })
+          
+          // Calculate overall size - handle Infinity case
+          let sizeX = maxX - minX
+          let sizeY = maxY - minY
+          let sizeZ = maxZ - minZ
+          
+          // If bounds are invalid, use a default
+          if (!isFinite(sizeX) || !isFinite(sizeY) || !isFinite(sizeZ)) {
+            sizeX = sizeY = sizeZ = 10
+            minX = minY = minZ = -5
+            maxX = maxY = maxZ = 5
+          }
+          
+          const maxDim = Math.max(sizeX, sizeY, sizeZ) || 10
+          
+          // Scale to fit in viewport
           const targetSize = 10
-          const scale = targetSize / maxDim
-          loadedMesh.scaling = new BABYLON.Vector3(scale, scale, scale)
+          const scale = maxDim > 0 ? targetSize / maxDim : 1
+          
+          rootMesh.scaling = new BABYLON.Vector3(scale, scale, scale)
           
           // Center the model on the grid
-          const center = bounds.boundingBox.center.scale(scale)
-          loadedMesh.position = new BABYLON.Vector3(-center.x, -center.y + 1, -center.z)
+          const centerX = (minX + maxX) / 2 * scale
+          const centerY = (minY + maxY) / 2 * scale
+          const centerZ = (minZ + maxZ) / 2 * scale
+          rootMesh.position = new BABYLON.Vector3(-centerX, -centerY + 1, -centerZ)
           
-          // Create appropriate material based on view mode
-          let mat: BABYLON.Material
+          const loadedMesh = rootMesh
+          
+          // Create fallback material for meshes without materials
+          let fallbackMat: BABYLON.Material
           
           if (viewMode === 'wireframe' || material?.wireframe) {
-            // Wireframe mode - use simple material
             const wireMat = new BABYLON.StandardMaterial('wireframeMat', scene)
             wireMat.wireframe = true
             wireMat.emissiveColor = new BABYLON.Color3(0.5, 0.5, 0.5)
             wireMat.backFaceCulling = false
-            mat = wireMat
+            fallbackMat = wireMat
           } else {
-            // Create premium metallic car paint material
-            const pbrMat = new BABYLON.PBRMaterial('carMaterial', scene)
-            
-            // Premium metallic car paint
-            pbrMat.albedoColor = new BABYLON.Color3(0.55, 0.57, 0.58) // Gunmetal gray base
-            pbrMat.metallic = material?.metalness ?? 0.9 // Very metallic
-            pbrMat.roughness = material?.roughness ?? 0.15 // Smooth, polished surface
-            pbrMat.reflectivityColor = new BABYLON.Color3(0.9, 0.9, 0.92) // Bright reflections
-            
-            // Add subtle blue tint to reflections (premium car effect)
-            pbrMat.reflectionColor = new BABYLON.Color3(0.95, 0.95, 1.0)
-            pbrMat.microSurface = 0.96 // Very smooth micro surface
-            
-            // Clear coat effect
-            pbrMat.clearCoat.isEnabled = true
-            pbrMat.clearCoat.intensity = 0.5
-            pbrMat.clearCoat.roughness = 0.01
-            
-            // Enable environment reflections for realistic look
-            pbrMat.environmentIntensity = 0.7
-            pbrMat.backFaceCulling = false // Enable double-sided rendering
-            pbrMat.twoSidedLighting = true // Light both sides
-            
-            mat = pbrMat
+            const pbrMat = new BABYLON.PBRMaterial('fallbackMaterial', scene)
+            pbrMat.albedoColor = new BABYLON.Color3(0.55, 0.57, 0.58)
+            pbrMat.metallic = material?.metalness ?? 0.7
+            pbrMat.roughness = material?.roughness ?? 0.3
+            pbrMat.backFaceCulling = false
+            pbrMat.twoSidedLighting = true
+            fallbackMat = pbrMat
           }
           
-          // Apply material and setup parts for selection
-          loadedMesh.material = mat
+          // Setup parts for selection - preserve original materials from GLB
           const selectableParts: BABYLON.Mesh[] = []
+          let meshesWithMaterial = 0
           
           result.meshes.forEach((mesh: BABYLON.AbstractMesh) => {
-            mesh.material = mat
             mesh.isPickable = true
-            // Ensure all parts are visible
+            mesh.isVisible = true
+            
+            // Apply fallback material if mesh has no material or material is broken
+            if (!mesh.material) {
+              mesh.material = fallbackMat
+            } else {
+              meshesWithMaterial++
+              // Ensure double-sided for existing materials
+              if (mesh.material instanceof BABYLON.PBRMaterial) {
+                mesh.material.backFaceCulling = false
+                mesh.material.twoSidedLighting = true
+              } else if (mesh.material instanceof BABYLON.StandardMaterial) {
+                mesh.material.backFaceCulling = false
+              }
+            }
+            
             if (mesh instanceof BABYLON.Mesh) {
               mesh.sideOrientation = BABYLON.Mesh.DOUBLESIDE
               selectableParts.push(mesh)
             }
           })
           
+          // Force the root mesh to be visible
+          rootMesh.isVisible = true
+          
+          
           loadedMesh.isPickable = true
           meshRef.current = loadedMesh
+          loadedMeshesRef.current = result.meshes
           
           // Initialize mesh segmenter
           segmenterRef.current = new MeshSegmenter(scene, loadedMesh)
@@ -548,13 +690,20 @@ export default function Studio3DViewerBabylon({
             setSelectedParts(newSelection)
           }
 
-          // Notify parent
+          // Notify parent with Three.js geometry for editing compatibility
           if (onGeometryUpdate) {
-            onGeometryUpdate(loadedMesh)
+            const threeGeometry = babylonToThreeGeometry(result.meshes)
+            onGeometryUpdate(threeGeometry)
           }
         })
-        .catch((error) => {
-          console.error('Failed to load model:', { error, modelUrl, fileName, rootUrl })
+        .catch(() => {
+          // Create a red sphere to indicate error
+          const errorSphere = BABYLON.MeshBuilder.CreateSphere('errorIndicator', { diameter: 2 }, scene)
+          errorSphere.position = new BABYLON.Vector3(0, 2, 0)
+          const errorMat = new BABYLON.StandardMaterial('errorMat', scene)
+          errorMat.diffuseColor = new BABYLON.Color3(1, 0.3, 0.3)
+          errorMat.emissiveColor = new BABYLON.Color3(0.5, 0, 0)
+          errorSphere.material = errorMat
         })
     }
 
@@ -581,6 +730,80 @@ export default function Studio3DViewerBabylon({
       engine.dispose()
     }
   }, [showGrid, viewMode, modelUrl, material])
+
+  // Apply edited geometry from Three.js back to Babylon mesh
+  useEffect(() => {
+    if (!geometry || !sceneRef.current || !meshRef.current) {
+      return
+    }
+    
+    // Check if this is a Three.js BufferGeometry
+    if (!(geometry instanceof THREE.BufferGeometry)) {
+      return
+    }
+    
+    const positions = geometry.getAttribute('position')
+    if (!positions) {
+      return
+    }
+    
+    
+    // Find the first mesh with geometry to update (usually the main mesh)
+    const targetMeshes = loadedMeshesRef.current.filter(
+      m => m instanceof BABYLON.Mesh && m.getTotalVertices() > 0
+    ) as BABYLON.Mesh[]
+    
+    if (targetMeshes.length === 0) {
+      return
+    }
+    
+    
+    // Convert Three.js geometry to Babylon vertex data
+    const posArray = new Float32Array(positions.count * 3)
+    for (let i = 0; i < positions.count; i++) {
+      posArray[i * 3] = positions.getX(i)
+      posArray[i * 3 + 1] = positions.getY(i)
+      posArray[i * 3 + 2] = positions.getZ(i)
+    }
+    
+    // Sample first vertex for debugging
+    
+    // Update normals if available
+    const normals = geometry.getAttribute('normal')
+    let normArray: Float32Array | null = null
+    if (normals) {
+      normArray = new Float32Array(normals.count * 3)
+      for (let i = 0; i < normals.count; i++) {
+        normArray[i * 3] = normals.getX(i)
+        normArray[i * 3 + 1] = normals.getY(i)
+        normArray[i * 3 + 2] = normals.getZ(i)
+      }
+    }
+    
+    // Try to update ALL meshes that might contain geometry
+    // For GLB models, geometry is often split across multiple child meshes
+    let updatedCount = 0
+    targetMeshes.forEach((targetMesh, idx) => {
+      const meshVertexCount = targetMesh.getTotalVertices()
+      
+      // Only update if vertex counts match or this is the primary mesh
+      if (meshVertexCount === positions.count || idx === 0) {
+        try {
+          targetMesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, posArray)
+          if (normArray) {
+            targetMesh.updateVerticesData(BABYLON.VertexBuffer.NormalKind, normArray)
+          }
+          targetMesh.refreshBoundingInfo()
+          updatedCount++
+        } catch (e) {
+        }
+      }
+    })
+    
+    // Also update the root mesh's bounding info
+    meshRef.current?.refreshBoundingInfo()
+    
+  }, [geometry])
 
   // Helper functions for grouping mesh fragments
   const groupMeshFragments = (meshes: BABYLON.Mesh[], scene: BABYLON.Scene) => {

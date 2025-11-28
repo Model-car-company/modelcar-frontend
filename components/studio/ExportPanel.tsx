@@ -1,83 +1,126 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Package, Layers, Cpu, Triangle, Square, FileText, Share2 } from 'lucide-react'
+import { Download, Package, Layers, Loader2 } from 'lucide-react'
+import * as THREE from 'three'
 
 interface ExportPanelProps {
-  modelUrl?: string | null;
+  modelUrl?: string | null
+  geometry?: THREE.BufferGeometry | null
 }
 
-export default function ExportPanel({ modelUrl }: ExportPanelProps) {
+export default function ExportPanel({ modelUrl, geometry }: ExportPanelProps) {
+  const [exporting, setExporting] = useState<string | null>(null)
+
   const exportFormats = [
     { 
       format: 'STL', 
-      desc: '3D Printing', 
+      desc: '3D Printing Ready', 
       icon: Package,
-      size: '12.4 MB',
-      color: 'text-blue-400'
+      color: 'text-blue-400',
+      bgColor: 'from-blue-500/20 to-blue-600/10',
+      borderColor: 'border-blue-500/30'
     },
     { 
       format: 'OBJ', 
-      desc: 'With Textures', 
+      desc: 'Universal Format', 
       icon: Layers,
-      size: '18.2 MB',
-      color: 'text-green-400'
-    },
-    { 
-      format: 'GLB', 
-      desc: 'Web & AR', 
-      icon: Cpu,
-      size: '8.7 MB',
-      color: 'text-purple-400'
-    },
-    { 
-      format: 'FBX', 
-      desc: 'Animation', 
-      icon: Triangle,
-      size: '15.3 MB',
-      color: 'text-orange-400'
-    },
-    { 
-      format: 'USDZ', 
-      desc: 'Apple AR', 
-      icon: Square,
-      size: '9.1 MB',
-      color: 'text-pink-400'
+      color: 'text-green-400',
+      bgColor: 'from-green-500/20 to-green-600/10',
+      borderColor: 'border-green-500/30'
     }
   ]
 
-  const handleExport = async (format: string) => {
-    if (!modelUrl) {
-      alert('No model loaded. Please generate or upload a model first.')
+  const handleExportSTL = async () => {
+    if (!geometry) {
+      alert('No model loaded. Please load a model first.')
       return
     }
 
+    setExporting('STL')
+
     try {
-      // For now, download directly if format matches
-      // In production, convert through API if needed
+      // Import STL exporter dynamically
+      const { STLExporter } = await import('three/examples/jsm/exporters/STLExporter.js')
+      const exporter = new STLExporter()
+
+      // Create a mesh from geometry
+      const mesh = new THREE.Mesh(
+        geometry,
+        new THREE.MeshStandardMaterial({ color: 0x808080 })
+      )
+
+      // Export as binary STL
+      const stlData = exporter.parse(mesh, { binary: true })
+      
+      // Create blob and download
+      const blob = new Blob([stlData], { type: 'application/sla' })
+      const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = modelUrl
-      link.download = `model-${Date.now()}.${format.toLowerCase()}`
+      link.href = url
+      link.download = `model-${Date.now()}.stl`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      URL.revokeObjectURL(url)
 
-      // TODO: If format conversion needed, call API
-      // const response = await fetch('/api/convert-model', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ modelUrl, targetFormat: format }),
-      // })
-      
-      // Exported
     } catch (error) {
-      // Export error
-      alert('Failed to export model. Please try again.')
+      alert('Failed to export STL. Please try again.')
+    } finally {
+      setExporting(null)
     }
   }
 
-  const handleShare = () => {
-    // Share model
+  const handleExportOBJ = async () => {
+    if (!geometry) {
+      alert('No model loaded. Please load a model first.')
+      return
+    }
+
+    setExporting('OBJ')
+
+    try {
+      // Import OBJ exporter dynamically
+      const { OBJExporter } = await import('three/examples/jsm/exporters/OBJExporter.js')
+      const exporter = new OBJExporter()
+
+      // Create a mesh from geometry
+      const mesh = new THREE.Mesh(
+        geometry,
+        new THREE.MeshStandardMaterial({ color: 0x808080 })
+      )
+
+      // Export as OBJ string
+      const objData = exporter.parse(mesh)
+      
+      // Create blob and download
+      const blob = new Blob([objData], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `model-${Date.now()}.obj`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+    } catch (error) {
+      alert('Failed to export OBJ. Please try again.')
+    } finally {
+      setExporting(null)
+    }
   }
+
+  const handleExport = (format: string) => {
+    if (format === 'STL') {
+      handleExportSTL()
+    } else if (format === 'OBJ') {
+      handleExportOBJ()
+    }
+  }
+
+  const hasModel = !!geometry
 
   return (
     <motion.div
@@ -85,98 +128,52 @@ export default function ExportPanel({ modelUrl }: ExportPanelProps) {
       animate={{ opacity: 1, x: 0 }}
       className="space-y-4"
     >
+      {/* Status */}
+      {!hasModel && (
+        <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded text-xs text-yellow-400">
+          Load a model to enable export
+        </div>
+      )}
+
       {/* Export Formats */}
       <div>
-        <h3 className="text-xs font-light text-gray-400 mb-3">Export Format</h3>
-        <div className="space-y-2">
+        <h3 className="text-xs font-light text-gray-400 mb-3">Download Format</h3>
+        <div className="space-y-3">
           {exportFormats.map((item) => (
             <button
               key={item.format}
               onClick={() => handleExport(item.format)}
-              className="w-full flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded hover:bg-white/10 transition-colors group"
+              disabled={!hasModel || exporting !== null}
+              className={`w-full flex items-center justify-between p-4 bg-gradient-to-r ${item.bgColor} border ${item.borderColor} rounded-lg hover:brightness-110 transition-all group disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <div className="flex items-center gap-3">
-                <item.icon className={`w-4 h-4 ${item.color}`} />
+                <div className={`p-2 rounded-lg bg-black/30 ${item.color}`}>
+                  <item.icon className="w-5 h-5" />
+                </div>
                 <div className="text-left">
-                  <div className="text-sm font-light">{item.format}</div>
-                  <div className="text-xs text-gray-500">{item.desc}</div>
+                  <div className="text-sm font-medium text-white">{item.format}</div>
+                  <div className="text-xs text-gray-400">{item.desc}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">{item.size}</span>
-                <Download className="w-4 h-4 text-gray-500 group-hover:text-purple-400 transition-colors" />
+                {exporting === item.format ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Download className={`w-5 h-5 ${item.color} group-hover:scale-110 transition-transform`} />
+                )}
               </div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Export Settings */}
+      {/* Info */}
       <div className="pt-4 border-t border-white/10">
-        <h3 className="text-xs font-light text-gray-400 mb-3">Export Settings</h3>
-        <div className="space-y-3">
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-xs text-gray-400">Include Textures</span>
-            <input type="checkbox" defaultChecked className="rounded border-gray-600 text-purple-500 focus:ring-purple-500" />
-          </label>
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-xs text-gray-400">Compress File</span>
-            <input type="checkbox" defaultChecked className="rounded border-gray-600 text-purple-500 focus:ring-purple-500" />
-          </label>
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-xs text-gray-400">Embed Materials</span>
-            <input type="checkbox" defaultChecked className="rounded border-gray-600 text-purple-500 focus:ring-purple-500" />
-          </label>
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-xs text-gray-400">Apply Transforms</span>
-            <input type="checkbox" className="rounded border-gray-600 text-purple-500 focus:ring-purple-500" />
-          </label>
+        <div className="text-[10px] text-gray-500 space-y-1">
+          <p><span className="text-blue-400">STL</span> - Best for 3D printing. Single color, no textures.</p>
+          <p><span className="text-green-400">OBJ</span> - Universal format. Works with most 3D software.</p>
         </div>
       </div>
-
-      {/* Resolution Options */}
-      <div className="pt-4 border-t border-white/10">
-        <h3 className="text-xs font-light text-gray-400 mb-3">Mesh Density</h3>
-        <div className="space-y-2">
-          {[
-            { level: 'Original', polys: '1,000,746', selected: true },
-            { level: 'High', polys: '500,000', selected: false },
-            { level: 'Medium', polys: '100,000', selected: false },
-            { level: 'Low', polys: '25,000', selected: false },
-          ].map((option) => (
-            <label key={option.level} className="flex items-center justify-between cursor-pointer">
-              <div className="flex items-center gap-2">
-                <input 
-                  type="radio" 
-                  name="resolution" 
-                  defaultChecked={option.selected}
-                  className="text-purple-500 focus:ring-purple-500" 
-                />
-                <span className="text-xs text-gray-300">{option.level}</span>
-              </div>
-              <span className="text-xs text-gray-500">{option.polys} polys</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="pt-4 border-t border-white/10">
-        <div className="grid grid-cols-2 gap-2">
-          <button className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
-            <FileText className="w-3 h-3" />
-            Export All
-          </button>
-          <button 
-            onClick={handleShare}
-            className="px-3 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-          >
-            <Share2 className="w-3 h-3" />
-            Share Link
-          </button>
-        </div>
-      </div>
-
     </motion.div>
   )
 }

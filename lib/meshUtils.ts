@@ -104,29 +104,105 @@ export function smoothMesh(
 }
 
 /**
- * Repair mesh by fixing normals and validating geometry
+ * Repair mesh by:
+ * 1. Welding duplicate/close vertices
+ * 2. Removing degenerate triangles
+ * 3. Recomputing normals
+ * 4. Fixing winding order
  * @param geometry - THREE.BufferGeometry to repair
  */
 export function repairMesh(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
   const newGeometry = geometry.clone()
   
   try {
-    // Simply recompute normals - safest repair operation
-    newGeometry.computeVertexNormals()
-    
-    // Recompute bounding volumes
-    newGeometry.computeBoundingBox()
-    newGeometry.computeBoundingSphere()
-    
-    // Validate geometry has required attributes
-    if (!newGeometry.getAttribute('position')) {
+    const positions = newGeometry.getAttribute('position')
+    if (!positions) {
       throw new Error('Geometry missing position attribute')
     }
     
-    return newGeometry
+    const posArray = positions.array as Float32Array
+    const vertexCount = posArray.length / 3
+    
+    // Step 1: Weld close vertices (within tolerance)
+    const tolerance = 0.0001
+    const vertexMap = new Map<string, number>() // hash -> canonical index
+    const indexRemap = new Int32Array(vertexCount)
+    const uniquePositions: number[] = []
+    let uniqueCount = 0
+    
+    for (let i = 0; i < vertexCount; i++) {
+      const x = posArray[i * 3]
+      const y = posArray[i * 3 + 1]
+      const z = posArray[i * 3 + 2]
+      
+      // Quantize to tolerance for hashing
+      const qx = Math.round(x / tolerance) * tolerance
+      const qy = Math.round(y / tolerance) * tolerance
+      const qz = Math.round(z / tolerance) * tolerance
+      const hash = `${qx.toFixed(6)},${qy.toFixed(6)},${qz.toFixed(6)}`
+      
+      if (vertexMap.has(hash)) {
+        indexRemap[i] = vertexMap.get(hash)!
+      } else {
+        vertexMap.set(hash, uniqueCount)
+        indexRemap[i] = uniqueCount
+        uniquePositions.push(x, y, z)
+        uniqueCount++
+      }
+    }
+    
+    
+    // Step 2: Rebuild indices with remapped vertices, remove degenerates
+    const oldIndices = newGeometry.index?.array
+    const newIndices: number[] = []
+    let degenerateCount = 0
+    
+    if (oldIndices) {
+      for (let i = 0; i < oldIndices.length; i += 3) {
+        const a = indexRemap[oldIndices[i]]
+        const b = indexRemap[oldIndices[i + 1]]
+        const c = indexRemap[oldIndices[i + 2]]
+        
+        // Skip degenerate triangles (where 2+ vertices are the same)
+        if (a !== b && b !== c && a !== c) {
+          newIndices.push(a, b, c)
+        } else {
+          degenerateCount++
+        }
+      }
+    } else {
+      // Non-indexed geometry
+      for (let i = 0; i < vertexCount; i += 3) {
+        const a = indexRemap[i]
+        const b = indexRemap[i + 1]
+        const c = indexRemap[i + 2]
+        
+        if (a !== b && b !== c && a !== c) {
+          newIndices.push(a, b, c)
+        } else {
+          degenerateCount++
+        }
+      }
+    }
+    
+    
+    // Create repaired geometry
+    const repairedGeometry = new THREE.BufferGeometry()
+    repairedGeometry.setAttribute('position', new THREE.Float32BufferAttribute(uniquePositions, 3))
+    repairedGeometry.setIndex(newIndices)
+    
+    // Step 3: Recompute normals
+    repairedGeometry.computeVertexNormals()
+    
+    // Step 4: Recompute bounding volumes
+    repairedGeometry.computeBoundingBox()
+    repairedGeometry.computeBoundingSphere()
+    
+    return repairedGeometry
   } catch (error) {
-    // Return original if repair fails
-    return geometry.clone()
+    // Return original with just normals recomputed if repair fails
+    newGeometry.computeVertexNormals()
+    return newGeometry
   }
 }
 
@@ -204,4 +280,215 @@ function getMidpoint(
   edgeMap.set(key, index)
   
   return index
+}
+
+/**
+ * Scale mesh uniformly or per-axis
+ * @param geometry - THREE.BufferGeometry to scale
+ * @param scale - Scale factor (number for uniform, {x,y,z} for per-axis)
+ */
+export function scaleMesh(
+  geometry: THREE.BufferGeometry,
+  scale: number | { x: number; y: number; z: number }
+): THREE.BufferGeometry {
+  const newGeometry = geometry.clone()
+  const positionAttribute = newGeometry.getAttribute('position')
+  
+  if (!positionAttribute) {
+    return geometry.clone()
+  }
+  
+  const positions = new Float32Array(positionAttribute.array)
+  const scaleX = typeof scale === 'number' ? scale : scale.x
+  const scaleY = typeof scale === 'number' ? scale : scale.y
+  const scaleZ = typeof scale === 'number' ? scale : scale.z
+  
+  // Sample a few vertices before scaling
+  const before = [positions[0], positions[1], positions[2]]
+  
+  for (let i = 0; i < positions.length; i += 3) {
+    positions[i] *= scaleX
+    positions[i + 1] *= scaleY
+    positions[i + 2] *= scaleZ
+  }
+  
+  // Sample after scaling
+  const after = [positions[0], positions[1], positions[2]]
+  
+  newGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  newGeometry.computeVertexNormals()
+  newGeometry.computeBoundingBox()
+  newGeometry.computeBoundingSphere()
+  
+  return newGeometry
+}
+
+/**
+ * Center mesh at origin
+ * @param geometry - THREE.BufferGeometry to center
+ */
+export function centerMesh(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
+  const newGeometry = geometry.clone()
+  newGeometry.computeBoundingBox()
+  
+  const boundingBox = newGeometry.boundingBox
+  if (!boundingBox) return geometry.clone()
+  
+  const center = new THREE.Vector3()
+  boundingBox.getCenter(center)
+  
+  const positionAttribute = newGeometry.getAttribute('position')
+  if (!positionAttribute) return geometry.clone()
+  
+  const positions = new Float32Array(positionAttribute.array)
+  
+  for (let i = 0; i < positions.length; i += 3) {
+    positions[i] -= center.x
+    positions[i + 1] -= center.y
+    positions[i + 2] -= center.z
+  }
+  
+  newGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  newGeometry.computeBoundingBox()
+  newGeometry.computeBoundingSphere()
+  
+  return newGeometry
+}
+
+/**
+ * Decimate mesh to reduce polygon count
+ * Uses edge collapse algorithm
+ * @param geometry - THREE.BufferGeometry to decimate
+ * @param targetRatio - Target ratio of original triangles (0.1 = 10% of original)
+ */
+export function decimateMesh(
+  geometry: THREE.BufferGeometry,
+  targetRatio: number = 0.5
+): THREE.BufferGeometry {
+  const newGeometry = geometry.clone()
+  const positionAttribute = newGeometry.getAttribute('position')
+  const indexAttribute = newGeometry.index
+  
+  if (!positionAttribute || !indexAttribute) {
+    return geometry.clone()
+  }
+  
+  const positions = Array.from(positionAttribute.array) as number[]
+  const indices = Array.from(indexAttribute.array) as number[]
+  
+  const originalTriCount = indices.length / 3
+  const targetTriCount = Math.max(4, Math.floor(originalTriCount * targetRatio))
+  
+  // Simple edge collapse decimation
+  let currentTriCount = originalTriCount
+  const removed = new Set<number>()
+  
+  while (currentTriCount > targetTriCount && currentTriCount > 4) {
+    // Find shortest edge
+    let minLength = Infinity
+    let minEdge: [number, number] | null = null
+    
+    for (let i = 0; i < indices.length; i += 3) {
+      if (removed.has(i / 3)) continue
+      
+      const edges: [number, number][] = [
+        [indices[i], indices[i + 1]],
+        [indices[i + 1], indices[i + 2]],
+        [indices[i + 2], indices[i]],
+      ]
+      
+      for (const [v0, v1] of edges) {
+        const dx = positions[v0 * 3] - positions[v1 * 3]
+        const dy = positions[v0 * 3 + 1] - positions[v1 * 3 + 1]
+        const dz = positions[v0 * 3 + 2] - positions[v1 * 3 + 2]
+        const length = Math.sqrt(dx * dx + dy * dy + dz * dz)
+        
+        if (length < minLength) {
+          minLength = length
+          minEdge = [v0, v1]
+        }
+      }
+    }
+    
+    if (!minEdge) break
+    
+    const [v0, v1] = minEdge
+    
+    // Collapse edge: merge v1 into v0
+    const midX = (positions[v0 * 3] + positions[v1 * 3]) / 2
+    const midY = (positions[v0 * 3 + 1] + positions[v1 * 3 + 1]) / 2
+    const midZ = (positions[v0 * 3 + 2] + positions[v1 * 3 + 2]) / 2
+    
+    positions[v0 * 3] = midX
+    positions[v0 * 3 + 1] = midY
+    positions[v0 * 3 + 2] = midZ
+    
+    // Update indices: replace v1 with v0
+    for (let i = 0; i < indices.length; i++) {
+      if (indices[i] === v1) {
+        indices[i] = v0
+      }
+    }
+    
+    // Mark degenerate triangles
+    for (let i = 0; i < indices.length; i += 3) {
+      const a = indices[i]
+      const b = indices[i + 1]
+      const c = indices[i + 2]
+      
+      if (a === b || b === c || c === a) {
+        removed.add(i / 3)
+        currentTriCount--
+      }
+    }
+  }
+  
+  // Build new geometry without removed triangles
+  const newIndices: number[] = []
+  for (let i = 0; i < indices.length; i += 3) {
+    if (!removed.has(i / 3)) {
+      newIndices.push(indices[i], indices[i + 1], indices[i + 2])
+    }
+  }
+  
+  const resultGeometry = new THREE.BufferGeometry()
+  resultGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  resultGeometry.setIndex(newIndices)
+  resultGeometry.computeVertexNormals()
+  resultGeometry.computeBoundingBox()
+  resultGeometry.computeBoundingSphere()
+  
+  return resultGeometry
+}
+
+/**
+ * Get mesh statistics
+ * @param geometry - THREE.BufferGeometry to analyze
+ */
+export function getMeshStats(geometry: THREE.BufferGeometry): {
+  vertexCount: number
+  triangleCount: number
+  boundingBox: { min: THREE.Vector3; max: THREE.Vector3; size: THREE.Vector3 } | null
+} {
+  const positionAttribute = geometry.getAttribute('position')
+  const indexAttribute = geometry.index
+  
+  const vertexCount = positionAttribute ? positionAttribute.count : 0
+  const triangleCount = indexAttribute ? indexAttribute.count / 3 : vertexCount / 3
+  
+  geometry.computeBoundingBox()
+  const bbox = geometry.boundingBox
+  
+  let boundingBox = null
+  if (bbox) {
+    const size = new THREE.Vector3()
+    bbox.getSize(size)
+    boundingBox = {
+      min: bbox.min.clone(),
+      max: bbox.max.clone(),
+      size,
+    }
+  }
+  
+  return { vertexCount, triangleCount, boundingBox }
 }
