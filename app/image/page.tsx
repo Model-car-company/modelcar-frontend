@@ -25,7 +25,7 @@ const ModelAssetCard = memo(({ asset }: { asset: { id: string; url: string; prom
         </div>
         <div className="flex gap-2">
           <Link href={`/studio?asset=${asset.id}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200 font-medium">
-            View in Studio
+            Customize
           </Link>
         </div>
       </div>
@@ -153,7 +153,7 @@ export default function ImagePage() {
       const token = session?.access_token
       const response = await fetch('/api/generate-3d', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
@@ -170,7 +170,7 @@ export default function ImagePage() {
 
       const a = data.asset || {}
       const modelUrl = data.modelUrl || a.url
-      
+
       // Save to user_assets database table
       const { data: savedAsset } = await supabase
         .from('user_assets')
@@ -377,7 +377,7 @@ export default function ImagePage() {
 
       const response = await fetch('/api/generate-image', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
@@ -393,7 +393,7 @@ export default function ImagePage() {
       const data = await response.json()
       const a = data.asset || {}
       const imageUrl = data.imageUrl || a.url
-      
+
       // Save to user_assets database table for persistence
       const { data: savedAsset } = await supabase
         .from('user_assets')
@@ -406,17 +406,17 @@ export default function ImagePage() {
         })
         .select()
         .single()
-      
-      const newAsset = { 
-        id: savedAsset?.id || a.id || Date.now().toString(), 
-        type: 'image' as const, 
-        url: imageUrl, 
-        prompt: a.prompt || prompt, 
-        timestamp: new Date().toISOString(), 
-        isGenerating: false 
+
+      const newAsset = {
+        id: savedAsset?.id || a.id || Date.now().toString(),
+        type: 'image' as const,
+        url: imageUrl,
+        prompt: a.prompt || prompt,
+        timestamp: new Date().toISOString(),
+        isGenerating: false
       }
       setDesignAssets(prev => prev.map(asset => asset.id === loadingId ? newAsset : asset))
-      
+
       // Deduct credits locally and persist
       const newCredits = Math.max(0, creditsRemaining - IMAGE_COST)
       setCreditsRemaining(newCredits)
