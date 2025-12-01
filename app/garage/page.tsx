@@ -10,14 +10,14 @@ import CollapsibleSidebar from '../../components/CollapsibleSidebar'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ShipDesignModal from '../../components/ShipDesignModal'
 import ModelViewer3D from '../../components/ModelViewer3D'
-import { Download, Trash2, Eye, Box, Grid3x3, List, Truck, X } from 'lucide-react'
+import { Download, Trash2, Eye, Box, Grid3x3, List, Truck, X, Globe, Lock } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import { AnimatePresence, motion } from 'framer-motion'
 
 export default function GaragePage() {
   const router = useRouter()
   const supabase = createClient()
-  
+
   const [loading, setLoading] = useState(true)
   const [models, setModels] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
@@ -38,7 +38,7 @@ export default function GaragePage() {
   const loadUserData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (!user) {
         router.push('/sign-in')
         return
@@ -74,7 +74,8 @@ export default function GaragePage() {
           format: asset.format?.toUpperCase() || (asset.type === 'image' ? 'IMAGE' : 'MODEL'),
           polygons: '-', // TODO: Add polygon count
           url: asset.url,
-          type: asset.type
+          type: asset.type,
+          is_public: asset.is_public || false
         }))
 
         setModels(transformedModels)
@@ -131,19 +132,19 @@ export default function GaragePage() {
   const handleDownload = async (model: any) => {
     try {
       toast.loading(`Downloading ${model.name}...`, { id: 'download' })
-      
+
       // Fetch the file
       const response = await fetch(model.url)
       if (!response.ok) throw new Error('Failed to fetch file')
-      
+
       const blob = await response.blob()
-      
+
       // Determine filename and extension
       const isModel = model.type === 'model3d'
       const extension = isModel ? '.glb' : '.jpg'
       const sanitizedName = (model.name || 'download').replace(/[^a-zA-Z0-9-_]/g, '_')
       const filename = `${sanitizedName}${extension}`
-      
+
       // Create download link
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -153,7 +154,7 @@ export default function GaragePage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      
+
       toast.success(`Downloaded ${filename}`, {
         id: 'download',
         style: {
@@ -185,6 +186,56 @@ export default function GaragePage() {
     }
   }
 
+  const togglePublic = async (modelId: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus
+
+    // Optimistic UI update
+    setModels(prevModels =>
+      prevModels.map(m =>
+        m.id === modelId ? { ...m, is_public: newStatus } : m
+      )
+    )
+
+    try {
+      const response = await fetch(`/api/v1/gallery/models/${modelId}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_public: newStatus })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update visibility')
+      }
+
+      toast.success(newStatus ? 'Model is now public' : 'Model is now private', {
+        style: {
+          background: '#0a0a0a',
+          color: '#fff',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          fontSize: '12px',
+          fontWeight: '300',
+        },
+      })
+    } catch (error) {
+      // Revert optimistic update on error
+      setModels(prevModels =>
+        prevModels.map(m =>
+          m.id === modelId ? { ...m, is_public: currentStatus } : m
+        )
+      )
+
+      toast.error('Failed to update visibility', {
+        style: {
+          background: '#0a0a0a',
+          color: '#fff',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          fontSize: '12px',
+          fontWeight: '300',
+        },
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -198,7 +249,7 @@ export default function GaragePage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Toaster position="bottom-right" />
-      
+
       {/* Delete Confirmation Modal */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
@@ -261,14 +312,14 @@ export default function GaragePage() {
                 alt={imageToPreview.name}
                 className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
               />
-              
+
               {/* Image info bar */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 rounded-b-lg">
                 <h3 className="text-lg font-light text-white mb-1">{imageToPreview.name}</h3>
                 <p className="text-xs text-gray-400">
                   Created {new Date(imageToPreview.created_at).toLocaleDateString()}
                 </p>
-                
+
                 {/* Quick actions */}
                 <div className="flex gap-3 mt-4">
                   <button
@@ -284,7 +335,7 @@ export default function GaragePage() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       {/* Sidebar */}
       <CollapsibleSidebar
         currentPage="garage"
@@ -311,21 +362,19 @@ export default function GaragePage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === 'grid' 
-                    ? 'bg-white/10 text-white' 
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                }`}
+                className={`p-2 rounded transition-colors ${viewMode === 'grid'
+                  ? 'bg-white/10 text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                  }`}
               >
                 <Grid3x3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === 'list' 
-                    ? 'bg-white/10 text-white' 
-                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                }`}
+                className={`p-2 rounded transition-colors ${viewMode === 'list'
+                  ? 'bg-white/10 text-white'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                  }`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -374,7 +423,33 @@ export default function GaragePage() {
 
                   {/* Details */}
                   <div className="p-3 sm:p-4">
-                    <h3 className="text-sm font-light text-white mb-2">{model.name}</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-light text-white truncate flex-1">{model.name}</h3>
+                      {/* Publish Toggle */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          togglePublic(model.id, model.is_public)
+                        }}
+                        className={`ml-2 px-2 py-1 rounded text-[10px] font-light transition-all flex items-center gap-1 flex-shrink-0 ${model.is_public
+                          ? 'bg-green-500/20 border border-green-500/40 text-green-400 hover:bg-green-500/30'
+                          : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
+                          }`}
+                        title={model.is_public ? 'Public' : 'Private'}
+                      >
+                        {model.is_public ? (
+                          <>
+                            <Globe className="w-3 h-3" />
+                            <span className="hidden sm:inline">Public</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3" />
+                            <span className="hidden sm:inline">Private</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                     <div className="flex items-center gap-2 sm:gap-3 text-[10px] text-gray-500 mb-4">
                       <span>{model.format}</span>
                       <span>•</span>
@@ -459,6 +534,30 @@ export default function GaragePage() {
 
                   {/* Actions */}
                   <div className="flex gap-2 flex-shrink-0">
+                    {/* Publish Toggle */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        togglePublic(model.id, model.is_public)
+                      }}
+                      className={`px-3 py-2 rounded text-xs font-light transition-all flex items-center gap-2 ${model.is_public
+                          ? 'bg-green-500/20 border border-green-500/40 text-green-400 hover:bg-green-500/30'
+                          : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
+                        }`}
+                      title={model.is_public ? 'Public' : 'Private'}
+                    >
+                      {model.is_public ? (
+                        <>
+                          <Globe className="w-3 h-3" />
+                          Public
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3 h-3" />
+                          Private
+                        </>
+                      )}
+                    </button>
                     <button
                       onClick={() => handleView(model)}
                       className="px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors flex items-center gap-2"
