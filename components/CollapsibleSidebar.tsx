@@ -131,10 +131,10 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
                 ? 'bg-white/10 border border-white/10 text-white'
                 : 'hover:bg-white/5 text-gray-400 hover:text-white'
               } transition-colors`}
-            title="Garage"
+            title="Creations"
           >
             <Box className="w-4 h-4 flex-shrink-0" />
-            {!isCollapsed && <span className="text-xs font-light tracking-wide">Garage</span>}
+            {!isCollapsed && <span className="text-xs font-light tracking-wide">Creations</span>}
           </Link>
 
           <Link

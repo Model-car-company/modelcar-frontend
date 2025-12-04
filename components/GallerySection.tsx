@@ -200,17 +200,13 @@ export default function GallerySection() {
                                 onClick={() => handleModelClick(model)}
                             >
                                 <div className="glass border border-white/10 rounded overflow-hidden hover:border-white/20 transition-all hover:scale-[1.02] duration-300 aspect-video relative">
-                                    {/* Full Image/Model */}
+                                    {/* Thumbnail image (3D models open in 3D modal on click) */}
                                     <div className="absolute inset-0">
-                                        {model.type === 'model3d' ? (
-                                            <ModelViewer3D modelUrl={model.url} className="w-full h-full" />
-                                        ) : (
-                                            <img
-                                                src={model.thumbnail}
-                                                alt={model.name}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                            />
-                                        )}
+                                        <img
+                                            src={model.thumbnail}
+                                            alt={model.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
                                     </div>
 
                                     {/* Format badge - sleeker and smaller */}

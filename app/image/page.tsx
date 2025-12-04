@@ -14,8 +14,8 @@ import ModelViewer3D from '../../components/ModelViewer3D'
 import UpgradeModal from '../../components/UpgradeModal'
 import { SubscriptionTier } from '../../lib/subscription-config'
 
-// Memoized component to prevent 3D viewer re-renders when typing in prompt
-const ModelAssetCard = memo(({ asset }: { asset: { id: string; url: string; prompt: string; format?: string; isGenerating?: boolean } }) => {
+// Memoized component to prevent unnecessary re-renders
+const ModelAssetCard = memo(({ asset, onPreview3D }: { asset: { id: string; url: string; prompt: string; format?: string; isGenerating?: boolean; thumbnailUrl?: string }, onPreview3D: () => void }) => {
   return (
     <div className="border border-white/10 rounded-lg overflow-hidden bg-black/50">
       <div className="p-3 flex items-center justify-between">
@@ -38,7 +38,27 @@ const ModelAssetCard = memo(({ asset }: { asset: { id: string; url: string; prom
             </div>
           </div>
         ) : (
-          <ModelViewer3D modelUrl={asset.url} className="w-full h-full" />
+          <button
+            type="button"
+            onClick={onPreview3D}
+            className="group w-full h-full relative overflow-hidden"
+          >
+            {asset.thumbnailUrl ? (
+              <img
+                src={asset.thumbnailUrl}
+                alt={asset.prompt || '3D model'}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-black">
+                <span className="text-xs text-gray-500">View 3D model</span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px]">
+              <span className="px-2 py-1 rounded bg-black/70 text-white/80 tracking-wide">View 3D</span>
+            </div>
+          </button>
         )}
       </div>
     </div>
@@ -90,6 +110,15 @@ export default function ImagePage() {
     thumbnailUrl?: string
     isGenerating?: boolean
   }>>([])
+
+  // Shared 3D preview modal state
+  const [show3DPreview, setShow3DPreview] = useState(false)
+  const [modelToPreview, setModelToPreview] = useState<{
+    id: string
+    url: string
+    prompt: string
+    thumbnailUrl?: string
+  } | null>(null)
 
   // Initialize canvas on mount
   useEffect(() => {
@@ -516,6 +545,47 @@ export default function ImagePage() {
     <div className="min-h-screen bg-black text-white">
       <Toaster position="top-right" />
 
+      {/* 3D Model Preview Modal */}
+      {show3DPreview && modelToPreview && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/90 backdrop-blur-md"
+          onClick={() => {
+            setShow3DPreview(false)
+            setModelToPreview(null)
+          }}
+        >
+          <button
+            onClick={() => {
+              setShow3DPreview(false)
+              setModelToPreview(null)
+            }}
+            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          <div
+            className="relative w-full max-w-5xl max-h-[85vh] mx-4 bg-gradient-to-b from-slate-900 to-black rounded-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full aspect-video bg-black">
+              <ModelViewer3D modelUrl={modelToPreview.url} className="w-full h-full" />
+            </div>
+            <div className="p-4 sm:p-6 border-t border-white/10 bg-black/60 backdrop-blur flex items-center justify-between gap-4">
+              <h3 className="text-base sm:text-lg font-light text-white mb-1 truncate">
+                {modelToPreview.prompt || '3D model'}
+              </h3>
+              <Link
+                href={`/studio?asset=${modelToPreview.id}`}
+                className="px-4 py-2 rounded bg-white text-black text-xs sm:text-sm font-medium hover:bg-gray-200 transition-colors whitespace-nowrap"
+              >
+                Customize
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
@@ -876,92 +946,8 @@ export default function ImagePage() {
 
                   {/* Render Button - Same style as Make 3D */}
                   <button
-                    onClick={async () => {
-                      if (!user) { router.push('/sign-in'); return }
-                      if (!canvasRef.current) { toast.error('No sketch found'); return }
-
-                      if (creditsRemaining < 5) {
-                        if (!isPaidActive) setShowUpgradeModal(true)
-                        return
-                      }
-
-                      setGenerating(true)
-                      const loadingId = `loading-sketch-${Date.now()}`
-                      const loadingAsset = {
-                        id: loadingId,
-                        type: 'image' as const,
-                        url: '',
-                        prompt: prompt.trim() ? `Sketch: ${prompt}` : 'Sketch rendering',
-                        timestamp: new Date().toISOString(),
-                        isGenerating: true
-                      }
-                      setDesignAssets(prev => [loadingAsset, ...prev])
-
-                      try {
-                        // Get current canvas as blob
-                        const canvas = canvasRef.current
-                        const dataUrl = canvas.toDataURL('image/png')
-                        const base64Response = await fetch(dataUrl)
-                        const blob = await base64Response.blob()
-                        const fileName = `sketches/${user.id}/${Date.now()}.png`
-
-                        const { data: uploadData, error: uploadError } = await supabase.storage
-                          .from('user-sketches')
-                          .upload(fileName, blob, { contentType: 'image/png' })
-
-                        if (uploadError) throw new Error('Failed to upload sketch')
-
-                        const { data: { publicUrl } } = supabase.storage
-                          .from('user-sketches')
-                          .getPublicUrl(fileName)
-
-                        const { data: { session } } = await supabase.auth.getSession()
-                        const token = session?.access_token
-
-                        const response = await fetch('/api/sketch-to-render', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            ...(token ? { Authorization: `Bearer ${token}` } : {})
-                          },
-                          body: JSON.stringify({
-                            sketch_image_url: publicUrl,
-                            prompt: prompt.trim() || 'render this sketch as a realistic car design',
-                            drawing_influence: drawingInfluence / 100,
-                            style_preset: stylePreset,
-                            negative_prompt: 'blurry, low quality, distorted, ugly'
-                          })
-                        })
-
-                        if (response.status === 402) {
-                          if (!isPaidActive) setShowUpgradeModal(true)
-                          setDesignAssets(prev => prev.filter(a => a.id !== loadingId))
-                          setGenerating(false)
-                          return
-                        }
-
-                        if (!response.ok) throw new Error('Sketch rendering failed')
-
-                        const data = await response.json()
-                        const a = data.asset || {}
-                        const newAsset = {
-                          id: a.id || Date.now().toString(),
-                          type: 'image' as const,
-                          url: data.imageUrl || a.url,
-                          prompt: a.prompt ? `Sketch: ${a.prompt}` : (prompt.trim() ? `Sketch: ${prompt}` : 'Sketch render'),
-                          timestamp: new Date().toISOString(),
-                          isGenerating: false
-                        }
-                        setDesignAssets(prev => prev.map(asset => asset.id === loadingId ? newAsset : asset))
-
-                        await fetchCredits()
-                        toast.success('Rendered! ✨')
-                      } catch (error: any) {
-                        setDesignAssets(prev => prev.filter(asset => asset.id !== loadingId))
-                        toast.error(error.message || 'Failed to render')
-                      } finally {
-                        setGenerating(false)
-                      }
+                    onClick={() => {
+                      toast.success('Sketch rendering coming soon')
                     }}
                     disabled={generating}
                     className={`px-3 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${generating
@@ -984,29 +970,39 @@ export default function ImagePage() {
                 </div>
               </div>
             </div>
-          ) :
-            designAssets.length === 0 ? (
-              <div className="text-center py-20">
-                <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-700" />
-                <p className="text-gray-500">No designs yet</p>
-                <p className="text-xs text-gray-600 mt-2">Start by entering a prompt and clicking generate</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {designAssets.map((asset) => (
-                  asset.type === 'image' ? (
-                    <ImageCard
-                      key={asset.id}
-                      image={asset}
-                      onGenerate3D={handleGenerate3D}
-                      onMake3D={handleMake3D}
-                    />
-                  ) : (
-                    <ModelAssetCard key={asset.id} asset={asset as any} />
-                  )
-                ))}
-              </div>
-            )}
+          ) : designAssets.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-sm text-gray-400 mb-2">No creations yet</p>
+              <p className="text-xs text-gray-500">Generate an image or 3D model to see it here.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {designAssets.map((asset) => (
+                asset.type === 'image' ? (
+                  <ImageCard
+                    key={asset.id}
+                    image={asset as any}
+                    onGenerate3D={handleGenerate3D}
+                    onMake3D={handleMake3D}
+                  />
+                ) : (
+                  <ModelAssetCard
+                    key={asset.id}
+                    asset={asset as any}
+                    onPreview3D={() => {
+                      setModelToPreview({
+                        id: asset.id,
+                        url: asset.url,
+                        prompt: asset.prompt,
+                        thumbnailUrl: asset.thumbnailUrl,
+                      })
+                      setShow3DPreview(true)
+                    }}
+                  />
+                )
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

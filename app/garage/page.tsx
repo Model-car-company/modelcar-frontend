@@ -30,6 +30,8 @@ export default function GaragePage() {
   const [modelToShip, setModelToShip] = useState<any>(null)
   const [showImagePreview, setShowImagePreview] = useState(false)
   const [imageToPreview, setImageToPreview] = useState<any>(null)
+  const [show3DPreview, setShow3DPreview] = useState(false)
+  const [model3DToPreview, setModel3DToPreview] = useState<any>(null)
 
   useEffect(() => {
     loadUserData()
@@ -186,6 +188,12 @@ export default function GaragePage() {
     }
   }
 
+  const handle3DPreview = (model: any) => {
+    if (!model || model.type !== 'model3d') return
+    setModel3DToPreview(model)
+    setShow3DPreview(true)
+  }
+
   const togglePublic = async (modelId: string, currentStatus: boolean) => {
     const newStatus = !currentStatus
 
@@ -336,6 +344,57 @@ export default function GaragePage() {
         )}
       </AnimatePresence>
 
+      {/* 3D Model Preview Modal */}
+      <AnimatePresence>
+        {show3DPreview && model3DToPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md"
+            onClick={() => {
+              setShow3DPreview(false)
+              setModel3DToPreview(null)
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShow3DPreview(false)
+                setModel3DToPreview(null)
+              }}
+              className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+
+            {/* 3D viewer container */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-5xl max-h-[85vh] mx-4 bg-gradient-to-b from-slate-900 to-black rounded-lg overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-full aspect-video bg-black">
+                <ModelViewer3D modelUrl={model3DToPreview.url} className="w-full h-full" />
+              </div>
+
+              {/* Info bar */}
+              <div className="p-4 sm:p-6 border-t border-white/10 bg-black/60 backdrop-blur">
+                <h3 className="text-base sm:text-lg font-light text-white mb-1 truncate">
+                  {model3DToPreview.name || '3D model'}
+                </h3>
+                <p className="text-xs text-gray-400">
+                  Created {new Date(model3DToPreview.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <CollapsibleSidebar
         currentPage="garage"
@@ -408,15 +467,23 @@ export default function GaragePage() {
                   className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded overflow-hidden hover:border-white/20 transition-all"
                 >
                   {/* Thumbnail */}
-                  <div className="relative aspect-video bg-black overflow-hidden rounded-t">
-                    {model.type === 'model3d' ? (
-                      <ModelViewer3D modelUrl={model.url} className="w-full h-full" />
-                    ) : (
-                      <img
-                        src={model.thumbnail}
-                        alt={model.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                  <div
+                    className="relative aspect-video bg-black overflow-hidden rounded-t cursor-pointer"
+                    onClick={() =>
+                      model.type === 'model3d'
+                        ? handle3DPreview(model)
+                        : (setImageToPreview(model), setShowImagePreview(true))
+                    }
+                  >
+                    <img
+                      src={model.thumbnail}
+                      alt={model.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {model.type === 'model3d' && (
+                      <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/60 text-[10px] font-light text-white tracking-wide">
+                        3D MODEL
+                      </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   </div>
@@ -506,16 +573,19 @@ export default function GaragePage() {
                   className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded p-4 hover:border-white/20 transition-all flex items-center gap-4"
                 >
                   {/* Thumbnail */}
-                  <div className="w-24 h-16 bg-black rounded overflow-hidden flex-shrink-0">
-                    {model.type === 'model3d' ? (
-                      <ModelViewer3D modelUrl={model.url} className="w-full h-full" />
-                    ) : (
-                      <img
-                        src={model.thumbnail}
-                        alt={model.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    )}
+                  <div
+                    className="w-24 h-16 bg-black rounded overflow-hidden flex-shrink-0 cursor-pointer"
+                    onClick={() =>
+                      model.type === 'model3d'
+                        ? handle3DPreview(model)
+                        : (setImageToPreview(model), setShowImagePreview(true))
+                    }
+                  >
+                    <img
+                      src={model.thumbnail}
+                      alt={model.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
                   </div>
 
                   {/* Details */}
