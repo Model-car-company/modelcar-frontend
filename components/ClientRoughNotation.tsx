@@ -1,14 +1,30 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import type { ComponentProps } from 'react'
 
-// Dynamically import RoughNotation with SSR disabled to prevent hydration issues
-export const RoughNotation = dynamic(
-  () => import('react-rough-notation').then(mod => mod.RoughNotation),
-  { ssr: false }
+// Create wrapper components to properly handle the dynamic imports
+const RoughNotationWrapper = dynamic(
+  () => import('react-rough-notation').then(mod => {
+    const { RoughNotation } = mod
+    return { default: RoughNotation }
+  }),
+  { 
+    ssr: false,
+    loading: () => <span />
+  }
 )
 
-export const RoughNotationGroup = dynamic(
-  () => import('react-rough-notation').then(mod => mod.RoughNotationGroup),
-  { ssr: false }
+const RoughNotationGroupWrapper = dynamic(
+  () => import('react-rough-notation').then(mod => {
+    const { RoughNotationGroup } = mod
+    return { default: RoughNotationGroup }
+  }),
+  { 
+    ssr: false,
+    loading: () => <span />
+  }
 )
+
+export const RoughNotation = RoughNotationWrapper
+export const RoughNotationGroup = RoughNotationGroupWrapper

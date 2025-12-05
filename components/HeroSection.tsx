@@ -196,7 +196,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            Make Your <span className="font-light text-white">Dreams</span> Tangible
+            Describe it. <span className="font-light text-white">Ship it.</span> Hold it.
           </motion.h1>
 
           {/* Subtitle */}
@@ -206,7 +206,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.4, duration: 0.8 }}
           >
-            Design custom 3D models with AI and get them printed and shipped to your door, Starting with custom car collectibles.
+            Turn any idea into a custom 3D printed object—no CAD, no printer, just your imagination.
           </motion.p>
 
           {/* Get Early Access Button */}

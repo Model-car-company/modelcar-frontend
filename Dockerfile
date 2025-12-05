@@ -1,7 +1,7 @@
 # Tangibel - Next.js Production Dockerfile
 # Multi-stage build for optimal image size
 
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 # Install OpenSSL for Prisma/crypto support
 RUN apk add --no-cache openssl
 

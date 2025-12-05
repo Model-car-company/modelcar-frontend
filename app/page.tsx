@@ -49,17 +49,89 @@ export default function Home() {
       {/* Hero Section */}
       <HeroSection y1={y1} y2={y2} opacity={opacity} />
 
+      {/* How It Works Section */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-20">
+            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              SIMPLE 3-STEP PROCESS
+            </p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-thin tracking-tight">
+              From Idea to Reality
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+            {/* Step 1 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <div className="relative mb-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-lg sm:text-xl font-thin text-red-400">1</span>
+                </div>
+              </div>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Describe Your Vision</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Type a prompt or upload a reference image. Be as detailed or simple as you like.
+              </p>
+            </motion.div>
+
+            {/* Step 2 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="text-center"
+            >
+              <div className="relative mb-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-lg sm:text-xl font-thin text-red-400">2</span>
+                </div>
+              </div>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">AI Creates Your Model</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Watch as AI generates your image and converts it to a fully-realized 3D model.
+              </p>
+            </motion.div>
+
+            {/* Step 3 */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="text-center"
+            >
+              <div className="relative mb-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
+                  <span className="text-lg sm:text-xl font-thin text-red-400">3</span>
+                </div>
+              </div>
+              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Ship Straight to You</h3>
+              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
+                Export your 3D model in any format and start 3D printing or rendering immediately.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Before/After - Personalize Your Car Section */}
       <section className="min-h-screen relative py-16 sm:py-24 lg:py-32 border-t border-white/5">
         <div className="border-l border-r border-white/5">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
             {/* Header */}
             <div className="text-center mb-12 sm:mb-20">
-              <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              {/* <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
                 YOUR CAR, YOUR WAY
-              </p>
+              </p> */}
               <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight mb-6">
-                Turn Your Car Into a 3D Masterpiece
+                Turn Your Picture Into a 3D Masterpiece
               </h2>
               <p className="text-sm sm:text-base font-extralight text-gray-400 max-w-2xl mx-auto">
                 Upload a photo of your actual car and watch AI transform it into a fully customizable 3D model
@@ -601,25 +673,25 @@ export default function Home() {
               WHAT YOU GET
             </p>
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight">
-            Unlock Your Potential
+            Premium Materials Library
             </h2>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 border-t border-l border-white/10">
-            {/* Benefit 1 */}
+            {/* Material 1 - PLA */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-base sm:text-lg font-light mb-2">Monthly Drops</h3>
+              <h3 className="text-base sm:text-lg font-light mb-2">PLA Plastic</h3>
               <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
-                New exclusive concept car every week. Open access, zero downtime, and edit in Blender.
+                Eco-friendly bioplastic perfect for detailed models. Easy to print, minimal warping, vibrant colors.
               </p>
             </motion.div>
 
-            {/* Benefit 2 */}
+            {/* Material 2 - PETG */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -627,13 +699,13 @@ export default function Home() {
               transition={{ delay: 0.05 }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-base sm:text-lg font-light mb-2">Custom AI Models</h3>
+              <h3 className="text-base sm:text-lg font-light mb-2">PETG Composite</h3>
               <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
-                Upload an idea of your own car and download a custom 3D-printable (STL) AI-generated.
+                Durable and chemical-resistant. Ideal for functional parts that need strength and flexibility.
               </p>
             </motion.div>
 
-            {/* Benefit 3 */}
+            {/* Material 3 - ABS */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -641,13 +713,13 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-base sm:text-lg font-light mb-2">Unlimited Downloads</h3>
+              <h3 className="text-base sm:text-lg font-light mb-2">ABS Pro</h3>
               <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
-                Print as many copies as you want. Keep your favorites, gift them, or sell them.
+                Industrial-grade toughness. Heat-resistant and impact-strong for professional-grade models.
               </p>
             </motion.div>
 
-            {/* Benefit 4 */}
+            {/* Material 4 - Resin */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -655,13 +727,13 @@ export default function Home() {
               transition={{ delay: 0.15 }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-base sm:text-lg font-light mb-2">Member Perks</h3>
+              <h3 className="text-base sm:text-lg font-light mb-2">Resin SLA</h3>
               <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
-                Vote on new drops, early access to limited editions, exclusive colorways.
+                Ultra-high detail with smooth surfaces. Perfect for display models and intricate details.
               </p>
             </motion.div>
 
-            {/* Benefit 5 */}
+            {/* Material 5 - TPU */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -669,13 +741,13 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-base sm:text-lg font-light mb-2">Print Anywhere</h3>
+              <h3 className="text-base sm:text-lg font-light mb-2">TPU Flexible</h3>
               <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
-                Works with ender, Prusa, Bambu, or any FDM/resin printer.
+                Rubber-like flexibility for tires, bumpers, and flexible components. Shock-absorbent.
               </p>
             </motion.div>
 
-            {/* Benefit 6 */}
+            {/* Material 6 - Carbon Fiber */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -683,13 +755,13 @@ export default function Home() {
               transition={{ delay: 0.25 }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-base sm:text-lg font-light mb-2">Multiple Formats</h3>
+              <h3 className="text-base sm:text-lg font-light mb-2">Carbon Fiber</h3>
               <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
-                STL, OBJ, and pre-sliced files included for easy on-point printing.
+                Lightweight and incredibly strong. Premium finish for racing models and performance parts.
               </p>
             </motion.div>
 
-            {/* Benefit 7 */}
+            {/* Material 7 - Metal Filament */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -697,13 +769,13 @@ export default function Home() {
               transition={{ delay: 0.3 }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-base sm:text-lg font-light mb-2">Community Gallery</h3>
+              <h3 className="text-base sm:text-lg font-light mb-2">Metal Filament</h3>
               <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
-                Share your builds, get inspired. Connect with other collectors.
+                Real metal particles for authentic weight and finish. Bronze, copper, and stainless steel options.
               </p>
             </motion.div>
 
-            {/* Benefit 8 */}
+            {/* Material 8 - Wood Composite */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -711,9 +783,9 @@ export default function Home() {
               transition={{ delay: 0.35 }}
               className="border-r border-b border-white/10 p-8 hover:bg-white/5 transition-all"
             >
-              <h3 className="text-base sm:text-lg font-light mb-2">Support Included</h3>
+              <h3 className="text-base sm:text-lg font-light mb-2">Wood Composite</h3>
               <p className="text-xs sm:text-sm font-extralight text-gray-400 leading-relaxed">
-                Priority tips, troubleshooting guides, and active Discord community.
+                Real wood fibers for natural texture and finish. Bamboo, pine, and walnut grain patterns.
               </p>
             </motion.div>
           </div>
@@ -901,78 +973,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
-          <div className="text-center mb-12 sm:mb-20">
-            <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
-              SIMPLE 3-STEP PROCESS
-            </p>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-thin tracking-tight">
-              From Idea to Reality
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
-            {/* Step 1 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <div className="relative mb-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-thin text-red-400">1</span>
-                </div>
-              </div>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Describe Your Vision</h3>
-              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
-                Type a prompt or upload a reference image. Be as detailed or simple as you like.
-              </p>
-            </motion.div>
-
-            {/* Step 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-center"
-            >
-              <div className="relative mb-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-thin text-red-400">2</span>
-                </div>
-              </div>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">AI Creates Your Model</h3>
-              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
-                Watch as AI generates your image and converts it to a fully-realized 3D model.
-              </p>
-            </motion.div>
-
-            {/* Step 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-center"
-            >
-              <div className="relative mb-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-thin text-red-400">3</span>
-                </div>
-              </div>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Ship Straight to You</h3>
-              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
-                Export your 3D model in any format and start 3D printing or rendering immediately.
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* Social Proof / Stats Section - COMMENTED OUT */}
       {/* 
       <section className="py-16 sm:py-24 border-t border-white/5">
@@ -1004,7 +1004,7 @@ export default function Home() {
       </section>
       */}
 
-      {/* Use Cases Section */}
+      {/* Use Cases Section - COMMENTED OUT
       <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
           <div className="text-center mb-12 sm:mb-20">
@@ -1017,7 +1017,7 @@ export default function Home() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {/* Use Case 1 */}
+            // Use Case 1
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1030,7 +1030,7 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Use Case 2 */}
+            // Use Case 2
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1044,7 +1044,7 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Use Case 3 */}
+            // Use Case 3
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1058,7 +1058,7 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Use Case 4 */}
+            // Use Case 4
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1072,7 +1072,7 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Use Case 5 */}
+            // Use Case 5
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1086,7 +1086,7 @@ export default function Home() {
               </p>
             </motion.div>
 
-            {/* Use Case 6 */}
+            // Use Case 6
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1101,7 +1101,7 @@ export default function Home() {
             </motion.div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* This Month's Drops Section - COMMENTED OUT FOR NOW
       <section className="min-h-screen relative py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">

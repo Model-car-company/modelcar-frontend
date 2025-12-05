@@ -657,7 +657,7 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
               <div className="absolute bottom-6 left-6 z-10">
                 <div className="bg-black/65 backdrop-blur-sm border border-white/10 rounded-lg p-4 pr-5 max-w-xl shadow-lg">
                   <h3 className="text-white text-2xl sm:text-3xl md:text-4xl font-light leading-snug tracking-wide mb-3">
-                    Your dream car
+                    Your dream product
                     <br />
                     just got one step closer
                   </h3>
