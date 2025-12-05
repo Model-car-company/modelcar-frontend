@@ -601,7 +601,7 @@ export default function Home() {
               WHAT YOU GET
             </p>
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight">
-            Unlock the Digital Garage
+            Unlock Your Potential
             </h2>
           </div>
 
