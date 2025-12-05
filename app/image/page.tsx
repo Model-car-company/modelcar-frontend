@@ -24,7 +24,7 @@ const ModelAssetCard = memo(({ asset, onPreview3D }: { asset: { id: string; url:
           <p className="text-xs text-gray-500">{asset.prompt}</p>
         </div>
         <div className="flex gap-2">
-          <Link href={`/studio?asset=${asset.id}`} className="px-3 py-1.5 bg-white text-black rounded text-xs hover:bg-gray-200 font-medium">
+          <Link href={`/studio?asset=${asset.id}`} className="px-3 py-1.5 bg-white text-black text-xs hover:bg-gray-200 font-medium">
             Customize
           </Link>
         </div>
@@ -56,7 +56,7 @@ const ModelAssetCard = memo(({ asset, onPreview3D }: { asset: { id: string; url:
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[11px]">
-              <span className="px-2 py-1 rounded bg-black/70 text-white/80 tracking-wide">View 3D</span>
+              <span className="px-2 py-1 bg-black/70 text-white/80 tracking-wide">View 3D</span>
             </div>
           </button>
         )}
@@ -577,7 +577,7 @@ export default function ImagePage() {
               </h3>
               <Link
                 href={`/studio?asset=${modelToPreview.id}`}
-                className="px-4 py-2 rounded bg-white text-black text-xs sm:text-sm font-medium hover:bg-gray-200 transition-colors whitespace-nowrap"
+                className="px-4 py-2 bg-white text-black text-xs sm:text-sm font-medium hover:bg-gray-200 transition-colors whitespace-nowrap"
               >
                 Customize
               </Link>
@@ -618,7 +618,7 @@ export default function ImagePage() {
             <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-lg">
               <button
                 onClick={() => setMode('text')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${mode === 'text'
+                className={`flex items-center justify-center gap-2 px-3 py-2 text-xs transition-colors ${mode === 'text'
                   ? 'bg-white text-black'
                   : 'hover:bg-white/10 text-gray-400'
                   }`}
@@ -628,7 +628,7 @@ export default function ImagePage() {
               </button>
               <button
                 onClick={() => setMode('sketch')}
-                className={`flex items-center justify-center gap-2 px-3 py-2 rounded text-xs transition-colors ${mode === 'sketch'
+                className={`flex items-center justify-center gap-2 px-3 py-2 text-xs transition-colors ${mode === 'sketch'
                   ? 'bg-white text-black'
                   : 'hover:bg-white/10 text-gray-400'
                   }`}
@@ -647,7 +647,7 @@ export default function ImagePage() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe your car in detail..."
-                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors resize-none h-24 lg:h-32"
+                className="w-full bg-white/5 border border-white/10 px-4 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors resize-none h-24 lg:h-32"
                 disabled={generating}
               />
               <p className="text-[10px] text-gray-500 mt-2">Be specific about style, color, angle, and details</p>
@@ -669,7 +669,7 @@ export default function ImagePage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setTool('pen')}
-                        className={`flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 ${tool === 'pen' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
+                        className={`flex-1 p-2 text-xs flex items-center justify-center gap-2 ${tool === 'pen' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
                           }`}
                       >
                         <Paintbrush className="w-3 h-3" />
@@ -677,7 +677,7 @@ export default function ImagePage() {
                       </button>
                       <button
                         onClick={() => setTool('eraser')}
-                        className={`flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 ${tool === 'eraser' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
+                        className={`flex-1 p-2 text-xs flex items-center justify-center gap-2 ${tool === 'eraser' ? 'bg-white text-black' : 'bg-white/10 hover:bg-white/20'
                           }`}
                       >
                         <Eraser className="w-3 h-3" />
@@ -691,7 +691,7 @@ export default function ImagePage() {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setBrushSize(Math.max(1, brushSize - 1))}
-                        className="p-1 hover:bg-white/10 rounded transition-colors"
+                        className="p-1 hover:bg-white/10 transition-colors"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
@@ -705,7 +705,7 @@ export default function ImagePage() {
                       />
                       <button
                         onClick={() => setBrushSize(Math.min(50, brushSize + 1))}
-                        className="p-1 hover:bg-white/10 rounded transition-colors"
+                        className="p-1 hover:bg-white/10 transition-colors"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
@@ -718,7 +718,7 @@ export default function ImagePage() {
                       type="color"
                       value={color}
                       onChange={(e) => setColor(e.target.value)}
-                      className="w-full h-10 rounded cursor-pointer"
+                      className="w-full h-10 cursor-pointer"
                     />
                   </div>
 
@@ -735,7 +735,7 @@ export default function ImagePage() {
                         }
                       }}
                       disabled={historyStep <= 0}
-                      className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
+                      className="flex-1 p-2 text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
                     >
                       <Undo className="w-3 h-3" />
                       Undo
@@ -752,7 +752,7 @@ export default function ImagePage() {
                         }
                       }}
                       disabled={historyStep >= history.length - 1}
-                      className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
+                      className="flex-1 p-2 text-xs flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 disabled:opacity-30"
                     >
                       <Redo className="w-3 h-3" />
                       Redo
@@ -773,7 +773,7 @@ export default function ImagePage() {
                           }
                         }
                       }}
-                      className="flex-1 p-2 rounded text-xs flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                      className="flex-1 p-2 text-xs flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400"
                     >
                       <Trash2 className="w-3 h-3" />
                       Clear
@@ -841,7 +841,7 @@ export default function ImagePage() {
               }
             }}
             disabled={(mode === 'text' && !prompt.trim()) || generating}
-            className={`w-full py-3 rounded font-light text-sm transition-all duration-300 flex items-center justify-center gap-2 ${generating || (mode === 'text' && !prompt.trim())
+            className={`w-full py-3 font-light text-sm transition-all duration-300 flex items-center justify-center gap-2 ${generating || (mode === 'text' && !prompt.trim())
               ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
               : 'bg-white text-black hover:bg-gray-200'
               }`}
@@ -950,7 +950,7 @@ export default function ImagePage() {
                       toast.success('Sketch rendering coming soon')
                     }}
                     disabled={generating}
-                    className={`px-3 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 whitespace-nowrap ${generating
+                    className={`px-3 py-1.5 text-[11px] transition-colors flex items-center gap-1.5 whitespace-nowrap ${generating
                       ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                       : 'bg-white text-black hover:bg-gray-200'
                       }`}

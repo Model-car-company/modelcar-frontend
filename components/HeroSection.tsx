@@ -181,7 +181,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
           className="text-center max-w-4xl mx-auto"
         >
           {/* Badge */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={inView ? { opacity: 1, scale: 1 } : {}}
             transition={{ delay: 0.2, duration: 0.8 }}
@@ -189,14 +189,14 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
           >
             <Sparkles className="w-3 h-3 text-red-400" />
             <span className="text-xs font-extralight tracking-wider text-gray-300 uppercase">Beta</span>
-          </motion.div>
+          </motion.div> */}
           <motion.h1
             className="text-4xl md:text-5xl lg:text-6xl font-extralight mb-8 leading-tight tracking-wide"
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
-            Build Your <span className="font-light text-white">Dream Garage</span> without the house loan
+            Make Your <span className="font-light text-white">Dreams</span> Tangible
           </motion.h1>
 
           {/* Subtitle */}
@@ -206,7 +206,7 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.4, duration: 0.8 }}
           >
-            Can't drop $44K on a Mustang GT? Own it as a detailed 3D model. Print it. Display it. Build your entire collection without the car payment.
+            Design custom 3D models with AI and get them printed and shipped to your door, Starting with custom car collectibles.
           </motion.p>
 
           {/* Get Early Access Button */}
@@ -225,9 +225,9 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
               Get Early Access
             </motion.a>
             
-            <p className="text-xs font-extralight text-gray-500 mt-4">
+            {/* <p className="text-xs font-extralight text-gray-500 mt-4">
               Start creating your dream garage today + exclusive founder benefits
-            </p>
+            </p> */}
           </motion.div>
         </motion.div>
       </div>
@@ -235,14 +235,64 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
       {/* Top Left Image */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
-        animate={inView ? { opacity: 1, scale: 1 } : {}}
-        transition={{ duration: 1, delay: 1.2 }}
-        className="absolute top-32 left-8 w-56 h-36 md:w-64 md:h-40 lg:w-72 lg:h-44"
+        animate={inView ? { opacity: [1, 0.8, 0.3, 0, 0, 0, 0.3, 0.8, 1], scale: [1, 0.98, 0.96, 0.95, 0.95, 0.95, 0.96, 0.98, 1] } : { opacity: 0, scale: 0.8 }}
+        transition={{ 
+          opacity: { duration: 16, delay: 1.2, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 16, delay: 1.2, repeat: Infinity, ease: "easeInOut" },
+          initial: { duration: 1, delay: 1.2 }
+        }}
+        className="absolute top-32 left-8 w-32 h-20 md:w-40 md:h-24 lg:w-48 lg:h-28"
       >
         <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
           <Image
             src="/landing/Gemini_Generated_Image_ct4rdhct4rdhct4r.png"
             alt="3D Model Preview"
+            fill
+            className="object-cover opacity-80 hover:opacity-100 transition-opacity"
+            sizes="(max-width: 768px) 256px, (max-width: 1024px) 288px, 320px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+        </div>
+      </motion.div>
+
+      {/* Top Right Shoe Image */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={inView ? { opacity: [1, 0.8, 0.3, 0, 0, 0, 0.3, 0.8, 1], scale: [1, 0.98, 0.96, 0.95, 0.95, 0.95, 0.96, 0.98, 1] } : { opacity: 0, scale: 0.8 }}
+        transition={{ 
+          opacity: { duration: 16, delay: 2.8, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 16, delay: 2.8, repeat: Infinity, ease: "easeInOut" },
+          initial: { duration: 1, delay: 1.8 }
+        }}
+        className="absolute top-40 right-12 w-32 h-20 md:w-40 md:h-24 lg:w-44 lg:h-28"
+      >
+        <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
+          <Image
+            src="/landing/Create_a_nice_detailed_shoe_for_running_and_make_it_look_like_this_design.jpg"
+            alt="Running Shoe Design"
+            fill
+            className="object-cover opacity-80 hover:opacity-100 transition-opacity"
+            sizes="(max-width: 768px) 224px, (max-width: 1024px) 256px, 288px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+        </div>
+      </motion.div>
+
+      {/* Top Center Toy Showcase Image */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={inView ? { opacity: [1, 0.8, 0.3, 0, 0, 0, 0.3, 0.8, 1], scale: [1, 0.98, 0.96, 0.95, 0.95, 0.95, 0.96, 0.98, 1] } : { opacity: 0, scale: 0.8 }}
+        transition={{ 
+          opacity: { duration: 16, delay: 5.2, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 16, delay: 5.2, repeat: Infinity, ease: "easeInOut" },
+          initial: { duration: 1, delay: 3.3 }
+        }}
+        className="absolute top-24 left-[calc(50%-80px)] -translate-x-0 w-40 h-24 md:w-48 md:h-28 lg:w-56 lg:h-32"
+      >
+        <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
+          <Image
+            src="/landing/make_a_cool_toy_showcase__keep_the__background_sleek_.jpg"
+            alt="Toy Showcase Design"
             fill
             className="object-cover opacity-80 hover:opacity-100 transition-opacity"
             sizes="(max-width: 768px) 256px, (max-width: 1024px) 288px, 320px"
@@ -263,14 +313,64 @@ export default function HeroSection({ y1, y2, opacity }: HeroSectionProps) {
       {/* Bottom Right Image */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
-        animate={inView ? { opacity: 1, scale: 1 } : {}}
-        transition={{ duration: 1, delay: 1.5 }}
-        className="absolute bottom-8 right-8 w-56 h-36 md:w-64 md:h-40 lg:w-72 lg:h-44"
+        animate={inView ? { opacity: [1, 0.8, 0.3, 0, 0, 0, 0.3, 0.8, 1], scale: [1, 0.98, 0.96, 0.95, 0.95, 0.95, 0.96, 0.98, 1] } : { opacity: 0, scale: 0.8 }}
+        transition={{ 
+          opacity: { duration: 16, delay: 2, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 16, delay: 2, repeat: Infinity, ease: "easeInOut" },
+          initial: { duration: 1, delay: 1.5 }
+        }}
+        className="absolute bottom-8 right-8 w-32 h-20 md:w-40 md:h-24 lg:w-48 lg:h-28"
       >
         <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
           <Image
             src="/landing/Gemini_Generated_Image_2kb57k2kb57k2kb5.png"
             alt="3D Model Preview"
+            fill
+            className="object-cover opacity-80 hover:opacity-100 transition-opacity"
+            sizes="(max-width: 768px) 256px, (max-width: 1024px) 288px, 320px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+        </div>
+      </motion.div>
+
+      {/* Bottom Left Action Figure Image */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={inView ? { opacity: [1, 0.8, 0.3, 0, 0, 0, 0.3, 0.8, 1], scale: [1, 0.98, 0.96, 0.95, 0.95, 0.95, 0.96, 0.98, 1] } : { opacity: 0, scale: 0.8 }}
+        transition={{ 
+          opacity: { duration: 16, delay: 3.6, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 16, delay: 3.6, repeat: Infinity, ease: "easeInOut" },
+          initial: { duration: 1, delay: 2.1 }
+        }}
+        className="absolute bottom-16 left-12 w-32 h-20 md:w-40 md:h-24 lg:w-44 lg:h-28"
+      >
+        <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
+          <Image
+            src="/landing/create_an_action_figure_that_is_cool_and_highly_detailed_.jpg"
+            alt="Action Figure Design"
+            fill
+            className="object-cover opacity-80 hover:opacity-100 transition-opacity"
+            sizes="(max-width: 768px) 224px, (max-width: 1024px) 256px, 288px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+        </div>
+      </motion.div>
+
+      {/* Bottom Center Robotics Image */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={inView ? { opacity: [1, 0.8, 0.3, 0, 0, 0, 0.3, 0.8, 1], scale: [1, 0.98, 0.96, 0.95, 0.95, 0.95, 0.96, 0.98, 1] } : { opacity: 0, scale: 0.8 }}
+        transition={{ 
+          opacity: { duration: 16, delay: 4.4, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 16, delay: 4.4, repeat: Infinity, ease: "easeInOut" },
+          initial: { duration: 1, delay: 2.7 }
+        }}
+        className="absolute bottom-24 left-[calc(50%-80px)] -translate-x-0 w-40 h-24 md:w-48 md:h-28 lg:w-56 lg:h-32"
+      >
+        <div className="relative w-full h-full border border-white/10 rounded-lg overflow-hidden">
+          <Image
+            src="/landing/make_a_cool_rebotics_design_look_of_it_s_parts_and_joints_.jpg"
+            alt="Robotics Design"
             fill
             className="object-cover opacity-80 hover:opacity-100 transition-opacity"
             sizes="(max-width: 768px) 256px, (max-width: 1024px) 288px, 320px"

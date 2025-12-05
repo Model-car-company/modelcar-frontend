@@ -590,8 +590,8 @@ export default function StudioPage() {
             )}
           </AnimatePresence>
           
-          {/* View Controls Overlay */}
-          <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm border border-white/10 rounded-lg p-3">
+          {/* View Mode Section - COMMENTED OUT */}
+          {/* <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm border border-white/10 rounded-lg p-3">
             <div className="text-xs font-light text-gray-400 mb-2">View Mode</div>
             <div className="flex gap-2">
               {['solid', 'wireframe', 'normal', 'uv'].map((mode) => (
@@ -608,7 +608,7 @@ export default function StudioPage() {
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Status Bar with Grid Toggle */}
           <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm border border-white/10 rounded-lg px-4 py-2">

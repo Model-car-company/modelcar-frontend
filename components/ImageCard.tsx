@@ -100,23 +100,23 @@ export default function ImageCard({ image, onGenerate3D, onMake3D }: ImageCardPr
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="flex items-center justify-between gap-2">
               <div className="flex gap-1.5">
-                <button onClick={startAddMode} className={`px-2.5 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 ${segmentMode === 'add' ? 'bg-green-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                <button onClick={startAddMode} className={`px-2.5 py-1.5 text-[11px] transition-colors flex items-center gap-1.5 ${segmentMode === 'add' ? 'bg-green-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
                   <Plus className="w-3 h-3" />
                   Add
                 </button>
-                <button onClick={startRemoveMode} className={`px-2.5 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 ${segmentMode === 'remove' ? 'bg-red-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                <button onClick={startRemoveMode} className={`px-2.5 py-1.5 text-[11px] transition-colors flex items-center gap-1.5 ${segmentMode === 'remove' ? 'bg-red-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
                   <Minus className="w-3 h-3" />
                   Remove
                 </button>
                 {segmentPoints.length > 0 && (
-                  <button onClick={clearSegments} className="px-2.5 py-1.5 bg-white/10 text-white text-[11px] rounded hover:bg-white/20 transition-colors">Clear</button>
+                  <button onClick={clearSegments} className="px-2.5 py-1.5 bg-white/10 text-white text-[11px] hover:bg-white/20 transition-colors">Clear</button>
                 )}
-                <a href={image.url} download className="px-2.5 py-1.5 bg-white/10 text-white text-[11px] rounded hover:bg-white/20 transition-colors flex items-center">
+                <a href={image.url} download className="px-2.5 py-1.5 bg-white/10 text-white text-[11px] hover:bg-white/20 transition-colors flex items-center">
                   <Download className="w-3 h-3" />
                 </a>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => onMake3D?.(image.url)} className="px-3 py-1.5 text-[11px] rounded transition-colors flex items-center gap-1.5 bg-white text-black hover:bg-gray-200">
+                <button onClick={() => onMake3D?.(image.url)} className="px-3 py-1.5 text-[11px] transition-colors flex items-center gap-1.5 bg-white text-black hover:bg-gray-200">
                   <Sparkles className="w-3 h-3" />
                   Make 3D
                 </button>

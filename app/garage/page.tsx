@@ -529,7 +529,7 @@ export default function GaragePage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleView(model)}
-                        className="flex-1 px-2 sm:px-3 py-2 bg-white/5 border border-white/10 rounded text-[10px] font-light hover:bg-white/10 transition-colors flex items-center justify-center gap-1"
+                        className="flex-1 px-2 sm:px-3 py-2 bg-white/5 border border-white/10 text-[10px] font-light hover:bg-white/10 transition-colors flex items-center justify-center gap-1"
                       >
                         <Eye className="w-3 h-3" />
                         <span className="hidden sm:inline">View</span>
@@ -537,7 +537,7 @@ export default function GaragePage() {
                       {model.type === 'model3d' && (
                         <button
                           onClick={() => handleShipClick(model)}
-                          className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 rounded text-[10px] font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center justify-center gap-1"
+                          className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 text-[10px] font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center justify-center gap-1"
                           title="Ship Design to 3D Printing"
                         >
                           <Truck className="w-3 h-3" />
@@ -546,14 +546,14 @@ export default function GaragePage() {
                       )}
                       <button
                         onClick={() => handleDownload(model)}
-                        className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 rounded text-[10px] font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center justify-center gap-1"
+                        className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-[10px] font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center justify-center gap-1"
                       >
                         <Download className="w-3 h-3" />
                         <span className="hidden sm:inline">Download</span>
                       </button>
                       <button
                         onClick={() => handleDeleteClick(model)}
-                        className="px-2 sm:px-3 py-2 bg-white/5 border border-white/10 rounded text-[10px] font-light hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all flex items-center justify-center"
+                        className="px-2 sm:px-3 py-2 bg-white/5 border border-white/10 text-[10px] font-light hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all flex items-center justify-center"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>

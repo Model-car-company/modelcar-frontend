@@ -663,7 +663,7 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
                   </h3>
                   <Link
                     href="/image"
-                    className="inline-block px-4 py-2 bg-white text-black border border-white/80 hover:bg-gray-100 transition-all shadow-md text-xs sm:text-sm font-light tracking-wide rounded-md"
+                    className="inline-block px-4 py-2 bg-white text-black border border-white/80 hover:bg-gray-100 transition-all shadow-md text-xs sm:text-sm font-light tracking-wide"
                   >
                     Start Designing
                   </Link>
@@ -673,10 +673,9 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
           </div>
 
           {/* Quick Actions */}
-          <div className="mb-8 sm:mb-12">
+          {/* <div className="mb-8 sm:mb-12">
             <h2 className="text-base sm:text-lg font-thin tracking-tight mb-4 sm:mb-6 text-gray-400">Quick Actions</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-              {/* Generate Image */}
               <Link
                 href="/image"
                 className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded p-4 sm:p-6 hover:bg-white/10 hover:border-white/20 transition-all"
@@ -688,7 +687,6 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
                 </p>
               </Link>
 
-              {/* Create 3D Model */}
               <Link
                 href="/studio"
                 className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded p-4 sm:p-6 hover:bg-white/10 hover:border-white/20 transition-all"
@@ -700,7 +698,6 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
                 </p>
               </Link>
 
-              {/* View Garage */}
               <Link
                 href="/garage"
                 className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded p-4 sm:p-6 hover:bg-white/10 hover:border-white/20 transition-all"
@@ -712,7 +709,7 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
                 </p>
               </Link>
             </div>
-          </div>
+          </div> */}
 
           {/* 3D Model Showcase - Complete Car */}
           <div className="mb-8 sm:mb-12">
