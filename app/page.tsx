@@ -1374,7 +1374,7 @@ export default function Home() {
                 </li>
               </ul>
               <Link 
-                href="/sign-up"
+                href="/dashboard"
                 className="block w-full py-3 text-center text-sm font-light border border-white/20 hover:bg-white/5 transition-all"
               >
                 Get Started
@@ -1404,7 +1404,7 @@ export default function Home() {
                 </li>
               </ul>
               <Link 
-                href="/pricing"
+                href="/dashboard"
                 className="block w-full py-3 text-center text-sm font-light border border-white/20 hover:bg-white/5 transition-all"
               >
                 Start Creating
@@ -1443,7 +1443,7 @@ export default function Home() {
                 </li>
               </ul>
               <Link 
-                href="/pricing"
+                href="/dashboard"
                 className="block w-full py-3 text-center text-sm font-light bg-white text-black hover:bg-gray-100 transition-all"
               >
                 Go Pro
