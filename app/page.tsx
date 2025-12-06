@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 import { ArrowRight, Sparkles, Box, Download, Zap, Image as ImageIcon, Check, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import SimpleFooter from '../components/SimpleFooter'
@@ -12,6 +12,13 @@ import HeroSection from '../components/HeroSection'
 import Landing3DViewer from '../components/Landing3DViewer'
 import PublicNav from '../components/PublicNav'
 
+// Step images for the scroll section
+const stepImages = [
+  '/landing/step1-describe-vision.png',
+  '/landing/step2-ai-creates-model.png',
+  '/landing/step3-ship-to-you.png',
+]
+
 export default function Home() {
   const router = useRouter()
   const supabase = createClient()
@@ -19,6 +26,45 @@ export default function Home() {
   const y1 = useTransform(scrollYProgress, [0, 0.5], ['0%', '20%'])
   const y2 = useTransform(scrollYProgress, [0, 0.5], ['0%', '10%'])
   const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0])
+  
+  // Track active step for image switching
+  const [activeStep, setActiveStep] = useState(0)
+  const [showFixedImage, setShowFixedImage] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null)
+  const stepsContainerRef = useRef<HTMLDivElement>(null)
+  const step1Ref = useRef(null)
+  const step2Ref = useRef(null)
+  const step3Ref = useRef(null)
+  
+  const step1InView = useInView(step1Ref, { amount: 0.5 })
+  const step2InView = useInView(step2Ref, { amount: 0.5 })
+  const step3InView = useInView(step3Ref, { amount: 0.5 })
+  
+  // Show fixed image only when steps container is properly in view
+  useEffect(() => {
+    const handleScroll = () => {
+      if (stepsContainerRef.current) {
+        const rect = stepsContainerRef.current.getBoundingClientRect()
+        // Show image when steps container top is above center of screen
+        // and bottom is below 40% of screen height
+        const isInStepsArea = rect.top < window.innerHeight * 0.4 && rect.bottom > window.innerHeight * 0.4
+        setShowFixedImage(isInStepsArea)
+      }
+    }
+    
+    window.addEventListener('scroll', handleScroll)
+    handleScroll()
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+  
+  useEffect(() => {
+    // Only update activeStep if at least one step is in view
+    // This prevents jumping back to step 0 when scrolling past step 3
+    if (step3InView) setActiveStep(2)
+    else if (step2InView) setActiveStep(1)
+    else if (step1InView) setActiveStep(0)
+    // If no step is in view, keep the current activeStep
+  }, [step1InView, step2InView, step3InView])
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -40,6 +86,44 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
       </div>
       
+      {/* Fixed Image Panel - Box background with left edge bleed */}
+      <motion.div 
+        className="hidden lg:block fixed left-0 top-0 w-1/2 h-screen z-40 pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showFixedImage ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {/* Centered box container with vertical margins */}
+        <div className="absolute left-0 top-[12%] bottom-[12%] right-8">
+          {/* Box background - lighter gray, sharp edges */}
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-300/20 via-gray-400/15 to-gray-500/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/15 via-gray-200/10 to-transparent" />
+          
+          {/* Image container - centered within the box */}
+          <div className="absolute inset-0 flex items-center justify-center p-8">
+            <div className="w-full h-full max-w-2xl relative">
+              {/* All images stacked, only active one visible */}
+              {stepImages.map((src, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: activeStep === index ? 1 : 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  <Image
+                    src={src}
+                    alt={`Step ${index + 1}`}
+                    fill
+                    className="object-contain"
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+      
       {/* Content wrapper */}
       <div className="relative z-10">
 
@@ -49,10 +133,12 @@ export default function Home() {
       {/* Hero Section */}
       <HeroSection y1={y1} y2={y2} opacity={opacity} />
 
-      {/* How It Works Section */}
-      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+      {/* How It Works Section - Scroll-triggered with Fixed Image */}
+      <section ref={sectionRef} className="relative border-t border-l border-r border-white/5">
+
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
-          <div className="text-center mb-12 sm:mb-20">
+          {/* Section Header */}
+          <div className="text-center py-16 sm:py-24">
             <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
               SIMPLE 3-STEP PROCESS
             </p>
@@ -61,62 +147,127 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+          {/* Steps Container - Right side on desktop */}
+          <div ref={stepsContainerRef} className="lg:ml-[50%] pb-16 sm:pb-24">
             {/* Step 1 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center"
+            <div
+              ref={step1Ref}
+              className="min-h-[80vh] flex flex-col justify-center relative py-16"
             >
-              <div className="relative mb-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-thin text-red-400">1</span>
+              {/* Sleek Progress Line - white gradient fade */}
+              <div className="absolute left-0 top-0 bottom-0 w-px">
+                <motion.div 
+                  className="w-full bg-gradient-to-b from-white/40 via-white/20 to-transparent"
+                  initial={{ height: "0%" }}
+                  animate={{ height: step1InView ? "100%" : "0%" }}
+                  transition={{ duration: 0.8 }}
+                />
+              </div>
+              
+              <div className="pl-6">
+                <p className="text-[10px] font-extralight tracking-[0.3em] uppercase text-white/50 mb-4">
+                  STEP 01
+                </p>
+                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extralight tracking-tight mb-6 text-white">
+                  Describe Your Vision
+                </h3>
+                <p className="text-base font-extralight text-gray-400 leading-relaxed max-w-md">
+                  Type a prompt or upload a reference image. Be as detailed or simple as you like—our AI understands natural language.
+                </p>
+              </div>
+
+              {/* Mobile Image - sharp edges */}
+              <div className="lg:hidden mt-8 pl-6">
+                <div className="relative h-64 overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-white/10">
+                  <Image
+                    src="/landing/step1-describe-vision.png"
+                    alt="Describe your vision"
+                    fill
+                    className="object-contain p-4"
+                  />
                 </div>
               </div>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Describe Your Vision</h3>
-              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
-                Type a prompt or upload a reference image. Be as detailed or simple as you like.
-              </p>
-            </motion.div>
+            </div>
 
             {/* Step 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-center"
+            <div
+              ref={step2Ref}
+              className="min-h-[80vh] flex flex-col justify-center relative py-16"
             >
-              <div className="relative mb-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-thin text-red-400">2</span>
+              {/* Sleek Progress Line - white gradient fade */}
+              <div className="absolute left-0 top-0 bottom-0 w-px">
+                <motion.div 
+                  className="w-full bg-gradient-to-b from-white/40 via-white/20 to-transparent"
+                  initial={{ height: "0%" }}
+                  animate={{ height: step2InView ? "100%" : "0%" }}
+                  transition={{ duration: 0.8 }}
+                />
+              </div>
+              
+              <div className="pl-6">
+                <p className="text-[10px] font-extralight tracking-[0.3em] uppercase text-white/50 mb-4">
+                  STEP 02
+                </p>
+                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extralight tracking-tight mb-6 text-white">
+                  AI Creates Your Model
+                </h3>
+                <p className="text-base font-extralight text-gray-400 leading-relaxed max-w-md">
+                  Watch as AI generates your image and converts it to a fully-realized 3D model in seconds.
+                </p>
+              </div>
+
+              {/* Mobile Image - sharp edges */}
+              <div className="lg:hidden mt-8 pl-6">
+                <div className="relative h-64 overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-white/10">
+                  <Image
+                    src="/landing/step2-ai-creates-model.png"
+                    alt="AI creates your model"
+                    fill
+                    className="object-contain p-4"
+                  />
                 </div>
               </div>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">AI Creates Your Model</h3>
-              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
-                Watch as AI generates your image and converts it to a fully-realized 3D model.
-              </p>
-            </motion.div>
+            </div>
 
             {/* Step 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-center"
+            <div
+              ref={step3Ref}
+              className="min-h-[80vh] flex flex-col justify-center relative py-16"
             >
-              <div className="relative mb-4">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-500/30 rounded flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-thin text-red-400">3</span>
+              {/* Sleek Progress Line - white gradient fade */}
+              <div className="absolute left-0 top-0 bottom-0 w-px">
+                <motion.div 
+                  className="w-full bg-gradient-to-b from-white/40 via-white/20 to-transparent"
+                  initial={{ height: "0%" }}
+                  animate={{ height: step3InView ? "100%" : "0%" }}
+                  transition={{ duration: 0.8 }}
+                />
+              </div>
+              
+              <div className="pl-6">
+                <p className="text-[10px] font-extralight tracking-[0.3em] uppercase text-white/50 mb-4">
+                  STEP 03
+                </p>
+                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-extralight tracking-tight mb-6 text-white">
+                  Ship Straight to You
+                </h3>
+                <p className="text-base font-extralight text-gray-400 leading-relaxed max-w-md">
+                  Export your 3D model in any format and get it 3D printed and shipped directly to your door.
+                </p>
+              </div>
+
+              {/* Mobile Image - sharp edges */}
+              <div className="lg:hidden mt-8 pl-6">
+                <div className="relative h-64 overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-white/10">
+                  <Image
+                    src="/landing/step3-ship-to-you.png"
+                    alt="Ship straight to you"
+                    fill
+                    className="object-contain p-4"
+                  />
                 </div>
               </div>
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-light mb-2">Ship Straight to You</h3>
-              <p className="text-sm font-extralight text-gray-400 leading-relaxed">
-                Export your 3D model in any format and start 3D printing or rendering immediately.
-              </p>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
