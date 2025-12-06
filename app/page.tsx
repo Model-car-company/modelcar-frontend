@@ -1336,6 +1336,133 @@ export default function Home() {
       </section>
       */}
 
+      {/* Pricing Section */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="text-center mb-12 sm:mb-16">
+            {/* <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-gray-400 mb-4">
+              PRICING
+            </p> */}
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-thin tracking-tight mb-4">
+              Start designing for free
+            </h2>
+            <p className="text-sm font-extralight text-gray-400 max-w-xl mx-auto">
+              Start free. Scale as you create.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            {/* Free Tier */}
+            <div className="p-8 border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+              <p className="text-[10px] font-extralight tracking-[0.2em] uppercase text-gray-500 mb-2">FREE</p>
+              <div className="flex items-baseline gap-1 mb-6">
+                <span className="text-4xl font-extralight">$0</span>
+              </div>
+              <div className="h-px bg-white/10 mb-6" />
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  6 credits to start
+                </li>
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  Basic 3D viewer
+                </li>
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  Community support
+                </li>
+              </ul>
+              <Link 
+                href="/sign-up"
+                className="block w-full py-3 text-center text-sm font-light border border-white/20 hover:bg-white/5 transition-all"
+              >
+                Get Started
+              </Link>
+            </div>
+
+            {/* Starter */}
+            <div className="p-8 border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] transition-all">
+              <p className="text-[10px] font-extralight tracking-[0.2em] uppercase text-gray-500 mb-2">STARTER</p>
+              <div className="flex items-baseline gap-1 mb-6">
+                <span className="text-4xl font-extralight">$9</span>
+                <span className="text-sm font-extralight text-gray-500">/month</span>
+              </div>
+              <div className="h-px bg-white/10 mb-6" />
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  100 credits/month
+                </li>
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  STL, OBJ, GLB exports
+                </li>
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  10 GB cloud storage
+                </li>
+              </ul>
+              <Link 
+                href="/pricing"
+                className="block w-full py-3 text-center text-sm font-light border border-white/20 hover:bg-white/5 transition-all"
+              >
+                Start Creating
+              </Link>
+            </div>
+
+            {/* Pro - Popular */}
+            <div className="p-8 border border-red-500/50 bg-red-500/5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] font-extralight tracking-[0.2em] uppercase text-gray-500">PRO</p>
+                <span className="text-[9px] font-light tracking-[0.2em] uppercase bg-red-500/20 border border-red-500/50 text-red-400 px-3 py-1">
+                  POPULAR
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1 mb-6">
+                <span className="text-4xl font-extralight">$29</span>
+                <span className="text-sm font-extralight text-gray-500">/month</span>
+              </div>
+              <div className="h-px bg-white/10 mb-6" />
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  350 credits/month
+                </li>
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  All export formats
+                </li>
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  Priority support
+                </li>
+                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                  <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
+                  Commercial license
+                </li>
+              </ul>
+              <Link 
+                href="/pricing"
+                className="block w-full py-3 text-center text-sm font-light bg-white text-black hover:bg-gray-100 transition-all"
+              >
+                Go Pro
+              </Link>
+            </div>
+          </div>
+
+          {/* View all plans link */}
+          <div className="text-center mt-10">
+            <Link 
+              href="/pricing"
+              className="text-sm font-extralight text-gray-400 hover:text-white transition-colors"
+            >
+              View all plans →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section */}
       <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
         <div className="max-w-4xl mx-auto px-4 sm:px-8 md:px-16">
