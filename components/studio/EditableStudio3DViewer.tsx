@@ -18,7 +18,17 @@ interface EditableStudio3DViewerProps {
   }
   modelUrl?: string
   onGeometryUpdate?: (geometry: any) => void
+  onScaleChange?: (scale: { x: number; y: number; z: number }) => void
   geometry?: any
+  meshStats?: {
+    vertexCount: number
+    triangleCount: number
+    boundingBox: {
+      min: any
+      max: any
+      size: { x: number; y: number; z: number }
+    } | null
+  } | null
 }
 
 interface HistoryEntry {
@@ -78,6 +88,11 @@ export default function EditableStudio3DViewer(props: EditableStudio3DViewerProp
     props.onGeometryUpdate?.(geometry)
   }, [saveToHistory, props])
 
+  // Handle scale change from gizmo - pass to parent
+  const handleScaleChange = useCallback((scale: { x: number; y: number; z: number }) => {
+    props.onScaleChange?.(scale)
+  }, [props])
+
   // Babylon.js operations
   const handleDelete = useCallback(() => {
     if (typeof window.babylonDeleteSelected === 'function') {
@@ -124,6 +139,7 @@ export default function EditableStudio3DViewer(props: EditableStudio3DViewerProp
         {...props}
         geometry={currentGeometry}
         onGeometryUpdate={handleGeometryLoaded}
+        onScaleChange={handleScaleChange}
         isEditMode={isEditMode}
         selectedTool={selectedTool}
       />

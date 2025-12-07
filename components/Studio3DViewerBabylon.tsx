@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import * as BABYLON from 'babylonjs'
 import 'babylonjs-loaders'
 import * as THREE from 'three'
@@ -90,7 +90,18 @@ interface Studio3DViewerBabylonProps {
   }
   modelUrl?: string
   onGeometryUpdate?: (geometry: any) => void
+  onScaleChange?: (scale: { x: number; y: number; z: number }) => void
   geometry?: any
+  // Real-world dimensions from Three.js geometry (for accurate display)
+  meshStats?: {
+    vertexCount: number
+    triangleCount: number
+    boundingBox: {
+      min: any
+      max: any
+      size: { x: number; y: number; z: number }
+    } | null
+  } | null
 }
 
 export default function Studio3DViewerBabylon({
@@ -99,7 +110,9 @@ export default function Studio3DViewerBabylon({
   material,
   modelUrl,
   onGeometryUpdate,
+  onScaleChange,
   geometry,
+  meshStats,
   isEditMode = false,
   selectedTool = 'select',
 }: Studio3DViewerBabylonProps & { isEditMode?: boolean; selectedTool?: string }) {
@@ -124,6 +137,21 @@ export default function Studio3DViewerBabylon({
   const [samPoints, setSamPoints] = useState<SAMPoint[]>([])
   const [samSegments, setSamSegments] = useState<SAMSegment[]>([])
   const [isSAMMode, setIsSAMMode] = useState(false)
+  const gridRef = useRef<BABYLON.LinesMesh | null>(null)
+  
+  // Gizmo state for interactive scaling
+  const gizmoManagerRef = useRef<BABYLON.GizmoManager | null>(null)
+  const boundingBoxGizmoRef = useRef<BABYLON.BoundingBoxGizmo | null>(null)
+  const [isGizmoActive, setIsGizmoActive] = useState(false)
+  const [currentScale, setCurrentScale] = useState({ x: 1, y: 1, z: 1 })
+  const [currentDimensions, setCurrentDimensions] = useState<{ w: number; h: number; d: number } | null>(null)
+  const initialScaleRef = useRef({ x: 1, y: 1, z: 1 })
+  const onScaleChangeRef = useRef(onScaleChange)
+  
+  // Keep the ref updated when prop changes
+  useEffect(() => {
+    onScaleChangeRef.current = onScaleChange
+  }, [onScaleChange])
 
   useEffect(() => {
     if (!canvasRef.current) return
@@ -200,36 +228,35 @@ export default function Studio3DViewerBabylon({
     highlightLayer.outerGlow = true
     highlightLayerRef.current = highlightLayer
 
-    // Grid floor - using lines for clean squares
-    if (showGrid) {
-      // Create grid using line system for clean squares
-      const gridSize = 50
-      const gridStep = 2
-      const gridLines = []
-      
-      // Create horizontal lines
-      for (let i = -gridSize / 2; i <= gridSize / 2; i += gridStep) {
-        gridLines.push([
-          new BABYLON.Vector3(-gridSize / 2, 0, i),
-          new BABYLON.Vector3(gridSize / 2, 0, i)
-        ])
-      }
-      
-      // Create vertical lines
-      for (let i = -gridSize / 2; i <= gridSize / 2; i += gridStep) {
-        gridLines.push([
-          new BABYLON.Vector3(i, 0, -gridSize / 2),
-          new BABYLON.Vector3(i, 0, gridSize / 2)
-        ])
-      }
-      
-      // Create the line system
-      const gridLineSystem = BABYLON.MeshBuilder.CreateLineSystem('grid', {
-        lines: gridLines,
-      }, scene)
-      gridLineSystem.color = new BABYLON.Color3(0.25, 0.25, 0.25)
-      gridLineSystem.position.y = -0.01
+    // Grid floor - using lines for clean squares (always create, toggle visibility separately)
+    const gridSize = 50
+    const gridStep = 2
+    const gridLines = []
+    
+    // Create horizontal lines
+    for (let i = -gridSize / 2; i <= gridSize / 2; i += gridStep) {
+      gridLines.push([
+        new BABYLON.Vector3(-gridSize / 2, 0, i),
+        new BABYLON.Vector3(gridSize / 2, 0, i)
+      ])
     }
+    
+    // Create vertical lines
+    for (let i = -gridSize / 2; i <= gridSize / 2; i += gridStep) {
+      gridLines.push([
+        new BABYLON.Vector3(i, 0, -gridSize / 2),
+        new BABYLON.Vector3(i, 0, gridSize / 2)
+      ])
+    }
+    
+    // Create the line system
+    const gridLineSystem = BABYLON.MeshBuilder.CreateLineSystem('grid', {
+      lines: gridLines,
+    }, scene)
+    gridLineSystem.color = new BABYLON.Color3(0.25, 0.25, 0.25)
+    gridLineSystem.position.y = -0.01
+    gridLineSystem.isVisible = showGrid
+    gridRef.current = gridLineSystem
 
     // Load model
     if (modelUrl) {
@@ -695,6 +722,192 @@ export default function Studio3DViewerBabylon({
             const threeGeometry = babylonToThreeGeometry(result.meshes)
             onGeometryUpdate(threeGeometry)
           }
+          
+          // ========== BOUNDING BOX GIZMO SETUP ==========
+          // Create a utility layer for gizmos
+          const utilLayer = new BABYLON.UtilityLayerRenderer(scene)
+          
+          // Create the bounding box gizmo with white color for sleek look
+          const boundingBoxGizmo = new BABYLON.BoundingBoxGizmo(
+            BABYLON.Color3.White(),
+            utilLayer
+          )
+          boundingBoxGizmoRef.current = boundingBoxGizmo
+          
+          // Style the gizmo - smaller, more elegant
+          boundingBoxGizmo.scaleBoxSize = 0.06 // Smaller corner boxes
+          boundingBoxGizmo.rotationSphereSize = 0 // Disable rotation spheres
+          boundingBoxGizmo.fixedDragMeshScreenSize = true
+          boundingBoxGizmo.fixedDragMeshScreenSizeDistanceFactor = 12
+          
+          // Make the box lines thinner by adjusting the gizmo's line meshes
+          // Set scale drag speed for smoother scaling
+          boundingBoxGizmo.scaleDragSpeed = 1.5
+          
+          // Store initial bounding box dimensions
+          let initialBounds: { sizeX: number; sizeY: number; sizeZ: number } | null = null
+          
+          // Calculate and store initial dimensions
+          const calculateDimensions = () => {
+            if (!rootMesh) return null
+            let minX = Infinity, minY = Infinity, minZ = Infinity
+            let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity
+            
+            result.meshes.forEach(mesh => {
+              if (mesh.getTotalVertices && mesh.getTotalVertices() > 0) {
+                mesh.computeWorldMatrix(true)
+                const bounds = mesh.getBoundingInfo()
+                const worldMin = bounds.boundingBox.minimumWorld
+                const worldMax = bounds.boundingBox.maximumWorld
+                
+                minX = Math.min(minX, worldMin.x)
+                minY = Math.min(minY, worldMin.y)
+                minZ = Math.min(minZ, worldMin.z)
+                maxX = Math.max(maxX, worldMax.x)
+                maxY = Math.max(maxY, worldMax.y)
+                maxZ = Math.max(maxZ, worldMax.z)
+              }
+            })
+            
+            return {
+              sizeX: maxX - minX,
+              sizeY: maxY - minY,
+              sizeZ: maxZ - minZ
+            }
+          }
+          
+          initialBounds = calculateDimensions()
+          if (initialBounds) {
+            setCurrentDimensions({
+              w: initialBounds.sizeX,
+              h: initialBounds.sizeY,
+              d: initialBounds.sizeZ
+            })
+          }
+          
+          // Track scale changes in real-time
+          boundingBoxGizmo.onScaleBoxDragObservable.add(() => {
+            if (!rootMesh) return
+            
+            const scale = rootMesh.scaling
+            setCurrentScale({ x: scale.x, y: scale.y, z: scale.z })
+            
+            // Calculate current dimensions based on scale
+            if (initialBounds) {
+              setCurrentDimensions({
+                w: initialBounds.sizeX * scale.x,
+                h: initialBounds.sizeY * scale.y,
+                d: initialBounds.sizeZ * scale.z
+              })
+            }
+          })
+          
+          // When scaling ends, propagate the change
+          boundingBoxGizmo.onScaleBoxDragEndObservable.add(() => {
+            if (!rootMesh) return
+            
+            const scale = rootMesh.scaling
+            const scaleChange = {
+              x: scale.x / initialScaleRef.current.x,
+              y: scale.y / initialScaleRef.current.y,
+              z: scale.z / initialScaleRef.current.z
+            }
+            
+            // Update initial scale reference
+            initialScaleRef.current = { x: scale.x, y: scale.y, z: scale.z }
+            
+            // Notify parent of scale change - this will apply scale to Three.js geometry
+            // and bake the scale into vertex positions for proper saving
+            if (onScaleChangeRef.current) {
+              onScaleChangeRef.current(scaleChange)
+            }
+            
+            // Note: We don't call onGeometryUpdate here because:
+            // 1. Babylon mesh scaling is a transform, not baked into vertices
+            // 2. onScaleChange handles updating the Three.js geometry with baked scale
+            // 3. The parent component will update currentGeometry which flows back here
+          })
+          
+          // Double-click handler to activate/deactivate gizmo (toggle)
+          let lastClickTime = 0
+          const doubleClickThreshold = 300 // ms
+          
+          scene.onPointerObservable.add((pointerInfo) => {
+            if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERPICK) {
+              const currentTime = Date.now()
+              const timeDiff = currentTime - lastClickTime
+              
+              if (timeDiff < doubleClickThreshold) {
+                // Double-click detected
+                const pickResult = pointerInfo.pickInfo
+                
+                // Check if gizmo is currently active
+                if (boundingBoxGizmo.attachedMesh) {
+                  // DEACTIVATE gizmo on double-click (toggle off)
+                  boundingBoxGizmo.attachedMesh = null
+                  setIsGizmoActive(false)
+                } else if (pickResult && pickResult.hit && pickResult.pickedMesh) {
+                  const pickedMesh = pickResult.pickedMesh
+                  
+                  // Check if clicking on the model (not ground/grid)
+                  if (pickedMesh.name !== 'ground' && 
+                      pickedMesh.name !== 'grid' &&
+                      !pickedMesh.name.includes('gizmo')) {
+                    
+                    // ACTIVATE gizmo on double-click (toggle on)
+                    boundingBoxGizmo.attachedMesh = rootMesh
+                    setIsGizmoActive(true)
+                    
+                    // Store initial scale
+                    initialScaleRef.current = {
+                      x: rootMesh.scaling.x,
+                      y: rootMesh.scaling.y,
+                      z: rootMesh.scaling.z
+                    }
+                  }
+                }
+              }
+              
+              lastClickTime = currentTime
+            }
+          })
+          
+          // Keyboard shortcut to toggle gizmo (press 'S' for scale)
+          const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 's' || e.key === 'S') {
+              if (boundingBoxGizmo.attachedMesh) {
+                boundingBoxGizmo.attachedMesh = null
+                setIsGizmoActive(false)
+              } else if (rootMesh) {
+                boundingBoxGizmo.attachedMesh = rootMesh
+                setIsGizmoActive(true)
+                initialScaleRef.current = {
+                  x: rootMesh.scaling.x,
+                  y: rootMesh.scaling.y,
+                  z: rootMesh.scaling.z
+                }
+              }
+            } else if (e.key === 'Escape') {
+              // Escape to deactivate gizmo
+              if (boundingBoxGizmo.attachedMesh) {
+                boundingBoxGizmo.attachedMesh = null
+                setIsGizmoActive(false)
+              }
+            }
+          }
+          
+          window.addEventListener('keydown', handleKeyDown)
+          
+          // Store cleanup function
+          const cleanupGizmo = () => {
+            window.removeEventListener('keydown', handleKeyDown)
+            boundingBoxGizmo.dispose()
+            utilLayer.dispose()
+          }
+          
+          // Store for cleanup
+          ;(scene as any)._gizmoCleanup = cleanupGizmo
+          // ========== END BOUNDING BOX GIZMO SETUP ==========
         })
         .catch(() => {
           // Create a red sphere to indicate error
@@ -727,9 +940,20 @@ export default function Studio3DViewerBabylon({
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize)
+      // Clean up gizmo if it exists
+      if ((scene as any)._gizmoCleanup) {
+        (scene as any)._gizmoCleanup()
+      }
       engine.dispose()
     }
-  }, [showGrid, viewMode, modelUrl, material])
+  }, [viewMode, modelUrl, material]) // Removed showGrid - handled separately
+  
+  // Toggle grid visibility without recreating the scene
+  useEffect(() => {
+    if (gridRef.current) {
+      gridRef.current.isVisible = showGrid
+    }
+  }, [showGrid])
 
   // Apply edited geometry from Three.js back to Babylon mesh
   useEffect(() => {
@@ -1276,9 +1500,88 @@ export default function Studio3DViewerBabylon({
       )}
       
       {/* Selection Count */}
-      {selectedParts.size > 0 && (
+      {selectedParts.size > 0 && !isGizmoActive && (
         <div className="absolute top-4 right-4 text-sm text-blue-400 pointer-events-none">
           {selectedParts.size} part{selectedParts.size > 1 ? 's' : ''} selected
+        </div>
+      )}
+      
+      {/* Scale Gizmo Active Panel - Shows real-time dimensions */}
+      {isGizmoActive && (
+        <div className="absolute top-4 right-4 bg-black/90 border border-white/20 backdrop-blur-sm p-4 text-xs pointer-events-none min-w-[220px]">
+          <div className="text-white font-medium mb-3 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+            Scale Mode Active
+          </div>
+          
+          {/* Current Scale */}
+          <div className="mb-3">
+            <div className="text-gray-500 uppercase tracking-wider text-[10px] mb-1">Scale Factor</div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-red-500/20 border border-red-500/30 px-2 py-1 text-center">
+                <span className="text-red-400 text-[10px]">X</span>
+                <span className="text-white ml-1">{currentScale.x.toFixed(2)}</span>
+              </div>
+              <div className="bg-green-500/20 border border-green-500/30 px-2 py-1 text-center">
+                <span className="text-green-400 text-[10px]">Y</span>
+                <span className="text-white ml-1">{currentScale.y.toFixed(2)}</span>
+              </div>
+              <div className="bg-blue-500/20 border border-blue-500/30 px-2 py-1 text-center">
+                <span className="text-blue-400 text-[10px]">Z</span>
+                <span className="text-white ml-1">{currentScale.z.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Current Dimensions - Use meshStats for real-world dimensions */}
+          {meshStats?.boundingBox && (
+            <div className="mb-3">
+              <div className="text-gray-500 uppercase tracking-wider text-[10px] mb-1">Dimensions (inches)</div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white/5 border border-white/10 px-2 py-1 text-center">
+                  <span className="text-red-400 text-[10px]">W</span>
+                  <span className="text-white ml-1">{(meshStats.boundingBox.size.x * currentScale.x).toFixed(1)}"</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 px-2 py-1 text-center">
+                  <span className="text-green-400 text-[10px]">H</span>
+                  <span className="text-white ml-1">{(meshStats.boundingBox.size.y * currentScale.y).toFixed(1)}"</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 px-2 py-1 text-center">
+                  <span className="text-blue-400 text-[10px]">D</span>
+                  <span className="text-white ml-1">{(meshStats.boundingBox.size.z * currentScale.z).toFixed(1)}"</span>
+                </div>
+              </div>
+              {/* Also show in cm */}
+              <div className="grid grid-cols-3 gap-2 mt-1">
+                <div className="text-center text-[9px] text-gray-500">
+                  {(meshStats.boundingBox.size.x * currentScale.x * 2.54).toFixed(1)}cm
+                </div>
+                <div className="text-center text-[9px] text-gray-500">
+                  {(meshStats.boundingBox.size.y * currentScale.y * 2.54).toFixed(1)}cm
+                </div>
+                <div className="text-center text-[9px] text-gray-500">
+                  {(meshStats.boundingBox.size.z * currentScale.z * 2.54).toFixed(1)}cm
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Instructions */}
+          <div className="text-gray-500 text-[10px] border-t border-white/10 pt-2 mt-2">
+            <div>• Drag corners to scale uniformly</div>
+            <div>• Drag edges to scale per-axis</div>
+            <div>• <span className="text-white">Double-click</span> to exit scale mode</div>
+            <div>• Press <span className="text-white">ESC</span> or <span className="text-white">S</span> to toggle</div>
+          </div>
+        </div>
+      )}
+      
+      {/* Scale Mode Hint - when not active */}
+      {!isGizmoActive && !isEditMode && modelUrl && (
+        <div className="absolute bottom-20 left-4 bg-black/60 border border-white/10 backdrop-blur-sm px-3 py-2 text-[10px] text-gray-400 pointer-events-none">
+          <span className="text-white">Double-click</span> model or press <span className="text-white">S</span> to scale
         </div>
       )}
       

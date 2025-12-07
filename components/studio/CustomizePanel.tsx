@@ -255,7 +255,7 @@ export default function CustomizePanel({
         </div>
       )}
 
-      {/* Transform Section */}
+      {/* Transform Section - COMMENTED OUT (using interactive gizmo instead)
       <div className="border border-white/10">
         <button
           onClick={() => toggleSection('transform')}
@@ -270,7 +270,6 @@ export default function CustomizePanel({
         
         {expandedSections.transform && (
           <div className="p-3 space-y-3">
-            {/* Scale Mode Toggle */}
             <div className="flex gap-2">
               <button
                 onClick={() => setUniformScale(true)}
@@ -308,7 +307,6 @@ export default function CustomizePanel({
                   onChange={(e) => setScaleValue(Number(e.target.value))}
                   className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer"
                 />
-                {/* Preview dimensions */}
                 {meshStats?.boundingBox && (
                   <div className="mt-2 text-[9px] text-gray-500">
                     After: {formatSize(meshStats.boundingBox.size.x * scaleValue / 100).inches}" × {formatSize(meshStats.boundingBox.size.y * scaleValue / 100).inches}" × {formatSize(meshStats.boundingBox.size.z * scaleValue / 100).inches}"
@@ -345,7 +343,6 @@ export default function CustomizePanel({
               </div>
             )}
             
-            {/* Quick Scale Buttons */}
             <div className="flex gap-1">
               <button
                 onClick={() => handleQuickScale(0.5)}
@@ -370,7 +367,6 @@ export default function CustomizePanel({
               </button>
             </div>
             
-            {/* Center Button */}
             <button
               onClick={() => onCenter?.()}
               disabled={isProcessing}
@@ -382,6 +378,7 @@ export default function CustomizePanel({
           </div>
         )}
       </div>
+      */}
 
       {/* Mesh Tools Section */}
       <div className="border border-white/10">

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Download, Wrench, Loader2, CheckCircle2, Box } from 'lucide-react'
+import { ArrowLeft, Download, Wrench, Loader2, CheckCircle2, Box, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import * as THREE from 'three'
 import { createClient } from '../../lib/supabase/client'
@@ -52,6 +52,49 @@ export default function StudioPage() {
   const [loadingModels, setLoadingModels] = useState(true)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
+  const router = useRouter()
+  
+  // Warn user before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?'
+        return e.returnValue
+      }
+    }
+    
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
+  
+  // Handle navigation with unsaved changes warning
+  const handleNavigation = useCallback((href: string) => {
+    if (hasUnsavedChanges) {
+      setPendingNavigation(href)
+      setShowUnsavedWarning(true)
+    } else {
+      router.push(href)
+    }
+  }, [hasUnsavedChanges, router])
+  
+  // Confirm leaving without saving
+  const confirmLeave = useCallback(() => {
+    setShowUnsavedWarning(false)
+    setHasUnsavedChanges(false)
+    if (pendingNavigation) {
+      router.push(pendingNavigation)
+      setPendingNavigation(null)
+    }
+  }, [pendingNavigation, router])
+  
+  // Cancel navigation and stay on page
+  const cancelLeave = useCallback(() => {
+    setShowUnsavedWarning(false)
+    setPendingNavigation(null)
+  }, [])
   
   // Fetch user's 3D models on mount
   useEffect(() => {
@@ -343,6 +386,22 @@ export default function StudioPage() {
     }
   }, [currentGeometry, addToHistory, showToast])
 
+  // Handle scale change from interactive gizmo (real-time scaling in 3D viewport)
+  const handleGizmoScaleChange = useCallback((scale: { x: number; y: number; z: number }) => {
+    if (!currentGeometry) return
+    
+    // Apply the scale change to the geometry
+    const scaled = scaleMesh(currentGeometry, scale)
+    
+    if (scaled && scaled.getAttribute('position')) {
+      addToHistory(scaled)
+      setHasUnsavedChanges(true)
+      
+      const scaleLabel = `X:${(scale.x * 100).toFixed(0)}% Y:${(scale.y * 100).toFixed(0)}% Z:${(scale.z * 100).toFixed(0)}%`
+      showToast(`Scaled: ${scaleLabel}`)
+    }
+  }, [currentGeometry, addToHistory, showToast])
+
   // Handle loading a model from user's library
   const handleLoadModel = useCallback((model: UserModel) => {
     setCurrentModel(`/api/models/${model.id}`)
@@ -416,10 +475,16 @@ export default function StudioPage() {
         {/* Left Panel - Controls */}
         <div className="w-full lg:w-80 border-b lg:border-r lg:border-b-0 border-white/5 bg-black/30 p-4 lg:p-6 overflow-y-auto max-h-screen">
           {/* Back to Dashboard */}
-          <Link href="/dashboard" className="flex items-center gap-2 mb-4 lg:mb-6 text-xs font-light text-gray-400 hover:text-white transition-colors">
+          <button 
+            onClick={() => handleNavigation('/dashboard')} 
+            className="flex items-center gap-2 mb-4 lg:mb-6 text-xs font-light text-gray-400 hover:text-white transition-colors"
+          >
             <ArrowLeft className="w-3 h-3" />
             <span>Back to Dashboard</span>
-          </Link>
+            {hasUnsavedChanges && (
+              <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" title="Unsaved changes" />
+            )}
+          </button>
 
           {/* Tab Navigation */}
           <div className="grid grid-cols-2 gap-2 mb-4 lg:mb-6 p-1 bg-white/5 rounded-lg">
@@ -523,6 +588,8 @@ export default function StudioPage() {
               modelUrl={currentModel}
               geometry={currentGeometry}
               onGeometryUpdate={handleGeometryLoaded}
+              onScaleChange={handleGizmoScaleChange}
+              meshStats={meshStats}
               // WIND TUNNEL PROPS COMMENTED OUT
               // windSpeed={windSpeed}
               // showStreamlines={showStreamlines}
@@ -625,8 +692,123 @@ export default function StudioPage() {
               </button>
             </div>
           </div>
+          
+          {/* Floating Save Button - Bottom Right when unsaved changes */}
+          <AnimatePresence>
+            {hasUnsavedChanges && (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                onClick={handleSaveModel}
+                disabled={isSaving}
+                className="absolute bottom-4 right-4 px-4 py-1.5 bg-white text-black text-xs font-light tracking-wide hover:bg-gray-100 transition-all flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-3 h-3" />
+                    Save
+                  </>
+                )}
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
       </div>
+      
+      {/* Unsaved Changes Warning Modal */}
+      <AnimatePresence>
+        {showUnsavedWarning && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={cancelLeave}
+              className="fixed inset-0 bg-black/90 backdrop-blur-md z-50"
+            />
+
+            {/* Modal */}
+            <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="bg-black border border-white/10 w-full max-w-md relative overflow-hidden"
+              >
+                {/* Content */}
+                <div className="p-8">
+                  {/* Icon */}
+                  <div className="mb-6 flex justify-center">
+                    <div className="w-12 h-12 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6 text-orange-500" />
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <h2 className="text-2xl font-thin tracking-tight mb-3 text-center">
+                    Unsaved Changes
+                  </h2>
+
+                  {/* Message */}
+                  <p className="text-sm font-light text-gray-400 text-center mb-8">
+                    You have unsaved changes to your 3D model. If you leave now, your changes will be lost.
+                  </p>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={async () => {
+                        setShowUnsavedWarning(false)
+                        await handleSaveModel()
+                        if (pendingNavigation) {
+                          router.push(pendingNavigation)
+                          setPendingNavigation(null)
+                        }
+                      }}
+                      disabled={isSaving}
+                      className="w-full py-2.5 px-4 text-sm bg-gradient-to-br from-emerald-500/70 via-emerald-600/60 to-emerald-500/70 border border-emerald-500/40 text-white font-light tracking-wide hover:from-emerald-500/90 hover:via-emerald-600/80 hover:to-emerald-500/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          Save Changes & Leave
+                        </>
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={confirmLeave}
+                      className="w-full py-2.5 px-4 text-sm bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-white font-light tracking-wide hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all"
+                    >
+                      Leave Without Saving
+                    </button>
+                    
+                    <button
+                      onClick={cancelLeave}
+                      className="w-full py-2.5 px-4 text-sm bg-white/5 border border-white/10 text-gray-300 font-light tracking-wide hover:bg-white/10 hover:border-white/20 transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
