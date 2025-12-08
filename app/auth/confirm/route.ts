@@ -2,11 +2,12 @@ import { createClient } from '../../../lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { type NextRequest } from 'next/server'
 
+// Handle email confirmation links from Supabase
+// These come in the format: /auth/confirm?token_hash=xxx&type=signup
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
   const token_hash = searchParams.get('token_hash')
-  const type = searchParams.get('type')
+  const type = searchParams.get('type') as 'signup' | 'recovery' | 'invite' | 'email' | null
   const next = searchParams.get('next') ?? '/dashboard'
 
   // Helper to get redirect URL
@@ -23,29 +24,20 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const supabase = await createClient()
-
-  // Handle PKCE flow (code exchange)
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(getRedirectUrl(next))
-    }
-    console.error('Auth callback error (code):', error.message)
-  }
-
-  // Handle email confirmation with token_hash (magic link / email confirmation)
   if (token_hash && type) {
+    const supabase = await createClient()
     const { error } = await supabase.auth.verifyOtp({
       token_hash,
-      type: type as 'signup' | 'recovery' | 'invite' | 'email',
+      type,
     })
+
     if (!error) {
       return NextResponse.redirect(getRedirectUrl(next))
     }
-    console.error('Auth callback error (token_hash):', error.message)
+    
+    console.error('Email confirmation error:', error.message)
   }
 
-  // If we get here without code or token_hash, redirect to error page
+  // Redirect to error page if verification fails
   return NextResponse.redirect(getRedirectUrl('/auth/auth-code-error'))
 }

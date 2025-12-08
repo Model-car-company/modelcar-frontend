@@ -13,10 +13,13 @@ export default function SignUpPage() {
   const router = useRouter()
   const supabase = createClient()
   const [fullName, setFullName] = useState('')
+  const [emailSent, setEmailSent] = useState(false)
+  const [submittedEmail, setSubmittedEmail] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -58,14 +61,15 @@ export default function SignUpPage() {
           data: {
             full_name: fullName,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       })
 
       if (error) throw error
 
-      // Success - redirect to dashboard
-      router.push('/dashboard')
-      router.refresh()
+      // Success - show email confirmation screen
+      setSubmittedEmail(email)
+      setEmailSent(true)
     } catch (error: any) {
       setError(error.message || 'Failed to create account')
     } finally {
@@ -126,6 +130,98 @@ export default function SignUpPage() {
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-md">
+        {/* Email Confirmation Screen */}
+        {emailSent ? (
+          <div className="text-center">
+            {/* Back to home */}
+            <Link 
+              href="/"
+              className="inline-flex items-center gap-2 text-xs font-light text-gray-400 hover:text-white transition-colors mb-8"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Back to Home
+            </Link>
+
+            {/* Email Icon */}
+            <div className="mb-8 flex justify-center">
+              <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <Mail className="w-10 h-10 text-white" strokeWidth={1} />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-3xl font-thin tracking-tight mb-4">
+              Check Your Email
+            </h1>
+
+            {/* Message */}
+            <p className="text-sm font-light text-gray-400 mb-2">
+              We've sent a confirmation link to
+            </p>
+            <p className="text-white font-light mb-6">
+              {submittedEmail}
+            </p>
+
+            {/* Instructions */}
+            <div className="bg-white/5 border border-white/10 p-4 mb-8 text-left">
+              <p className="text-xs font-light text-gray-400 mb-3">
+                Click the link in the email to verify your account and get started.
+              </p>
+              <p className="text-xs font-light text-gray-500">
+                <span className="text-gray-400">Didn't receive it?</span> Check your spam folder or wait a few minutes for it to arrive.
+              </p>
+            </div>
+
+            {/* Resend Button */}
+            <button
+              onClick={async () => {
+                setResending(true)
+                try {
+                  const { error } = await supabase.auth.resend({
+                    type: 'signup',
+                    email: submittedEmail,
+                    options: {
+                      emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    },
+                  })
+                  if (error) throw error
+                  toast.success('Confirmation email resent! Check your inbox.')
+                } catch (err: any) {
+                  console.error('Resend error:', err)
+                  toast.error(err.message || 'Failed to resend email')
+                } finally {
+                  setResending(false)
+                }
+              }}
+              disabled={resending}
+              className="w-full py-2.5 px-4 text-sm bg-white/5 border border-white/10 text-gray-300 font-light tracking-wide hover:bg-white/10 hover:border-white/20 transition-all mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resending ? 'Sending...' : 'Resend Confirmation Email'}
+            </button>
+
+            {/* Back to Sign In */}
+            <p className="text-xs font-light text-gray-500">
+              Wrong email?{' '}
+              <button
+                onClick={() => {
+                  setEmailSent(false)
+                  setSubmittedEmail('')
+                }}
+                className="text-white hover:underline"
+              >
+                Try again
+              </button>
+            </p>
+
+            {/* Footer */}
+            <div className="mt-12 text-center">
+              <p className="text-[10px] font-light text-gray-600 tracking-wide">
+                TANGIBEL © 2026 · SECURE AUTHENTICATION
+              </p>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Back to home */}
         <Link 
           href="/"
@@ -310,9 +406,11 @@ export default function SignUpPage() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-[10px] font-light text-gray-600 tracking-wide">
-            TANGIBEL © 2024 · SECURE AUTHENTICATION
+            TANGIBEL © 2026 · SECURE AUTHENTICATION
           </p>
         </div>
+        </>
+        )}
       </div>
     </div>
   )
