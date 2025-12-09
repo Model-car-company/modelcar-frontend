@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     
     if (!BACKEND_URL) {
       return NextResponse.json(
-        { error: 'Backend URL not configured. Set NEXT_PUBLIC_BACKEND_URL in .env' },
+        { error: 'Service unavailable' },
         { status: 500 }
       )
     }
@@ -38,16 +38,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!response.ok) {
-      const err = await response.text()
-      
       if (response.status === 401) {
-        return NextResponse.json({ 
-          error: 'Backend Authentication Failed', 
-          details: 'The backend rejected the authentication token (401).' 
-        }, { status: 401 })
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
-      
-      return NextResponse.json({ error: 'Backend segmentation failed', details: err }, { status: response.status })
+      return NextResponse.json({ error: 'Segmentation failed' }, { status: response.status })
     }
 
     const data = await response.json()
@@ -56,10 +50,7 @@ export async function POST(request: NextRequest) {
     const segmentedImage = data.maskUrl || data.mask_url || data.segmentedImage || data.url
     
     if (!segmentedImage) {
-      return NextResponse.json({ 
-        error: 'No mask URL in backend response', 
-        details: JSON.stringify(data) 
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Segmentation failed' }, { status: 500 })
     }
     
     // Return in format expected by frontend (segmentedImage = mask URL)

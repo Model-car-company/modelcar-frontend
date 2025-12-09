@@ -187,7 +187,6 @@ export default function SignUpPage() {
                   if (error) throw error
                   toast.success('Confirmation email resent! Check your inbox.')
                 } catch (err: any) {
-                  console.error('Resend error:', err)
                   toast.error(err.message || 'Failed to resend email')
                 } finally {
                   setResending(false)

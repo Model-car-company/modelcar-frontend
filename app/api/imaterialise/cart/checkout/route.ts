@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,8 +49,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!draftResponse.ok) {
-      const errorData = await draftResponse.json().catch(() => ({ error: 'Unknown error' }))
-      throw new Error(errorData.detail || errorData.error || `Failed: ${draftResponse.status}`)
+      throw new Error('Order creation failed')
     }
 
     const draftData = await draftResponse.json()
@@ -63,8 +62,7 @@ export async function POST(request: NextRequest) {
       })
 
       if (!processResponse.ok) {
-        const errorData = await processResponse.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(errorData.detail || errorData.error || `Process failed`)
+        throw new Error('Order processing failed')
       }
 
       const processData = await processResponse.json()
@@ -85,7 +83,7 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     return NextResponse.json(
-      { error: 'Failed to process checkout', details: error.message },
+      { error: 'Failed to process checkout' },
       { status: 500 }
     )
   }

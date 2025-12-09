@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!BACKEND_URL) {
-      return NextResponse.json({ error: 'Backend URL not configured. Set NEXT_PUBLIC_BACKEND_URL' }, { status: 500 })
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
     }
 
     // For our backend we require a public image URL
@@ -62,16 +62,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!resp.ok) {
-      const text = await resp.text()
-      
       if (resp.status === 401) {
-        return NextResponse.json({ 
-          error: 'Backend Authentication Failed', 
-          details: 'The backend rejected the authentication token (401).' 
-        }, { status: 401 })
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
-      
-      return NextResponse.json({ error: 'Backend 3D generation failed', details: text }, { status: resp.status })
+      return NextResponse.json({ error: 'Generation failed' }, { status: resp.status })
     }
 
     const data = await resp.json()
@@ -82,10 +76,7 @@ export async function POST(request: NextRequest) {
     const format = data.format || 'glb'
     
     if (!modelUrl) {
-      return NextResponse.json({ 
-        error: 'No model URL in backend response', 
-        details: JSON.stringify(data) 
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Generation failed' }, { status: 500 })
     }
     
     // Return the model URL - frontend will save to user_assets and use asset ID for Studio
@@ -106,9 +97,5 @@ export async function POST(request: NextRequest) {
 
 // Health check endpoint
 export async function GET() {
-  return NextResponse.json({
-    status: 'ready',
-    message: '3D Generation API is online',
-    integrations: { backend: BACKEND_URL ? 'connected' : 'not-configured' }
-  })
+  return NextResponse.json({ status: 'ok' })
 }

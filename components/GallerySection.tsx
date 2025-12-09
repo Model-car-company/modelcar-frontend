@@ -44,7 +44,6 @@ export default function GallerySection() {
             setModels(data.models || [])
             setError(null)
         } catch (err) {
-            console.error('Error loading gallery:', err)
             setError('Failed to load community gallery')
         } finally {
             setLoading(false)

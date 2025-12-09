@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
     if (!BACKEND_URL) {
-      return NextResponse.json(
-        { error: 'Backend URL not configured' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
     }
 
     // Forward authorization header if present
@@ -28,16 +25,10 @@ export async function POST(req: NextRequest) {
     })
 
     if (!response.ok) {
-      const text = await response.text()
-      
       if (response.status === 401) {
-        return NextResponse.json({ 
-          error: 'Backend Authentication Failed', 
-          details: 'The backend rejected the authentication token (401).' 
-        }, { status: 401 })
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
-      
-      return NextResponse.json({ error: 'Backend sketch-to-render failed', details: text }, { status: response.status })
+      return NextResponse.json({ error: 'Render failed' }, { status: response.status })
     }
 
     const data = await response.json()
@@ -46,10 +37,7 @@ export async function POST(req: NextRequest) {
     const imageUrl = data.imageUrl || data.image_url || data.url || data.images?.[0]?.url
     
     if (!imageUrl) {
-      return NextResponse.json({ 
-        error: 'No image URL in backend response', 
-        details: JSON.stringify(data) 
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Render failed' }, { status: 500 })
     }
 
     return NextResponse.json({

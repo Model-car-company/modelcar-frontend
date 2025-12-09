@@ -100,7 +100,6 @@ export async function POST(
             .single()
 
         if (updateError) {
-            console.error('Error updating asset:', updateError)
             return NextResponse.json(
                 { error: 'Failed to update asset' },
                 { status: 500 }
@@ -113,7 +112,6 @@ export async function POST(
         })
 
     } catch (error) {
-        console.error('Publish toggle API error:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

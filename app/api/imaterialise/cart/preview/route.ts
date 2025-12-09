@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,8 +23,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-      throw new Error(errorData.error || `Backend returned ${response.status}`)
+      throw new Error('Preview failed')
     }
 
     const data = await response.json()
@@ -32,7 +31,7 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     return NextResponse.json(
-      { error: 'Failed to preview cart', details: error.message },
+      { error: 'Failed to preview cart' },
       { status: 500 }
     )
   }

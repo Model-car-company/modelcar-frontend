@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     return NextResponse.json(
-      { error: 'Segmentation failed', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Segmentation failed' },
       { status: 500 }
     )
   }

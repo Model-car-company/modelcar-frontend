@@ -5,6 +5,25 @@ import { createClient } from '@supabase/supabase-js'
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://tangibel.io',
+  'https://www.tangibel.io',
+  process.env.NEXT_PUBLIC_APP_URL,
+].filter(Boolean) as string[]
+
+function getCorsOrigin(request: NextRequest): string {
+  const origin = request.headers.get('origin')
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    return origin
+  }
+  // In development, allow localhost
+  if (process.env.NODE_ENV === 'development' && origin?.includes('localhost')) {
+    return origin
+  }
+  return ALLOWED_ORIGINS[0] || ''
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -22,7 +41,7 @@ export async function GET(
 
     if (!supabaseUrl || !supabaseServiceKey) {
       return NextResponse.json(
-        { error: 'Server configuration error: Missing Supabase keys' },
+        { error: 'Service unavailable' },
         { status: 500 }
       )
     }
@@ -51,10 +70,7 @@ export async function GET(
     })
     
     if (!modelResponse.ok) {
-      return NextResponse.json({ 
-        error: 'Failed to fetch model from source',
-        details: `Status ${modelResponse.status}: ${modelResponse.statusText}`
-      }, { status: 502 })
+      return NextResponse.json({ error: 'Resource unavailable' }, { status: 502 })
     }
 
     // Get the model data
@@ -62,9 +78,7 @@ export async function GET(
 
     // Check if the file is valid (has content)
     if (modelBuffer.byteLength < 100) {
-      return NextResponse.json({ 
-        error: 'Model file appears to be empty or invalid' 
-      }, { status: 502 })
+      return NextResponse.json({ error: 'Invalid resource' }, { status: 502 })
     }
     
     // Determine format from URL if not in database
@@ -97,6 +111,8 @@ export async function GET(
                         format === 'obj' ? 'text/plain' :
                         'application/octet-stream'
 
+    const corsOrigin = getCorsOrigin(request)
+    
     // Return the model with proper headers for Babylon.js
     return new NextResponse(modelBuffer, {
       headers: {
@@ -104,25 +120,23 @@ export async function GET(
         'Content-Disposition': `inline; filename="model.${format}"`,
         'Content-Length': modelBuffer.byteLength.toString(),
         'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': corsOrigin,
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
       },
     })
 
   } catch (error) {
-    return NextResponse.json({ 
-      error: 'Failed to proxy model',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Request failed' }, { status: 500 })
   }
 }
 
 // Handle CORS preflight requests
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
+  const corsOrigin = getCorsOrigin(request)
   return new NextResponse(null, {
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': corsOrigin,
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },

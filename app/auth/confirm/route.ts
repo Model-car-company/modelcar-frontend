@@ -34,8 +34,6 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(getRedirectUrl(next))
     }
-    
-    console.error('Email confirmation error:', error.message)
   }
 
   // Redirect to error page if verification fails

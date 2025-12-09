@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Backend URL for Tangibel API
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -22,10 +22,7 @@ export async function POST(request: NextRequest) {
     const { prompt, previousImage, reference_images, aspect_ratio, output_format } = await request.json()
 
     if (!BACKEND_URL) {
-      return NextResponse.json(
-        { error: 'Backend URL not configured. Set NEXT_PUBLIC_BACKEND_URL in .env' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
     }
 
     // Call backend external endpoint
@@ -54,16 +51,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!resp.ok) {
-      const text = await resp.text()
-      
       if (resp.status === 401) {
-        return NextResponse.json({ 
-          error: 'Backend Authentication Failed', 
-          details: 'The backend rejected the authentication token (401). This likely means the Backend is configured with a different Supabase Project/Secret than the Frontend.' 
-        }, { status: 401 })
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
-
-      return NextResponse.json({ error: 'Backend image generation failed', details: text }, { status: resp.status })
+      return NextResponse.json({ error: 'Generation failed' }, { status: resp.status })
     }
 
     const data = await resp.json()
@@ -73,10 +64,7 @@ export async function POST(request: NextRequest) {
     const enhancedPrompt = data.prompt || data.description || prompt
     
     if (!imageUrl) {
-      return NextResponse.json({ 
-        error: 'No image URL in backend response', 
-        details: JSON.stringify(data) 
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Generation failed' }, { status: 500 })
     }
     
     // Download the image from the generated URL
@@ -106,14 +94,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, imageUrl: publicUrl, prompt: enhancedPrompt, model: 'flux-1.1-pro' })
 
   } catch (error: any) {
-    // Generation error occurred
-    return NextResponse.json(
-      { 
-        error: 'Failed to generate image', 
-        message: error.message,
-        details: error.toString()
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to generate image' }, { status: 500 })
   }
 }

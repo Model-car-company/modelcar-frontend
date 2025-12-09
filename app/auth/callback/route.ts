@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(getRedirectUrl(next))
     }
-    console.error('Auth callback error (code):', error.message)
   }
 
   // Handle email confirmation with token_hash (magic link / email confirmation)
@@ -43,7 +42,6 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(getRedirectUrl(next))
     }
-    console.error('Auth callback error (token_hash):', error.message)
   }
 
   // If we get here without code or token_hash, redirect to error page

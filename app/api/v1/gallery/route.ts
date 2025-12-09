@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
             .limit(limit)
 
         if (error) {
-            console.error('Error fetching gallery models:', error)
             return NextResponse.json(
                 { error: 'Failed to fetch gallery models' },
                 { status: 500 }
@@ -54,7 +53,6 @@ export async function GET(request: NextRequest) {
         })
 
     } catch (error) {
-        console.error('Gallery API error:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

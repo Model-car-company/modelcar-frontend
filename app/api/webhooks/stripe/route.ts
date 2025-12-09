@@ -7,7 +7,7 @@ import { fetchSubscriptionWithPrices, tierIntervalFromPrice } from '../../../../
 import { getAdminSupabase } from '../../../../lib/supabase/admin';
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
 
 const log = (message: string, context: Record<string, any> = {}) => {
 };

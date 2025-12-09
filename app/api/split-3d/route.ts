@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
     if (!BACKEND_URL) {
-      return NextResponse.json(
-        { error: 'Backend URL not configured' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
     }
 
     // Forward authorization header if present
@@ -27,8 +24,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!resp.ok) {
-      const text = await resp.text()
-      return NextResponse.json({ error: 'Backend split-3d failed', details: text }, { status: resp.status })
+      if (resp.status === 401) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      return NextResponse.json({ error: 'Operation failed' }, { status: resp.status })
     }
 
     const data = await resp.json()

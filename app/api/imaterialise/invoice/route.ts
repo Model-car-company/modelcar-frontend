@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!fileId) {
-        throw new Error("No file_id or model_url provided")
+        throw new Error("MISSING_FILE:Please provide a model to print.")
     }
 
     // 2. Get estimate
@@ -64,8 +64,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!estimateResponse.ok) {
-      const errorData = await estimateResponse.json().catch(() => ({ error: 'Unknown error' }))
-      throw new Error(errorData.detail || `Backend returned ${estimateResponse.status}`)
+      throw new Error("ESTIMATE_FAILED:Unable to calculate price. Please try again.")
     }
 
     const estimateData = await estimateResponse.json()
@@ -102,8 +101,7 @@ export async function POST(request: NextRequest) {
       { 
         error: 'Failed to get invoice', 
         error_code: errorCode,
-        friendly_message: friendlyMessage || 'Something went wrong. Please try again later.',
-        details: error.message 
+        friendly_message: friendlyMessage || 'Something went wrong. Please try again later.'
       },
       { status: errorCode === 'HIGH_DEMAND' ? 503 : 500 }
     )
