@@ -19,7 +19,7 @@ BEGIN
       avatar_url TEXT,
       subscription_tier TEXT DEFAULT 'free',
       subscription_status TEXT DEFAULT 'inactive',
-      credits_remaining INTEGER DEFAULT 10 NOT NULL,
+      credits_remaining INTEGER DEFAULT 45 NOT NULL,
       stripe_customer_id TEXT UNIQUE,
       stripe_subscription_id TEXT UNIQUE,
       current_period_start TIMESTAMPTZ,
@@ -36,7 +36,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free';
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive';
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS credits_remaining INTEGER DEFAULT 10 NOT NULL;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS credits_remaining INTEGER DEFAULT 45 NOT NULL;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT UNIQUE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS current_period_start TIMESTAMPTZ;

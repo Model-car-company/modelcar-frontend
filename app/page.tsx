@@ -1469,7 +1469,7 @@ export default function Home() {
               <ul className="space-y-3 mb-8">
                 <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
                   <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
-                  6 credits to start
+                  45 credits to start
                 </li>
                 <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
                   <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
@@ -1587,7 +1587,7 @@ export default function Home() {
             <div className="py-8 border-b border-white/5">
               <h3 className="text-base sm:text-lg font-light mb-3">How does the credit system work?</h3>
               <p className="text-sm font-extralight text-gray-400 leading-relaxed">
-                Each image generation costs 1 credit, and each 3D model conversion costs 5 credits. You get 10 free credits to start, and can purchase more anytime.
+                Each image generation costs 1 credit, and each 3D model conversion costs 5 credits. You get 45 free credits to start, and can purchase more anytime.
               </p>
             </div>
 

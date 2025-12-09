@@ -21,10 +21,10 @@ export const SUBSCRIPTION_TIERS: Record<SubscriptionTier, TierConfig> = {
     description: 'Starter credits to explore AI image and 3D tools',
     monthlyPrice: 0,
     yearlyDiscountPercent: 0,
-    credits: 6,
+    credits: 45,
     stripePriceId: null,
     features: [
-      '6 credits to start',
+      '45 credits to start',
       'Basic 3D viewer',
       'Community support',
     ],
