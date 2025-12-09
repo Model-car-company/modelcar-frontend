@@ -1437,10 +1437,10 @@ export default function Home() {
                   <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
                   Priority support
                 </li>
-                <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
+                {/* <li className="flex items-center gap-3 text-sm font-extralight text-gray-300">
                   <Check className="w-4 h-4 text-white/50 flex-shrink-0" />
                   Commercial license
-                </li>
+                </li> */}
               </ul>
               <Link 
                 href="/dashboard"
