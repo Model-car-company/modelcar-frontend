@@ -593,8 +593,9 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-red-400 mb-4">
+              <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-red-400 mb-4 flex items-center gap-2">
                 NEW FEATURE
+                <span className="text-[8px] bg-red-500/20 border border-red-500/40 px-1.5 py-0.5 tracking-wider">BETA</span>
               </p>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-thin tracking-tight mb-6">
                 Blueprint-Accurate Dimensions
@@ -659,16 +660,18 @@ export default function Home() {
               className="relative"
             >
               <div className="aspect-square bg-gradient-to-br from-white/10 to-white/5 border border-white/20 overflow-hidden relative">
-                {/* Blueprint visual mockup */}
-                <div className="absolute inset-0 flex items-center justify-center p-8">
-                  <div className="w-full h-full border-2 border-dashed border-red-500/30 flex flex-col items-center justify-center">
-                    <svg className="w-16 h-16 text-red-400/60 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-sm font-light text-gray-400 mb-2">Upload Blueprint</p>
-                    <p className="text-xs font-extralight text-gray-600">152.5mm × 67.8mm × 70.5mm</p>
-                  </div>
-                </div>
+                {/* Blueprint image */}
+                <Image
+                  src="/landing/unnamed.jpg"
+                  alt="Blueprint example"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  quality={85}
+                  loading="lazy"
+                />
+                {/* Overlay for dimension labels */}
+                <div className="absolute inset-0 bg-black/20" />
                 
                 {/* Dimension callouts */}
                 <div className="absolute top-4 right-4 bg-red-500/20 border border-red-500/40 px-3 py-1.5">
