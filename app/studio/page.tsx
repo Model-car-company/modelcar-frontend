@@ -11,6 +11,7 @@ import { createClient } from '../../lib/supabase/client'
 import { smoothMesh, repairMesh, scaleMesh, centerMesh, decimateMesh, subdivideMesh, getMeshStats } from '../../lib/meshUtils'
 // GenerationPanel removed - generation is now in /image page
 import CustomizePanel from '../../components/studio/CustomizePanel'
+import OnboardingTour from '../../components/OnboardingTour'
 
 // Type for user models
 interface UserModel {
@@ -470,6 +471,9 @@ export default function StudioPage() {
 
   return (
     <div className="h-screen bg-black text-white overflow-hidden">
+      {/* Onboarding Tour */}
+      <OnboardingTour page="studio" />
+      
       {/* Main Content */}
       <div className="h-screen flex flex-col lg:flex-row">
         {/* Left Panel - Controls */}
@@ -490,6 +494,7 @@ export default function StudioPage() {
           <div className="grid grid-cols-2 gap-2 mb-4 lg:mb-6 p-1 bg-white/5 rounded-lg">
             <button
               onClick={() => setActiveTab('customize')}
+              data-tour="customize-tools"
               className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded text-xs font-light ${
                 activeTab === 'customize'
                   ? 'bg-red-500/20 text-red-400'
@@ -516,6 +521,7 @@ export default function StudioPage() {
             </button> */}
             <button
               onClick={() => setActiveTab('export')}
+              data-tour="export-tab"
               className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded text-xs font-light ${
                 activeTab === 'export'
                   ? 'bg-red-500/20 text-red-400'
@@ -579,7 +585,7 @@ export default function StudioPage() {
         </div>
 
         {/* 3D Viewport */}
-        <div className="flex-1 relative bg-gradient-to-br from-black via-gray-900 to-black h-screen overflow-hidden">
+        <div className="flex-1 relative bg-gradient-to-br from-black via-gray-900 to-black h-screen overflow-hidden" data-tour="3d-viewer">
           {currentModel ? (
             <EditableStudio3DViewer
               showGrid={showGrid}

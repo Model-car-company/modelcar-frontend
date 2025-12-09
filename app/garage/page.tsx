@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '../../lib/supabase/client'
 import CollapsibleSidebar from '../../components/CollapsibleSidebar'
+import OnboardingTour from '../../components/OnboardingTour'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ShipDesignModal from '../../components/ShipDesignModal'
 import ModelViewer3D from '../../components/ModelViewer3D'
@@ -395,6 +396,9 @@ export default function GaragePage() {
         )}
       </AnimatePresence>
 
+      {/* Onboarding Tour */}
+      <OnboardingTour page="garage" />
+
       {/* Sidebar */}
       <CollapsibleSidebar
         currentPage="garage"
@@ -461,9 +465,10 @@ export default function GaragePage() {
           {/* Grid View */}
           {viewMode === 'grid' && models.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {models.map((model) => (
+              {models.map((model, index) => (
                 <div
                   key={model.id}
+                  data-tour={index === 0 ? "model-card" : undefined}
                   className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded overflow-hidden hover:border-white/20 transition-all"
                 >
                   {/* Thumbnail */}
@@ -498,6 +503,7 @@ export default function GaragePage() {
                           e.stopPropagation()
                           togglePublic(model.id, model.is_public)
                         }}
+                        data-tour={index === 0 ? "public-toggle" : undefined}
                         className={`ml-2 px-2 py-1 rounded text-[10px] font-light transition-all flex items-center gap-1 flex-shrink-0 ${model.is_public
                           ? 'bg-green-500/20 border border-green-500/40 text-green-400 hover:bg-green-500/30'
                           : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
@@ -537,6 +543,7 @@ export default function GaragePage() {
                       {model.type === 'model3d' && (
                         <button
                           onClick={() => handleShipClick(model)}
+                          data-tour={index === 0 ? "ship-button" : undefined}
                           className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 text-[10px] font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center justify-center gap-1"
                           title="Ship Design to 3D Printing"
                         >
@@ -546,6 +553,7 @@ export default function GaragePage() {
                       )}
                       <button
                         onClick={() => handleDownload(model)}
+                        data-tour={index === 0 ? "download-button" : undefined}
                         className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-[10px] font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center justify-center gap-1"
                       >
                         <Download className="w-3 h-3" />

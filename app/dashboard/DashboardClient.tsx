@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, Box, Image as ImageIcon } from 'lucide-react'
 import CollapsibleSidebar from '../../components/CollapsibleSidebar'
+import OnboardingTour from '../../components/OnboardingTour'
 import { RoughNotation } from '../../components/ClientRoughNotation'
 import GallerySection from '../../components/GallerySection'
 import dynamic from 'next/dynamic'
@@ -42,8 +43,12 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
 
   return (
     <div className="min-h-screen bg-black text-white flex">
+      {/* Onboarding Tour */}
+      <OnboardingTour page="dashboard" />
+      
       {/* Collapsible Sidebar */}
       <CollapsibleSidebar
+        data-tour="sidebar"
         currentPage="dashboard"
         fullName={fullName}
         creditsRemaining={creditsRemaining}
@@ -663,6 +668,7 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
                   </h3>
                   <Link
                     href="/image"
+                    data-tour="start-designing"
                     className="inline-block px-4 py-2 bg-white text-black border border-white/80 hover:bg-gray-100 transition-all shadow-md text-xs sm:text-sm font-light tracking-wide"
                   >
                     Start Designing

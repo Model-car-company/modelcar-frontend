@@ -582,6 +582,110 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Blueprint Dimensions Section */}
+      <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left - Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <p className="text-[10px] sm:text-[11px] font-extralight tracking-[0.3em] uppercase text-red-400 mb-4">
+                NEW FEATURE
+              </p>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-thin tracking-tight mb-6">
+                Blueprint-Accurate Dimensions
+              </h2>
+              <p className="text-base font-extralight text-gray-400 leading-relaxed mb-8">
+                Upload a technical drawing or blueprint alongside your reference image, and our AI will extract the exact dimensions to create a perfectly scaled 3D model—ready for real-world manufacturing.
+              </p>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-red-500/20 border border-red-500/40 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-light text-white mb-1">Automatic Dimension Extraction</h4>
+                    <p className="text-xs font-extralight text-gray-500">AI reads measurements from your blueprint and applies them precisely</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-red-500/20 border border-red-500/40 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-light text-white mb-1">Real-World Scale</h4>
+                    <p className="text-xs font-extralight text-gray-500">Models are scaled to exact millimeters for print-ready accuracy</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-red-500/20 border border-red-500/40 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-light text-white mb-1">Manufacturing Ready</h4>
+                    <p className="text-xs font-extralight text-gray-500">Perfect for prototyping, replacement parts, and custom builds</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Link 
+                href="/image"
+                className="inline-flex items-center gap-3 px-6 py-3 bg-white text-black text-sm font-light tracking-wide hover:bg-gray-100 transition-all"
+              >
+                Try Blueprint Upload
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+            
+            {/* Right - Visual */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="aspect-square bg-gradient-to-br from-white/10 to-white/5 border border-white/20 overflow-hidden relative">
+                {/* Blueprint visual mockup */}
+                <div className="absolute inset-0 flex items-center justify-center p-8">
+                  <div className="w-full h-full border-2 border-dashed border-red-500/30 flex flex-col items-center justify-center">
+                    <svg className="w-16 h-16 text-red-400/60 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm font-light text-gray-400 mb-2">Upload Blueprint</p>
+                    <p className="text-xs font-extralight text-gray-600">152.5mm × 67.8mm × 70.5mm</p>
+                  </div>
+                </div>
+                
+                {/* Dimension callouts */}
+                <div className="absolute top-4 right-4 bg-red-500/20 border border-red-500/40 px-3 py-1.5">
+                  <span className="text-xs font-light text-red-400">W: 152.5mm</span>
+                </div>
+                <div className="absolute bottom-4 left-4 bg-red-500/20 border border-red-500/40 px-3 py-1.5">
+                  <span className="text-xs font-light text-red-400">H: 70.5mm</span>
+                </div>
+                <div className="absolute bottom-4 right-4 bg-red-500/20 border border-red-500/40 px-3 py-1.5">
+                  <span className="text-xs font-light text-red-400">D: 67.8mm</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Bento Grid Features Section */}
       <section className="py-16 sm:py-24 lg:py-32 border-t border-l border-r border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-16">

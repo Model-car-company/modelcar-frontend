@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Download, Plus, Minus, Sparkles } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Download, Plus, Minus, Sparkles, FileText, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface SegmentPoint {
@@ -19,11 +19,14 @@ interface ImageCardProps {
     isGenerating?: boolean
   }
   onGenerate3D?: (imageUrl: string, points: SegmentPoint[]) => void
-  onMake3D?: (imageUrl: string) => void
+  onMake3D?: (imageUrl: string, blueprintFile?: File) => void
 }
 
 export default function ImageCard({ image, onGenerate3D, onMake3D }: ImageCardProps) {
   const [segmentPoints, setSegmentPoints] = useState<SegmentPoint[]>([])
+  const [blueprintFile, setBlueprintFile] = useState<File | null>(null)
+  const [blueprintPreview, setBlueprintPreview] = useState<string | null>(null)
+  const blueprintInputRef = useRef<HTMLInputElement>(null)
   const [segmentMode, setSegmentMode] = useState<'add' | 'remove' | null>(null)
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
@@ -58,11 +61,36 @@ export default function ImageCard({ image, onGenerate3D, onMake3D }: ImageCardPr
     onGenerate3D?.(image.url, segmentPoints)
   }
 
+  const handleBlueprintChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setBlueprintFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setBlueprintPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+      toast.success('Blueprint added! Click Make 3D for accurate dimensions.')
+    }
+  }
+
+  const removeBlueprint = () => {
+    setBlueprintFile(null)
+    setBlueprintPreview(null)
+    if (blueprintInputRef.current) {
+      blueprintInputRef.current.value = ''
+    }
+  }
+
+  const handleMake3DClick = () => {
+    onMake3D?.(image.url, blueprintFile || undefined)
+  }
+
   const includeCount = segmentPoints.filter(p => p.label === 1).length
   const excludeCount = segmentPoints.filter(p => p.label === 0).length
 
   return (
-    <div className="border border-white/10 rounded-lg overflow-hidden bg-black/50 group">
+    <div className="border border-white/10 rounded-lg overflow-hidden bg-black/50 group" data-tour="image-card">
       <div className="aspect-video bg-gray-900 relative">
         {image.isGenerating ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 animate-pulse">
@@ -115,8 +143,42 @@ export default function ImageCard({ image, onGenerate3D, onMake3D }: ImageCardPr
                   <Download className="w-3 h-3" />
                 </a>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => onMake3D?.(image.url)} className="px-3 py-1.5 text-[11px] transition-colors flex items-center gap-1.5 bg-white text-black hover:bg-gray-200">
+              <div className="flex gap-2 items-center">
+                {/* Hidden file input for blueprint */}
+                <input
+                  ref={blueprintInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBlueprintChange}
+                  className="hidden"
+                />
+                
+                {/* Blueprint indicator or button */}
+                {blueprintFile ? (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-600/20 border border-red-500/50 text-red-400 text-[11px]">
+                    <FileText className="w-3 h-3" />
+                    <span className="max-w-[60px] truncate">{blueprintFile.name}</span>
+                    <button onClick={removeBlueprint} className="hover:text-red-300">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative group" data-tour="add-blueprint">
+                    <button 
+                      onClick={() => blueprintInputRef.current?.click()} 
+                      className="px-3 py-1.5 text-[11px] transition-colors flex items-center gap-1.5 bg-red-600/20 border border-red-500/50 text-red-400 hover:bg-red-600/30"
+                    >
+                      <FileText className="w-3 h-3" />
+                      Add Blueprint
+                    </button>
+                    {/* Hover tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 backdrop-blur-sm border border-white/20 rounded text-white text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      Add a blueprint for accurate dimensions
+                    </div>
+                  </div>
+                )}
+                
+                <button onClick={handleMake3DClick} data-tour="make-3d" className="px-3 py-1.5 text-[11px] transition-colors flex items-center gap-1.5 bg-white text-black hover:bg-gray-200">
                   <Sparkles className="w-3 h-3" />
                   Make 3D
                 </button>

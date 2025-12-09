@@ -12,6 +12,7 @@ import toast, { Toaster } from 'react-hot-toast'
 import ImageCard from '../../components/ImageCard'
 import ModelViewer3D from '../../components/ModelViewer3D'
 import UpgradeModal from '../../components/UpgradeModal'
+import OnboardingTour from '../../components/OnboardingTour'
 import { SubscriptionTier } from '../../lib/subscription-config'
 
 // Memoized component to prevent unnecessary re-renders
@@ -153,7 +154,8 @@ export default function ImagePage() {
   }
 
   // Handle 1-click 3D (no segmentation) using backend provider
-  const handleMake3D = async (imageUrl: string) => {
+  // Now supports optional blueprint for dimension accuracy
+  const handleMake3D = async (imageUrl: string, blueprintFile?: File) => {
     if (!user) { router.push('/sign-in'); return }
     if (!isPaidActive) { setShowUpgradeModal(true); return }
 
@@ -169,7 +171,7 @@ export default function ImagePage() {
       id: tempId,
       type: 'model3d' as const,
       url: '',
-      prompt: 'Generating 3D model…',
+      prompt: blueprintFile ? 'Generating dimension-accurate 3D model…' : 'Generating 3D model…',
       timestamp: new Date().toISOString(),
       format: 'glb' as const,
       thumbnailUrl: imageUrl,
@@ -180,14 +182,41 @@ export default function ImagePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      const response = await fetch('/api/generate-3d', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ image: imageUrl })
-      })
+      
+      // Use FormData if blueprint is provided, otherwise JSON
+      let response: Response
+      
+      if (blueprintFile) {
+        // FormData for file upload
+        const formData = new FormData()
+        formData.append('image', imageUrl)
+        
+        // Convert blueprint file to base64 for the API
+        const blueprintBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blueprintFile)
+        })
+        formData.append('blueprint', blueprintBase64)
+        
+        response = await fetch('/api/generate-3d', {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: formData
+        })
+      } else {
+        // JSON for simple request
+        response = await fetch('/api/generate-3d', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ image: imageUrl })
+        })
+      }
       if (response.status === 402) {
         if (!isPaidActive) setShowUpgradeModal(true)
         // Remove temp card
@@ -544,6 +573,9 @@ export default function ImagePage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Toaster position="top-right" />
+      
+      {/* Onboarding Tour */}
+      <OnboardingTour />
 
       {/* 3D Model Preview Modal */}
       {show3DPreview && modelToPreview && (
@@ -641,7 +673,7 @@ export default function ImagePage() {
 
           {/* Text Mode */}
           {mode === 'text' && (
-            <div className="mb-6 lg:mb-8">
+            <div className="mb-6 lg:mb-8" data-tour="prompt-input">
               <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Prompt</h3>
               <textarea
                 value={prompt}
@@ -784,7 +816,7 @@ export default function ImagePage() {
             </div>
           )}
 
-          <div className="mb-6 lg:mb-8">
+          <div className="mb-6 lg:mb-8" data-tour="reference-images">
             <h3 className="text-sm font-light text-white mb-3 uppercase tracking-wide">Reference Images (up to 3)</h3>
             <p className="text-[10px] text-gray-500 mb-3">Add reference images to guide the AI generation</p>
 
@@ -841,6 +873,7 @@ export default function ImagePage() {
               }
             }}
             disabled={(mode === 'text' && !prompt.trim()) || generating}
+            data-tour="generate-button"
             className={`w-full py-3 font-light text-sm transition-all duration-300 flex items-center justify-center gap-2 ${generating || (mode === 'text' && !prompt.trim())
               ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
               : 'bg-white text-black hover:bg-gray-200'

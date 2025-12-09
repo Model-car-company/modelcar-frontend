@@ -7,19 +7,22 @@ export async function POST(request: NextRequest) {
     // Handle both FormData and JSON requests
     const contentType = request.headers.get('content-type')
     let image: string | File | null = null
+    let blueprint: string | null = null  // Base64 blueprint image for dimension accuracy
     let prompt: string = ''
     let quality: string = 'standard'
     let provider: string = 'synexa'
     
     if (contentType?.includes('multipart/form-data')) {
       const formData = await request.formData()
-      image = formData.get('image') as File
+      image = formData.get('image') as string
+      blueprint = formData.get('blueprint') as string || null
       prompt = formData.get('prompt') as string || ''
       quality = formData.get('quality') as string || 'standard'
       provider = formData.get('provider') as string || 'synexa'
     } else {
       const json = await request.json()
-      image = json.image // Base64 string
+      image = json.image // URL string
+      blueprint = json.blueprint || null
       prompt = json.prompt || ''
       quality = json.quality || 'standard'
       provider = json.provider || 'synexa'
@@ -55,10 +58,21 @@ export async function POST(request: NextRequest) {
       headers['Authorization'] = authHeader
     }
 
+    // Build request body - include blueprint if provided for dimension accuracy
+    const requestBody: Record<string, any> = { 
+      image_url: image, 
+      prompt 
+    }
+    
+    if (blueprint) {
+      requestBody.blueprint = blueprint
+      console.log('📐 Blueprint provided for dimension-accurate 3D generation')
+    }
+
     const resp = await fetch(`${BACKEND_URL}/api/v1/external/generate-3d`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ image_url: image, prompt })
+      body: JSON.stringify(requestBody)
     })
 
     if (!resp.ok) {
