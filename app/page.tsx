@@ -613,7 +613,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-sm font-light text-white mb-1">Automatic Dimension Extraction</h4>
-                    <p className="text-xs font-extralight text-gray-500">AI reads measurements from your blueprint and applies them precisely</p>
+                    {/* <p className="text-xs font-extralight text-gray-500">AI reads measurements from your blueprint and applies them precisely</p> */}
                   </div>
                 </div>
                 
@@ -625,7 +625,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-sm font-light text-white mb-1">Real-World Scale</h4>
-                    <p className="text-xs font-extralight text-gray-500">Models are scaled to exact millimeters for print-ready accuracy</p>
+                    {/* <p className="text-xs font-extralight text-gray-500">Models are scaled to exact millimeters for print-ready accuracy</p> */}
                   </div>
                 </div>
                 
@@ -637,7 +637,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h4 className="text-sm font-light text-white mb-1">Manufacturing Ready</h4>
-                    <p className="text-xs font-extralight text-gray-500">Perfect for prototyping, replacement parts, and custom builds</p>
+                    {/* <p className="text-xs font-extralight text-gray-500">Perfect for prototyping, replacement parts, and custom builds</p> */}
                   </div>
                 </div>
               </div>

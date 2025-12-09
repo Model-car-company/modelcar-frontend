@@ -12,20 +12,53 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST
     
     if (!posthogKey) {
+      console.warn('[PostHog] Missing NEXT_PUBLIC_POSTHOG_KEY - analytics disabled')
       return
     }
 
-    // Initialize PostHog
+    // Don't re-initialize if already done
+    if (posthog.__loaded) {
+      return
+    }
+
+    // Initialize PostHog with FULL features enabled
     posthog.init(posthogKey, {
       api_host: posthogHost || 'https://us.i.posthog.com',
-      person_profiles: 'identified_only',
-      capture_pageview: false, // We'll manually capture pageviews
+      
+      // User identification
+      person_profiles: 'always', // Track all users, not just identified
+      
+      // Page tracking
+      capture_pageview: false, // We manually capture via PostHogPageView
       capture_pageleave: true,
+      
+      // Session Replay - FULL recording
+      disable_session_recording: false,
+      session_recording: {
+        maskAllInputs: false, // Set to true if you want to mask sensitive inputs
+        maskTextSelector: '[data-mask]', // Mask elements with this attribute
+        recordCrossOriginIframes: false,
+      },
+      
+      // Autocapture - clicks, form submissions, etc.
+      autocapture: true,
+      
+      // Heatmaps
+      enable_heatmaps: true,
+      
+      // Performance & scroll tracking
+      capture_performance: true,
+      enable_recording_console_log: true,
+      
+      // Persistence
+      persistence: 'localStorage+cookie',
+      
+      // Debug in development
       loaded: (posthog) => {
-        // Enable debug mode in development
         if (process.env.NODE_ENV === 'development') {
           posthog.debug()
         }
+        console.log('[PostHog] Initialized successfully with session replay enabled')
       }
     })
   }, [])
