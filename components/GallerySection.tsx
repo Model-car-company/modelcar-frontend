@@ -50,19 +50,38 @@ export default function GallerySection() {
 
     // Deep Linking: Auto-open purchase modal if params exist
     useEffect(() => {
-        const action = searchParams.get('action')
-        const assetId = searchParams.get('assetId')
+        const handleDeepLink = async () => {
+            const action = searchParams.get('action')
+            const assetId = searchParams.get('assetId')
 
-        if (action === 'buy' && assetId && models.length > 0) {
-            const targetModel = models.find(m => m.id === assetId)
-            if (targetModel) {
-                setModelToShip(targetModel)
-                setShowShipModal(true)
+            if (action === 'buy' && assetId) {
+                // First check if model is already loaded
+                const existingModel = models.find(m => m.id === assetId)
+
+                if (existingModel) {
+                    setModelToShip(existingModel)
+                    setShowShipModal(true)
+                } else {
+                    // If not found, fetch it specifically
+                    try {
+                        const response = await fetch(`/api/v1/gallery/models/${assetId}`)
+                        if (response.ok) {
+                            const modelData = await response.json()
+                            setModelToShip(modelData)
+                            setShowShipModal(true)
+                        }
+                    } catch (err) {
+                        console.error('Failed to fetch deep linked model:', err)
+                    }
+                }
+
                 // Clean up URL without reload
                 const newUrl = window.location.pathname
                 window.history.replaceState({}, '', newUrl)
             }
         }
+
+        handleDeepLink()
     }, [models, searchParams])
 
     useEffect(() => {

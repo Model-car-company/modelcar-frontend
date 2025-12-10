@@ -5,12 +5,21 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider } from 'posthog-js/react'
 
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
+export function PostHogProvider({
+  children,
+  apiKey,
+  apiHost
+}: {
+  children: React.ReactNode
+  apiKey?: string
+  apiHost?: string
+}) {
   useEffect(() => {
     // Only initialize PostHog if we have the required environment variables
-    const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
-    const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST
-    
+    // Prefer props (runtime), fallback to env (build time)
+    const posthogKey = apiKey || process.env.NEXT_PUBLIC_POSTHOG_KEY
+    const posthogHost = apiHost || process.env.NEXT_PUBLIC_POSTHOG_HOST
+
     if (!posthogKey) {
       console.warn('[PostHog] Missing NEXT_PUBLIC_POSTHOG_KEY - analytics disabled')
       return
@@ -24,14 +33,14 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     // Initialize PostHog with FULL features enabled
     posthog.init(posthogKey, {
       api_host: posthogHost || 'https://us.i.posthog.com',
-      
+
       // User identification
       person_profiles: 'always', // Track all users, not just identified
-      
+
       // Page tracking
       capture_pageview: false, // We manually capture via PostHogPageView
       capture_pageleave: true,
-      
+
       // Session Replay - FULL recording
       disable_session_recording: false,
       session_recording: {
@@ -39,20 +48,20 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         maskTextSelector: '[data-mask]', // Mask elements with this attribute
         recordCrossOriginIframes: false,
       },
-      
+
       // Autocapture - clicks, form submissions, etc.
       autocapture: true,
-      
+
       // Heatmaps
       enable_heatmaps: true,
-      
+
       // Performance & scroll tracking
       capture_performance: true,
       enable_recording_console_log: true,
-      
+
       // Persistence
       persistence: 'localStorage+cookie',
-      
+
       // Debug in development
       loaded: (posthog) => {
         if (process.env.NODE_ENV === 'development') {

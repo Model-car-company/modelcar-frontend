@@ -35,7 +35,10 @@ export default function RootLayout({
         <script async src="https://tally.so/widgets/embed.js"></script>
       </head>
       <body className={`${inter.className} bg-background text-foreground antialiased min-h-screen overflow-x-hidden`}>
-        <PostHogProvider>
+        <PostHogProvider
+          apiKey={process.env.NEXT_PUBLIC_POSTHOG_KEY}
+          apiHost={process.env.NEXT_PUBLIC_POSTHOG_HOST}
+        >
           <Suspense fallback={null}>
             <PostHogPageView />
           </Suspense>
