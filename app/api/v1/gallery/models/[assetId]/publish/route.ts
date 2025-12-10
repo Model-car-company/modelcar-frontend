@@ -3,6 +3,39 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+/**
+ * Auto-categorize asset based on prompt keywords
+ */
+function autoCategorize(prompt: string | null): string {
+    if (!prompt) return 'other'
+
+    const text = prompt.toLowerCase()
+
+    // Category keyword matching
+    if (text.match(/car|vehicle|truck|racing|automotive|wheel|motor|engine/))
+        return 'cars'
+
+    if (text.match(/game|gaming|character|hero|weapon|armor|fantasy|rpg|sword|shield/))
+        return 'gaming'
+
+    if (text.match(/film|movie|cinema|scene|set|prop|camera|director/))
+        return 'film'
+
+    if (text.match(/jewelry|ring|necklace|bracelet|earring|pendant|diamond|gold|silver/))
+        return 'jewelry'
+
+    if (text.match(/art|sculpture|statue|abstract|modern|contemporary|painting/))
+        return 'art'
+
+    if (text.match(/building|architecture|house|structure|skyscraper|tower/))
+        return 'architecture'
+
+    if (text.match(/toy|figurine|action figure|collectible|doll|miniature/))
+        return 'toys'
+
+    return 'other'
+}
+
 export async function POST(
     request: NextRequest,
     { params }: { params: { assetId: string } }
@@ -57,10 +90,10 @@ export async function POST(
             )
         }
 
-        // Verify the asset belongs to the user
+        // Verify the asset belongs to the user and get the prompt
         const { data: asset, error: assetError } = await supabaseAdmin
             .from('user_assets')
-            .select('user_id, id')
+            .select('user_id, id, prompt')
             .eq('id', assetId)
             .single()
 
@@ -87,14 +120,24 @@ export async function POST(
 
         const creator_name = profile?.full_name || user.email?.split('@')[0] || 'Anonymous'
 
+        // Auto-categorize when publishing
+        const category = is_public ? autoCategorize(asset.prompt) : null
+
         // Update the asset
+        const updateData: any = {
+            is_public,
+            creator_name,
+            updated_at: new Date().toISOString()
+        }
+
+        // Only set category if publishing
+        if (is_public && category) {
+            updateData.category = category
+        }
+
         const { data: updatedAsset, error: updateError } = await supabaseAdmin
             .from('user_assets')
-            .update({
-                is_public,
-                creator_name,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', assetId)
             .select()
             .single()

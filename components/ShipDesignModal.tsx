@@ -34,13 +34,17 @@ interface ShipDesignModalProps {
     format: string
   }
   userEmail?: string
+  assetId?: string // Gallery asset ID for marketplace
+  creatorId?: string // Creator user ID for marketplace
 }
 
 export default function ShipDesignModal({
   isOpen,
   onClose,
   model,
-  userEmail
+  userEmail,
+  assetId,
+  creatorId,
 }: ShipDesignModalProps) {
   const [step, setStep] = useState<'materials' | 'size' | 'invoice' | 'pay'>('materials')
   const [materials, setMaterials] = useState<Material[]>([])
@@ -135,12 +139,12 @@ export default function ShipDesignModal({
       })
 
       const data = await response.json()
-      
+
       if (!response.ok) {
         // Extract friendly message from error response
         const errorMessage = data.friendly_message || 'Unable to fetch pricing. Please try again later.'
         const errorCode = data.error_code || 'UNKNOWN'
-        
+
         setQuoteData({
           success: false,
           material_id: selectedMaterial!.materialID,
@@ -170,7 +174,7 @@ export default function ShipDesignModal({
     } catch (err: any) {
       // Network error or other failure
       const errorMessage = 'Unable to connect to printing service. Please check your connection and try again.'
-      
+
       setQuoteData({
         success: false,
         material_id: selectedMaterial!.materialID,
@@ -214,6 +218,8 @@ export default function ShipDesignModal({
         totalPrice: quoteData.total_price,
         currency: quoteData.currency || 'USD',
         fileId: quoteData.file_id,
+        assetId, // Gallery marketplace asset ID
+        creatorId, // Creator user ID for revenue split
       }),
     })
       .then(async (resp) => {
@@ -530,8 +536,8 @@ export default function ShipDesignModal({
                                 {quoteData.printing_price != null
                                   ? `$${quoteData.printing_price.toFixed(2)}`
                                   : quoteData.total_price != null
-                                  ? `$${quoteData.total_price.toFixed(2)}`
-                                  : "--"}
+                                    ? `$${quoteData.total_price.toFixed(2)}`
+                                    : "--"}
                               </div>
                             </div>
                             {/* Shipping cost */}
@@ -571,11 +577,10 @@ export default function ShipDesignModal({
                             </div>
                           )}
                           {quoteData.error && (
-                            <div className={`p-3 rounded text-xs font-light ${
-                              quoteData.error_code === 'HIGH_DEMAND' 
-                                ? 'bg-amber-500/10 border border-amber-500/20 text-amber-200'
-                                : 'bg-red-500/10 border border-red-500/20 text-red-300'
-                            }`}>
+                            <div className={`p-3 rounded text-xs font-light ${quoteData.error_code === 'HIGH_DEMAND'
+                              ? 'bg-amber-500/10 border border-amber-500/20 text-amber-200'
+                              : 'bg-red-500/10 border border-red-500/20 text-red-300'
+                              }`}>
                               {quoteData.error_code === 'HIGH_DEMAND' ? '🕐' : '⚠️'}{' '}
                               {quoteData.error_message || 'Unable to fetch pricing. Please try again or contact support.'}
                             </div>

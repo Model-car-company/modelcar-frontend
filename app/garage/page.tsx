@@ -619,8 +619,8 @@ export default function GaragePage() {
                         togglePublic(model.id, model.is_public)
                       }}
                       className={`px-3 py-2 rounded text-xs font-light transition-all flex items-center gap-2 ${model.is_public
-                          ? 'bg-green-500/20 border border-green-500/40 text-green-400 hover:bg-green-500/30'
-                          : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
+                        ? 'bg-green-500/20 border border-green-500/40 text-green-400 hover:bg-green-500/30'
+                        : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
                         }`}
                       title={model.is_public ? 'Public' : 'Private'}
                     >

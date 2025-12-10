@@ -45,7 +45,7 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
     <div className="min-h-screen bg-black text-white flex">
       {/* Onboarding Tour */}
       <OnboardingTour page="dashboard" />
-      
+
       {/* Collapsible Sidebar */}
       <CollapsibleSidebar
         data-tour="sidebar"
@@ -67,7 +67,7 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
 
           {/* Dashboard Hero Image */}
           <div className="mb-8 sm:mb-12">
-            <div className="relative overflow-hidden rounded border border-white/10 h-48 sm:h-64 lg:h-96">
+            <div className="relative overflow-hidden rounded border border-white/10 h-32 sm:h-40 lg:h-48">
               <img
                 src="/dashboard/Gemini_Generated_Image_yycbrpyycbrpyycb.png"
                 alt="Dashboard Overview"
@@ -659,7 +659,7 @@ export default function DashboardClient({ fullName, creditsRemaining }: Dashboar
               </div>
 
               {/* CTA Panel (dark background for text + button) */}
-              <div className="absolute bottom-6 left-6 z-10">
+              <div className="absolute top-1/2 -translate-y-1/2 left-6 z-10">
                 <div className="bg-black/65 backdrop-blur-sm border border-white/10 rounded-lg p-4 pr-5 max-w-xl shadow-lg">
                   <h3 className="text-white text-2xl sm:text-3xl md:text-4xl font-light leading-snug tracking-wide mb-3">
                     Your dream product

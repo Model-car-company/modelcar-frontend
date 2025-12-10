@@ -537,87 +537,133 @@ export async function POST(req: NextRequest) {
         } catch (err) {
         }
 
+        // Handle marketplace purchases (from gallery)
+        if (metadata.assetId && metadata.creatorId) {
+          try {
+            // Insert into marketplace_purchases table
+            const { data: purchase, error: purchaseError } = await supabase
+              .from('marketplace_purchases')
+              .insert({
+                asset_id: metadata.assetId,
+                creator_id: metadata.creatorId,
+                buyer_id: metadata.userId || null,
+                purchase_type: 'print',
+                material_id: metadata.materialId || null,
+                finish_id: metadata.finishId || null,
+                quantity: metadata.quantity ? Number(metadata.quantity) : 1,
+                total_price: pi.amount ? (pi.amount / 100).toFixed(2) : '0.00',
+                // TODO: Calculate creator_earnings and platform_earnings based on revenue split
+                creator_earnings: pi.amount ? ((pi.amount / 100) * 0.6).toFixed(2) : '0.00', // 60% to creator for now
+                platform_earnings: pi.amount ? ((pi.amount / 100) * 0.4).toFixed(2) : '0.00', // 40% platform fee
+                payment_intent_id: pi.id,
+              } as any)
+              .select()
+              .single()
+
+            if (purchaseError) {
+              console.error('Failed to insert marketplace purchase:', purchaseError)
+            } else {
+              // Get creator email to send notification
+              const { data: creator } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', metadata.creatorId)
+                .single() as any
+
+              if (creator?.email) {
+                // Send email notification to creator
+                const { sendCreatorPurchaseNotification } = await import('../../../../lib/email')
+                await sendCreatorPurchaseNotification({
+                  creatorEmail: creator.email,
+                })
+              }
+            }
+          } catch (err) {
+            console.error('Error handling marketplace purchase:', err)
+          }
+        }
+
         // Create order in Slant3D via Backend
         if (metadata.fileId && metadata.finishId) {
-            try {
-                const shippingAddress = shipping?.address
-                const orderData = {
-                    customer_email: pi.receipt_email || 'no-email@tangibel.io',
-                    shipping_address: {
-                        name: shipping?.name || 'Valued Customer',
-                        line1: shippingAddress?.line1 || '',
-                        line2: shippingAddress?.line2 || '',
-                        city: shippingAddress?.city || '',
-                        state: shippingAddress?.state || '',
-                        zip: shippingAddress?.postal_code || '',
-                        country: shippingAddress?.country || 'US'
-                    },
-                    items: [{
-                        file_id: metadata.fileId,
-                        filament_id: metadata.finishId,
-                        quantity: Number(metadata.quantity || 1)
-                    }],
-                    metadata: {
-                        stripe_pi: pi.id,
-                        user_id: metadata.userId,
-                        model_id: metadata.modelId
-                    }
+          try {
+            const shippingAddress = shipping?.address
+            const orderData = {
+              customer_email: pi.receipt_email || 'no-email@tangibel.io',
+              shipping_address: {
+                name: shipping?.name || 'Valued Customer',
+                line1: shippingAddress?.line1 || '',
+                line2: shippingAddress?.line2 || '',
+                city: shippingAddress?.city || '',
+                state: shippingAddress?.state || '',
+                zip: shippingAddress?.postal_code || '',
+                country: shippingAddress?.country || 'US'
+              },
+              items: [{
+                file_id: metadata.fileId,
+                filament_id: metadata.finishId,
+                quantity: Number(metadata.quantity || 1)
+              }],
+              metadata: {
+                stripe_pi: pi.id,
+                user_id: metadata.userId,
+                model_id: metadata.modelId
+              }
+            }
+
+            log('Drafting Slant3D order...', { fileId: metadata.fileId });
+
+            const draftRes = await fetch(`${BACKEND_URL}/api/v1/printing/draft-order`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(orderData)
+            })
+
+            if (!draftRes.ok) {
+              const errText = await draftRes.text();
+              throw new Error(`Draft failed: ${draftRes.status} ${errText}`);
+            }
+
+            const draftJson = await draftRes.json()
+
+            if (draftJson.success && draftJson.order_id) {
+              log('Processing Slant3D order...', { orderId: draftJson.order_id });
+
+              const procRes = await fetch(`${BACKEND_URL}/api/v1/printing/process-order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: draftJson.order_id })
+              })
+
+              if (!procRes.ok) {
+                const errText = await procRes.text();
+                throw new Error(`Process failed: ${procRes.status} ${errText}`);
+              }
+
+              log('Slant3D order processed successfully', { orderId: draftJson.order_id });
+
+              // Update ship_orders with Slant3D order ID for tracking
+              try {
+                const updateQuery = (supabase as any)
+                  .from('ship_orders')
+                  .update({
+                    slant3d_order_id: draftJson.order_id,
+                    status: 'processing'
+                  });
+
+                if (orderRecordId) {
+                  await updateQuery.eq('id', orderRecordId)
+                } else {
+                  await updateQuery.eq('payment_intent_id', pi.id)
                 }
 
-                log('Drafting Slant3D order...', { fileId: metadata.fileId });
-                
-                const draftRes = await fetch(`${BACKEND_URL}/api/v1/printing/draft-order`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                })
-                
-                if (!draftRes.ok) {
-                    const errText = await draftRes.text();
-                    throw new Error(`Draft failed: ${draftRes.status} ${errText}`);
-                }
-                
-                const draftJson = await draftRes.json()
-                
-                if (draftJson.success && draftJson.order_id) {
-                    log('Processing Slant3D order...', { orderId: draftJson.order_id });
-                    
-                    const procRes = await fetch(`${BACKEND_URL}/api/v1/printing/process-order`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ order_id: draftJson.order_id })
-                    })
-                    
-                    if (!procRes.ok) {
-                         const errText = await procRes.text();
-                         throw new Error(`Process failed: ${procRes.status} ${errText}`);
-                    }
-                    
-                    log('Slant3D order processed successfully', { orderId: draftJson.order_id });
-                    
-                    // Update ship_orders with Slant3D order ID for tracking
-                    try {
-                        const updateQuery = (supabase as any)
-                          .from('ship_orders')
-                          .update({ 
-                              slant3d_order_id: draftJson.order_id,
-                              status: 'processing'
-                          });
-                        
-                        if (orderRecordId) {
-                          await updateQuery.eq('id', orderRecordId)
-                        } else {
-                          await updateQuery.eq('payment_intent_id', pi.id)
-                        }
-                        
-                        log('Updated ship_orders with Slant3D order ID', { orderId: draftJson.order_id });
-                    } catch (updateErr) {
-                    }
-                }
-            } catch (err: any) {
-                // We don't fail the webhook response here because the payment succeeded
-                // We should probably alert admin/developer
+                log('Updated ship_orders with Slant3D order ID', { orderId: draftJson.order_id });
+              } catch (updateErr) {
+              }
             }
+          } catch (err: any) {
+            // We don't fail the webhook response here because the payment succeeded
+            // We should probably alert admin/developer
+          }
         }
         break;
       }

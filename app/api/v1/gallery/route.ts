@@ -16,15 +16,24 @@ export async function GET(request: NextRequest) {
 
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
-        // Get limit from query params (default 50)
+        // Get limit and search from query params
         const { searchParams } = new URL(request.url)
         const limit = parseInt(searchParams.get('limit') || '50', 10)
+        const search = searchParams.get('search')
+
+        // Build query
+        let query = supabaseAdmin
+            .from('user_assets')
+            .select('id, type, url, thumbnail_url, prompt, creator_name, created_at, format, user_id, hearts_count, category')
+            .eq('is_public', true)
+
+        // Apply search filter if present
+        if (search) {
+            query = query.ilike('prompt', `%${search}%`)
+        }
 
         // Fetch public models from all users
-        const { data: models, error } = await supabaseAdmin
-            .from('user_assets')
-            .select('id, type, url, thumbnail_url, prompt, creator_name, created_at, format, user_id')
-            .eq('is_public', true)
+        const { data: models, error } = await query
             .order('created_at', { ascending: false })
             .limit(limit)
 
@@ -42,9 +51,12 @@ export async function GET(request: NextRequest) {
             thumbnail: model.thumbnail_url || model.url,
             url: model.url, // Actual file URL for 3D viewing
             creator: model.creator_name || 'Anonymous',
+            creator_id: model.user_id, // Creator user ID for marketplace
             created_at: model.created_at,
             type: model.type,
-            format: model.format?.toUpperCase() || (model.type === 'image' ? 'IMAGE' : 'MODEL')
+            format: model.format?.toUpperCase() || (model.type === 'image' ? 'IMAGE' : 'MODEL'),
+            category: model.category || 'other',
+            hearts_count: model.hearts_count || 0
         }))
 
         return NextResponse.json({
