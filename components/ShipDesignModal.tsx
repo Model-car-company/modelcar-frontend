@@ -293,7 +293,7 @@ export default function ShipDesignModal({
                     </p>
                   </div>
 
-                  {/* Step 2: Size */}
+                  {/* Step 2: Finish */}
                   <div
                     className={`text-center ${step === "size" ? "opacity-100" : "opacity-50"
                       }`}
@@ -313,7 +313,7 @@ export default function ShipDesignModal({
                       )}
                     </div>
                     <p className="text-[9px] font-light tracking-wide uppercase">
-                      Size
+                      Finish
                     </p>
                   </div>
 
@@ -398,16 +398,16 @@ export default function ShipDesignModal({
                   </div>
                 )}
 
-                {/* Step 2: Size Confirmation */}
+                {/* Step 2: Finish Selection */}
                 {step === "size" && (
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-sm font-light mb-1 flex items-center gap-2 tracking-wide">
-                        <Ruler className="w-4 h-4" strokeWidth={1.5} />
-                        Confirm Size & Finish
+                        <Box className="w-4 h-4" strokeWidth={1.5} />
+                        Select Finish
                       </h3>
                       <p className="text-[10px] font-light text-gray-500">
-                        Select finish and adjust scale for your model
+                        Choose a finish for your selected material
                       </p>
                     </div>
 
@@ -466,50 +466,6 @@ export default function ShipDesignModal({
                         </div>
                       </div>
                     </div>
-
-                    <div>
-                      <label className="block text-xs font-light mb-2 uppercase tracking-wide text-gray-500">
-                        Unit
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {(["mm", "cm", "in"] as const).map((u) => (
-                          <button
-                            key={u}
-                            onClick={() => setUnit(u)}
-                            className={`py-2 px-4 rounded border text-sm font-light transition-all ${unit === u
-                              ? "border-white/30 bg-white/10 text-white"
-                              : "border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20"
-                              }`}
-                          >
-                            {u}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-light mb-2 uppercase tracking-wide text-gray-500">
-                        Scale: {scale.toFixed(2)}x
-                      </label>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="5"
-                        step="0.1"
-                        value={scale}
-                        onChange={(e) => setScale(parseFloat(e.target.value))}
-                        className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
-                      />
-                      <div className="flex justify-between text-[10px] font-light text-gray-600 mt-1">
-                        <span>0.1x</span>
-                        <span>5x</span>
-                      </div>
-                    </div>
-
-                    <div className="text-[10px] font-light text-gray-400 p-3 bg-white/5 border border-white/10 rounded">
-                      The final size will be determined based on your model&apos;s
-                      geometry
-                    </div>
                   </div>
                 )}
 
@@ -523,7 +479,7 @@ export default function ShipDesignModal({
                           strokeWidth={1.5}
                         />
                         <p className="text-sm font-light text-gray-500">
-                          Getting pricing...
+                          Getting Best price...
                         </p>
                       </div>
                     ) : quoteData ? (
