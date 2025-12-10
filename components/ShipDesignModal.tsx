@@ -220,6 +220,8 @@ export default function ShipDesignModal({
         fileId: quoteData.file_id,
         assetId, // Gallery marketplace asset ID
         creatorId, // Creator user ID for revenue split
+        creatorCommission: quoteData.creator_commission,
+        platformEarnings: quoteData.printing_price, // Base cost goes to platform/manufacturer
       }),
     })
       .then(async (resp) => {
@@ -526,101 +528,83 @@ export default function ShipDesignModal({
                               {quoteData.quantity || 1}
                             </div>
                           </div>
-                          <div className="pt-3 border-t border-white/10 space-y-2">
-                            {/* Printing cost */}
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs font-light text-gray-400">
-                                Printing
-                              </div>
-                              <div className="text-sm font-light text-white">
-                                {quoteData.printing_price != null
-                                  ? `$${quoteData.printing_price.toFixed(2)}`
-                                  : quoteData.total_price != null
-                                    ? `$${quoteData.total_price.toFixed(2)}`
-                                    : "--"}
-                              </div>
+                          {/* Price Breakdown */}
+                          <div className="space-y-2 pt-4 border-t border-white/10">
+                            <div className="flex justify-between text-xs font-light text-gray-400">
+                              <span>Manufacturing</span>
+                              <span>${quoteData.printing_price?.toFixed(2)}</span>
                             </div>
-                            {/* Shipping cost */}
-                            <div className="flex items-center justify-between">
-                              <div className="text-xs font-light text-gray-400">
-                                Shipping (US)
-                              </div>
-                              <div className="text-sm font-light text-white">
-                                {quoteData.shipping_price != null
-                                  ? `$${quoteData.shipping_price.toFixed(2)}`
-                                  : "$5.99"}
-                              </div>
-                            </div>
-                            {/* Total */}
-                            <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                              <div className="text-sm font-light uppercase tracking-wide text-gray-400">
-                                Total
-                              </div>
-                              <div className="text-xl font-light text-white">
-                                {quoteData.total_price != null
-                                  ? `$${quoteData.total_price.toFixed(2)} ${quoteData.currency}`
-                                  : "--"}
-                              </div>
-                            </div>
-                            {quoteData.unit_price != null && (
-                              <div className="text-[10px] font-light text-gray-500">
-                                ${quoteData.unit_price.toFixed(2)} per item + shipping
+                            {quoteData.creator_commission > 0 && (
+                              <div className="flex justify-between text-xs font-light text-green-400">
+                                <span>Creator Support</span>
+                                <span>${quoteData.creator_commission?.toFixed(2)}</span>
                               </div>
                             )}
+                            <div className="flex justify-between text-xs font-light text-gray-400">
+                              <span>Shipping</span>
+                              <span>${quoteData.shipping_price?.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm font-medium text-white pt-2 border-t border-white/10">
+                              <span>Total</span>
+                              <span>${quoteData.total_price?.toFixed(2)}</span>
+                            </div>
                           </div>
-                          {quoteData.valid_until && (
-                            <div className="text-[10px] font-light text-gray-600">
-                              Valid until:{" "}
-                              {new Date(
-                                quoteData.valid_until
-                              ).toLocaleDateString()}
-                            </div>
-                          )}
-                          {quoteData.error && (
-                            <div className={`p-3 rounded text-xs font-light ${quoteData.error_code === 'HIGH_DEMAND'
-                              ? 'bg-amber-500/10 border border-amber-500/20 text-amber-200'
-                              : 'bg-red-500/10 border border-red-500/20 text-red-300'
-                              }`}>
-                              {quoteData.error_code === 'HIGH_DEMAND' ? '🕐' : '⚠️'}{' '}
-                              {quoteData.error_message || 'Unable to fetch pricing. Please try again or contact support.'}
-                            </div>
-                          )}
                         </div>
 
-                        {/* Info note */}
-                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded text-xs font-light text-blue-200">
-                          Payment and shipping details will be collected securely in
-                          the next step
-                        </div>
+                        {quoteData.valid_until && (
+                          <div className="text-[10px] font-light text-gray-600">
+                            Valid until:{" "}
+                            {new Date(
+                              quoteData.valid_until
+                            ).toLocaleDateString()}
+                          </div>
+                        )}
+                        {quoteData.error && (
+                          <div className={`p-3 rounded text-xs font-light ${quoteData.error_code === 'HIGH_DEMAND'
+                            ? 'bg-amber-500/10 border border-amber-500/20 text-amber-200'
+                            : 'bg-red-500/10 border border-red-500/20 text-red-300'
+                            }`}>
+                            {quoteData.error_code === 'HIGH_DEMAND' ? '🕐' : '⚠️'}{' '}
+                            {quoteData.error_message || 'Unable to fetch pricing. Please try again or contact support.'}
+                          </div>
+                        )}
                       </div>
                     ) : null}
                   </div>
                 )}
+
+                {/* Info note */}
+                {step === 'invoice' && (
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded text-xs font-light text-blue-200">
+                    Payment and shipping details will be collected securely in
+                    the next step
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Payment Step */}
-            {step === "pay" && clientSecret && (
-              <div className="rounded-lg border border-white/10 bg-black/40 p-3 sm:p-4">
-                <Elements
-                  stripe={stripePromise}
-                  options={{
-                    clientSecret,
-                    appearance: { theme: "night", labels: "floating" },
-                  }}
-                >
-                  <PaymentForm
-                    onClose={onClose}
-                    loading={loading}
-                    setLoading={setLoading}
-                    addressComplete={addressComplete}
-                    setAddressComplete={setAddressComplete}
-                  />
-                </Elements>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Payment Step */}
+        {step === "pay" && clientSecret && (
+          <div className="rounded-lg border border-white/10 bg-black/40 p-3 sm:p-4">
+            <Elements
+              stripe={stripePromise}
+              options={{
+                clientSecret,
+                appearance: { theme: "night", labels: "floating" },
+              }}
+            >
+              <PaymentForm
+                onClose={onClose}
+                loading={loading}
+                setLoading={setLoading}
+                addressComplete={addressComplete}
+                setAddressComplete={setAddressComplete}
+              />
+            </Elements>
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-white/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -685,7 +669,6 @@ export default function ShipDesignModal({
         </div>
       </div>
     </div>
-
   )
 }
 
@@ -713,59 +696,52 @@ function PaymentForm({
       return
     }
     setLoading(true)
-    const { error, paymentIntent } = await stripe.confirmPayment({
+
+    const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        shipping: undefined, // AddressElement attaches shipping internally
+        return_url: `${window.location.origin}/garage`,
       },
-      redirect: 'if_required',
     })
+
     if (error) {
       toast.error(error.message || 'Payment failed')
       setLoading(false)
-      return
+    } else {
+      // Success is handled by redirect
     }
-
-    if (paymentIntent?.status === 'succeeded') {
-      toast.success("Payment successful! We're processing your order.")
-      setLoading(false)
-      onClose()
-      return
-    }
-
-    toast('Payment processing, we will update your order shortly.', { icon: '⏳' })
-    setLoading(false)
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 bg-white/[0.02] border border-white/10 rounded space-y-3">
-        <div className="text-sm font-light text-white">Shipping Address</div>
+      <div className="space-y-3">
+        <h3 className="text-sm font-light text-white flex items-center gap-2">
+          <DollarSign className="w-4 h-4" />
+          Payment Details
+        </h3>
         <AddressElement
-          options={{ mode: 'shipping', allowedCountries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'NL', 'SE', 'IN'] }}
+          options={{
+            mode: 'shipping',
+            allowedCountries: ['US', 'CA', 'GB', 'AU', 'DE', 'FR'],
+          }}
           onChange={(e) => setAddressComplete(e.complete)}
         />
-      </div>
-      <div className="p-4 bg-white/[0.02] border border-white/10 rounded space-y-3">
-        <div className="text-sm font-light text-white">Payment</div>
         <PaymentElement />
       </div>
-      <div className="flex gap-3 justify-end">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 text-xs font-light text-gray-500 hover:text-white transition-colors uppercase tracking-wide"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={loading || !stripe || !elements}
-          className="px-6 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-white rounded text-xs font-light hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Processing...' : 'Pay Now'}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={!stripe || loading || !addressComplete}
+        className="w-full py-3 bg-white text-black rounded font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+      >
+        {loading ? (
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Processing...
+          </div>
+        ) : (
+          'Pay Now'
+        )}
+      </button>
     </form>
   )
 }

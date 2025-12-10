@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
       fileId,
       assetId,
       creatorId,
+      creatorCommission,
+      platformEarnings,
     } = await req.json() as {
       model: { id: string; name: string }
       material: { id: string; name: string }
@@ -26,6 +28,8 @@ export async function POST(req: NextRequest) {
       fileId?: string
       assetId?: string
       creatorId?: string
+      creatorCommission?: number
+      platformEarnings?: number
     }
 
     if (!model?.id || !material?.id || !finish?.id || !totalPrice || totalPrice <= 0) {
@@ -57,6 +61,8 @@ export async function POST(req: NextRequest) {
         // Marketplace fields (only present for gallery purchases)
         ...(assetId && { assetId }),
         ...(creatorId && { creatorId }),
+        ...(creatorCommission && { creatorCommission: String(creatorCommission) }),
+        ...(platformEarnings && { platformEarnings: String(platformEarnings) }),
       },
       automatic_payment_methods: { enabled: true },
     })

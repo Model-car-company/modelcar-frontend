@@ -552,9 +552,8 @@ export async function POST(req: NextRequest) {
                 finish_id: metadata.finishId || null,
                 quantity: metadata.quantity ? Number(metadata.quantity) : 1,
                 total_price: pi.amount ? (pi.amount / 100).toFixed(2) : '0.00',
-                // TODO: Calculate creator_earnings and platform_earnings based on revenue split
-                creator_earnings: pi.amount ? ((pi.amount / 100) * 0.6).toFixed(2) : '0.00', // 60% to creator for now
-                platform_earnings: pi.amount ? ((pi.amount / 100) * 0.4).toFixed(2) : '0.00', // 40% platform fee
+                creator_earnings: metadata.creatorCommission || '0.00',
+                platform_earnings: metadata.platformEarnings || '0.00',
                 payment_intent_id: pi.id,
               } as any)
               .select()
