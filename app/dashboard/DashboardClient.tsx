@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Sparkles, Box, Image as ImageIcon } from 'lucide-react'
 import CollapsibleSidebar from '../../components/CollapsibleSidebar'
@@ -40,11 +41,13 @@ interface DashboardClientProps {
 
 export default function DashboardClient({ fullName, creditsRemaining }: DashboardClientProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const searchParams = useSearchParams()
+  const isBuying = searchParams.get('action') === 'buy'
 
   return (
     <div className="min-h-screen bg-black text-white flex">
-      {/* Onboarding Tour */}
-      <OnboardingTour page="dashboard" />
+      {/* Onboarding Tour - Suppress if buying */}
+      <OnboardingTour page="dashboard" run={!isBuying} />
 
       {/* Collapsible Sidebar */}
       <CollapsibleSidebar

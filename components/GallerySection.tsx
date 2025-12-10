@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Package, Truck, Users, Car, Gamepad2, Film, Gem, Palette, Building2, Search, X } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Package, Truck, Users, Car, Gamepad2, Film, Gem, Palette, Building2, Search, X, Share2 } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
 import ModelViewer3D from './ModelViewer3D'
 import ShipDesignModal from './ShipDesignModal'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -45,6 +46,24 @@ export default function GallerySection() {
     const [modelToShip, setModelToShip] = useState<GalleryModel | null>(null)
     const [selectedCategory, setSelectedCategory] = useState('all')
     const [searchQuery, setSearchQuery] = useState('')
+    const searchParams = useSearchParams()
+
+    // Deep Linking: Auto-open purchase modal if params exist
+    useEffect(() => {
+        const action = searchParams.get('action')
+        const assetId = searchParams.get('assetId')
+
+        if (action === 'buy' && assetId && models.length > 0) {
+            const targetModel = models.find(m => m.id === assetId)
+            if (targetModel) {
+                setModelToShip(targetModel)
+                setShowShipModal(true)
+                // Clean up URL without reload
+                const newUrl = window.location.pathname
+                window.history.replaceState({}, '', newUrl)
+            }
+        }
+    }, [models, searchParams])
 
     useEffect(() => {
         fetchGallery()
@@ -93,6 +112,13 @@ export default function GallerySection() {
 
     return (
         <>
+            <Toaster position="top-center" toastOptions={{
+                style: {
+                    background: '#333',
+                    color: '#fff',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                },
+            }} />
             {/* Ship Design Modal */}
             {modelToShip && (
                 <ShipDesignModal
@@ -223,9 +249,23 @@ export default function GallerySection() {
                             className="relative w-full max-w-5xl h-[85vh] mx-4"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black rounded-lg shadow-2xl overflow-hidden">
+                            <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black shadow-2xl overflow-hidden">
                                 <ModelViewer3D modelUrl={modelToPreview.url} className="w-full h-full" />
                             </div>
+
+                            {/* Share button - bottom right (next to like) */}
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    const url = `${window.location.origin}/dashboard?assetId=${modelToPreview.id}&action=buy`
+                                    navigator.clipboard.writeText(url)
+                                    toast.success('Magic Link copied to clipboard!')
+                                }}
+                                className="absolute bottom-6 right-20 p-3 bg-black/40 backdrop-blur-md border border-white/20 hover:bg-black/60 transition-all shadow-lg z-10"
+                                title="Share Design"
+                            >
+                                <Share2 className="w-5 h-5 text-white" />
+                            </button>
 
                             {/* Like button - bottom right */}
                             <button

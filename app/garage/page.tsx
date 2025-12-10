@@ -11,7 +11,7 @@ import OnboardingTour from '../../components/OnboardingTour'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ShipDesignModal from '../../components/ShipDesignModal'
 import ModelViewer3D from '../../components/ModelViewer3D'
-import { Download, Trash2, Eye, Box, Grid3x3, List, Truck, X, Globe, Lock } from 'lucide-react'
+import { Box, Grid3x3, List, MoreVertical, Trash2, Download, Eye, Truck, Globe, Lock, Share2, Copy, Check, X } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -33,6 +33,9 @@ export default function GaragePage() {
   const [imageToPreview, setImageToPreview] = useState<any>(null)
   const [show3DPreview, setShow3DPreview] = useState(false)
   const [model3DToPreview, setModel3DToPreview] = useState<any>(null)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [modelToShare, setModelToShare] = useState<any>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     loadUserData()
@@ -504,7 +507,7 @@ export default function GaragePage() {
                           togglePublic(model.id, model.is_public)
                         }}
                         data-tour={index === 0 ? "public-toggle" : undefined}
-                        className={`ml-2 px-2 py-1 rounded text-[10px] font-light transition-all flex items-center gap-1 flex-shrink-0 ${model.is_public
+                        className={`ml-2 px-2 py-1 text-[10px] font-light transition-all flex items-center gap-1 flex-shrink-0 ${model.is_public
                           ? 'bg-green-500/20 border border-green-500/40 text-green-400 hover:bg-green-500/30'
                           : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'
                           }`}
@@ -534,11 +537,27 @@ export default function GaragePage() {
                     {/* Actions */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleView(model)}
+                        onClick={() => {
+                          if (model.type === 'model3d') {
+                            setModelToShare(model)
+                            setShowShareModal(true)
+                          } else {
+                            handleView(model)
+                          }
+                        }}
                         className="flex-1 px-2 sm:px-3 py-2 bg-white/5 border border-white/10 text-[10px] font-light hover:bg-white/10 transition-colors flex items-center justify-center gap-1"
                       >
-                        <Eye className="w-3 h-3" />
-                        <span className="hidden sm:inline">View</span>
+                        {model.type === 'model3d' ? (
+                          <>
+                            <Share2 className="w-3 h-3" />
+                            <span className="hidden sm:inline">Share</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            <span className="hidden sm:inline">View</span>
+                          </>
+                        )}
                       </button>
                       {model.type === 'model3d' && (
                         <button
@@ -638,7 +657,7 @@ export default function GaragePage() {
                     </button>
                     <button
                       onClick={() => handleView(model)}
-                      className="px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-white/10 transition-colors flex items-center gap-2"
+                      className="px-4 py-2 bg-white/5 border border-white/10 text-xs font-light hover:bg-white/10 transition-colors flex items-center gap-2"
                     >
                       <Eye className="w-3 h-3" />
                       View
@@ -646,7 +665,7 @@ export default function GaragePage() {
                     {model.type === 'model3d' && (
                       <button
                         onClick={() => handleShipClick(model)}
-                        className="px-4 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 rounded text-xs font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center gap-2"
+                        className="px-4 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 text-xs font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center gap-2"
                         title="Ship Design to 3D Printing"
                       >
                         <Truck className="w-3 h-3" />
@@ -655,14 +674,14 @@ export default function GaragePage() {
                     )}
                     <button
                       onClick={() => handleDownload(model)}
-                      className="px-4 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 rounded text-xs font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2"
+                      className="px-4 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-xs font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2"
                     >
                       <Download className="w-3 h-3" />
                       Download
                     </button>
                     <button
                       onClick={() => handleDeleteClick(model)}
-                      className="px-4 py-2 bg-white/5 border border-white/10 rounded text-xs font-light hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all flex items-center gap-2"
+                      className="px-4 py-2 bg-white/5 border border-white/10 text-xs font-light hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all flex items-center gap-2"
                     >
                       <Trash2 className="w-3 h-3" />
                       Delete
@@ -674,6 +693,58 @@ export default function GaragePage() {
           )}
         </div>
       </div>
+      {/* Share Modal */}
+      {showShareModal && modelToShare && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#0a0a0a] border border-white/10 max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="mb-6">
+              <div className="w-12 h-12 bg-green-500/10 flex items-center justify-center mb-4">
+                <Share2 className="w-6 h-6 text-green-500" />
+              </div>
+              <h2 className="text-xl font-light text-white mb-2">Share & Earn</h2>
+              <p className="text-sm text-gray-400 font-light leading-relaxed">
+                Share this design with your friends, family, or audience. When they purchase your design using this link, you earn money!
+              </p>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 p-4 mb-6">
+              <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Your Magic Link</p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-black/50 px-3 py-2 text-xs text-green-400 font-mono truncate">
+                  {`${window.location.origin}/dashboard?assetId=${modelToShare.id}&action=buy`}
+                </code>
+                <button
+                  onClick={() => {
+                    const url = `${window.location.origin}/dashboard?assetId=${modelToShare.id}&action=buy`
+                    navigator.clipboard.writeText(url)
+                    setCopied(true)
+                    toast.success('Link copied!')
+                    setTimeout(() => setCopied(false), 2000)
+                  }}
+                  className="p-2 bg-white/10 hover:bg-white/20 transition-colors"
+                  title="Copy Link"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-white" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="w-full py-3 bg-white text-black font-light text-sm hover:bg-gray-100 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
