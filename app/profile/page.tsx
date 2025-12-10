@@ -244,19 +244,6 @@ export default function ProfilePage() {
               </button>
 
               <button
-                onClick={() => setActiveTab('security')}
-                className={`pb-3 text-xs font-light tracking-wide whitespace-nowrap transition-colors relative ${activeTab === 'security'
-                  ? 'text-white'
-                  : 'text-gray-500 hover:text-gray-300'
-                  }`}
-              >
-                Security
-                {activeTab === 'security' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-px bg-white" />
-                )}
-              </button>
-
-              <button
                 onClick={() => setActiveTab('danger')}
                 className={`pb-3 text-xs font-light tracking-wide whitespace-nowrap transition-colors relative ${activeTab === 'danger'
                   ? 'text-red-400'
@@ -779,26 +766,7 @@ export default function ProfilePage() {
             )}
 
             {/* Security */}
-            {activeTab === 'security' && (
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Lock className="w-5 h-5 text-white" />
-                  <h2 className="text-lg font-thin tracking-tight">Security</h2>
-                </div>
 
-                <div className="space-y-4">
-                  <button className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light text-left hover:bg-white/10 transition-colors">
-                    Change Password
-                  </button>
-                  <button className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light text-left hover:bg-white/10 transition-colors">
-                    Two-Factor Authentication
-                  </button>
-                  <button className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-sm font-light text-left hover:bg-white/10 transition-colors">
-                    Active Sessions
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Danger Zone */}
             {activeTab === 'danger' && (
