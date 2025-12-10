@@ -24,8 +24,16 @@ export default function SimpleFooter() {
       {/* Bottom Right Links */}
       <div className="absolute bottom-10 right-6 sm:right-10 md:right-20">
         <div className="flex items-center justify-end gap-6 text-xs font-extralight text-gray-500">
+          <Link href="/refund" className="hover:text-white transition-colors">Refund</Link>
           <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-          <a href="https://discord.gg/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Discord</a>
+          <a
+            href="https://discord.gg/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white transition-colors"
+          >
+            Discord
+          </a>
         </div>
       </div>
 
