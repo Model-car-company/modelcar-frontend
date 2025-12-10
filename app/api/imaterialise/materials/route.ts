@@ -20,7 +20,7 @@ export async function GET() {
     const data = await response.json()
     const filaments = data.filaments || []
     
-    // Group filaments by profile (PLA, PETG, etc.)
+    // Group filaments by profile (PLA, PETG, etc.) - format expected by ShipDesignModal
     const materialsMap = new Map()
 
     filaments.forEach((f: any) => {
@@ -39,11 +39,10 @@ export async function GET() {
       
       // Clean up finish name
       let finishName = f.color || f.name
-      // Remove prefix if present (e.g. "PLA BROWN" -> "Brown")
       if (f.name && f.name.toUpperCase().startsWith(materialType.toUpperCase() + ' ')) {
         finishName = f.name.substring(materialType.length + 1)
       } else if (f.color) {
-          finishName = f.color
+        finishName = f.color
       }
       
       // Title case
@@ -52,7 +51,7 @@ export async function GET() {
       ).join(' ')
 
       material.finishes.push({
-        finishID: f.publicId, // This is the filament UUID we need for ordering
+        finishID: f.publicId,
         finishName: finishName,
         description: f.name,
         hexValue: f.hexValue,
