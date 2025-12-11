@@ -1440,7 +1440,7 @@ export default function Home() {
               <div className="py-8 border-b border-white/5">
                 <h3 className="text-base sm:text-lg font-light mb-3">How does the credit system work?</h3>
                 <p className="text-sm font-extralight text-gray-400 leading-relaxed">
-                  Each image generation costs 1 credit, and each 3D model conversion costs 5 credits. You get 45 free credits to start, and can purchase more anytime.
+                  Each image generation costs 1 credit, and each 3D model conversion costs 5 credits. You get 6 free credits to start, and can purchase more anytime.
                 </p>
               </div>
 

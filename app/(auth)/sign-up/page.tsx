@@ -108,7 +108,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
       {/* Toast Notifications */}
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 3000,
@@ -134,7 +134,7 @@ export default function SignUpPage() {
         {emailSent ? (
           <div className="text-center">
             {/* Back to home */}
-            <Link 
+            <Link
               href="/"
               className="inline-flex items-center gap-2 text-xs font-light text-gray-400 hover:text-white transition-colors mb-8"
             >
@@ -220,31 +220,31 @@ export default function SignUpPage() {
             </div>
           </div>
         ) : (
-        <>
-        {/* Back to home */}
-        <Link 
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-light text-gray-400 hover:text-white transition-colors mb-8"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          Back to Home
-        </Link>
+          <>
+            {/* Back to home */}
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-xs font-light text-gray-400 hover:text-white transition-colors mb-8"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              Back to Home
+            </Link>
 
-        {/* Sign up card */}
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6 sm:p-8">
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-thin tracking-tight mb-2">Create Account</h1>
-            <p className="text-sm font-light text-gray-400">Get started with 10 free credits</p>
-          </div>
+            {/* Sign up card */}
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6 sm:p-8">
+              <div className="mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-thin tracking-tight mb-2">Create Account</h1>
+                <p className="text-sm font-light text-gray-400">Get started with 6 free credits</p>
+              </div>
 
-          {error && (
-            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
-              {error}
-            </div>
-          )}
+              {error && (
+                <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
+                  {error}
+                </div>
+              )}
 
-          {/* Google Sign In - COMMENTED OUT */}
-          {/* 
+              {/* Google Sign In - COMMENTED OUT */}
+              {/* 
           <button
             onClick={handleGoogleSignIn}
             type="button"
@@ -272,8 +272,8 @@ export default function SignUpPage() {
           </button>
           */}
 
-          {/* Discord Sign In - COMMENTED OUT */}
-          {/* 
+              {/* Discord Sign In - COMMENTED OUT */}
+              {/* 
           <button
             onClick={handleDiscordSignIn}
             type="button"
@@ -295,120 +295,120 @@ export default function SignUpPage() {
           </div>
           */}
 
-          <form onSubmit={handleSignUp} className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label className="text-xs font-light text-gray-400 mb-2 block">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded px-10 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors"
-                  placeholder="John Doe"
-                />
+              <form onSubmit={handleSignUp} className="space-y-4">
+                {/* Full Name */}
+                <div>
+                  <label className="text-xs font-light text-gray-400 mb-2 block">
+                    Full Name
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded px-10 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors"
+                      placeholder="John Doe"
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="text-xs font-light text-gray-400 mb-2 block">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded px-10 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="text-xs font-light text-gray-400 mb-2 block">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded px-10 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">At least 6 characters</p>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="text-xs font-light text-gray-400 mb-2 block">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="w-full bg-white/5 border border-white/10 rounded px-10 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+
+                {/* Sign up button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-white text-black py-3 rounded font-light text-sm hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Creating account...' : 'Create Account'}
+                </button>
+              </form>
+
+              {/* Terms */}
+              <p className="text-[10px] font-light text-gray-500 mt-4 text-center">
+                By creating an account, you agree to our Terms of Service and Privacy Policy
+              </p>
+
+              {/* Divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10"></div>
+                </div>
+              </div>
+
+              {/* Sign in link */}
+              <div className="text-center">
+                <p className="text-xs font-light text-gray-400">
+                  Already have an account?{' '}
+                  <Link href="/sign-in" className="text-white hover:underline">
+                    Sign in
+                  </Link>
+                </p>
               </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <label className="text-xs font-light text-gray-400 mb-2 block">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded px-10 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors"
-                  placeholder="you@example.com"
-                />
-              </div>
+            {/* Footer */}
+            <div className="mt-8 text-center">
+              <p className="text-[10px] font-light text-gray-600 tracking-wide">
+                TANGIBEL © 2026 · SECURE AUTHENTICATION
+              </p>
             </div>
-
-            {/* Password */}
-            <div>
-              <label className="text-xs font-light text-gray-400 mb-2 block">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded px-10 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors"
-                  placeholder="••••••••"
-                />
-              </div>
-              <p className="text-[10px] text-gray-500 mt-1">At least 6 characters</p>
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className="text-xs font-light text-gray-400 mb-2 block">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded px-10 py-3 text-sm font-light focus:outline-none focus:border-white/30 transition-colors"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
-            {/* Sign up button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-white text-black py-3 rounded font-light text-sm hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating account...' : 'Create Account'}
-            </button>
-          </form>
-
-          {/* Terms */}
-          <p className="text-[10px] font-light text-gray-500 mt-4 text-center">
-            By creating an account, you agree to our Terms of Service and Privacy Policy
-          </p>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
-            </div>
-          </div>
-
-          {/* Sign in link */}
-          <div className="text-center">
-            <p className="text-xs font-light text-gray-400">
-              Already have an account?{' '}
-              <Link href="/sign-in" className="text-white hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-[10px] font-light text-gray-600 tracking-wide">
-            TANGIBEL © 2026 · SECURE AUTHENTICATION
-          </p>
-        </div>
-        </>
+          </>
         )}
       </div>
     </div>
