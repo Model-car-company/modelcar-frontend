@@ -16,7 +16,7 @@ const getResendClient = () => {
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'no-reply@tangibel.io'
 
 /**
- * Send creator purchase notification
+ * Send creator purchase notification using Resend template
  * SECURITY: Only call this from server-side API routes
  */
 export async function sendCreatorPurchaseNotification({
@@ -27,54 +27,13 @@ export async function sendCreatorPurchaseNotification({
   const resend = getResendClient()
 
   try {
+    // Use Resend template alias instead of inline HTML
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: creatorEmail,
       subject: '🎉 Someone purchased your design!',
-      html: `
-        <div style="background: #000000; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;">
-          <div style="max-width: 600px; margin: 0 auto; background: #0a0a0a; border: 1px solid rgba(255,255,255,0.1);">
-            
-            <div style="padding: 40px;">
-              <h2 style="color: #ffffff; font-weight: 300; margin: 0 0 20px 0; font-size: 24px;">
-                Great news! 🎉
-              </h2>
-              
-              <p style="font-size: 16px; color: #e5e5e5; line-height: 1.6; margin: 0 0 30px 0;">
-                Someone just purchased one of your designs from the Tangibel marketplace!
-              </p>
-
-              <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 25px; margin: 30px 0;">
-                <p style="margin: 0; color: #ffffff; font-size: 15px; font-weight: 300; line-height: 1.6;">
-                  💰 A new sale has been added to your account
-                </p>
-              </div>
-
-              <p style="font-size: 15px; color: #a3a3a3; margin: 30px 0; line-height: 1.6;">
-                Check your analytics dashboard to see your earnings and track your sales performance.
-              </p>
-
-              <div style="text-align: center; margin: 40px 0;">
-                <a href="https://tangibel.io/profile" 
-                   style="background: #ffffff; color: #000000; padding: 14px 32px; text-decoration: none; display: inline-block; font-weight: 500; font-size: 15px; border: 1px solid rgba(255,255,255,0.2);">
-                  View Analytics Dashboard →
-                </a>
-              </div>
-
-              <p style="color: #737373; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0; font-weight: 300;">
-                Keep creating amazing designs and growing your creator business!
-              </p>
-            </div>
-
-            <div style="padding: 20px 40px; border-top: 1px solid rgba(255,255,255,0.1);">
-              <p style="color: #525252; font-size: 12px; margin: 0; font-weight: 300;">
-                - The Tangibel Team
-              </p>
-            </div>
-
-          </div>
-        </div>
-      `,
+      // @ts-ignore - templateAlias is a valid Resend option
+      templateAlias: 'you-got-a-sale',
     })
 
     if (error) {

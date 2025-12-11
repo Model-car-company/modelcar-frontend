@@ -328,7 +328,7 @@ export default function GallerySection() {
                                             setShow3DPreview(false)
                                             setShowShipModal(true)
                                         }}
-                                        className="px-4 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 rounded-sm text-sm font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center gap-2"
+                                        className="px-4 py-2 bg-green-500/20 backdrop-blur-sm border border-green-500/30 rounded-sm text-sm font-light text-white hover:bg-green-500/30 hover:border-green-500/50 transition-all flex items-center gap-2"
                                     >
                                         <Truck className="w-4 h-4" />
                                         Purchase Design

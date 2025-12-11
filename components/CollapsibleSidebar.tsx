@@ -55,12 +55,13 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
       `}>
         {/* Logo & Toggle */}
         <div className={`${isCollapsed ? 'px-4' : 'px-6'} py-6 border-b border-white/5 transition-all duration-300 flex items-center justify-between`}>
-          <Link href="/" className="flex items-center gap-1 transition-all duration-300">
+          <Link href="/dashboard" className="flex items-center gap-1 transition-all duration-300">
             <div className="relative w-6 h-6 flex-shrink-0">
               <Image
                 src="/logo/Tangibellight.png"
                 alt="Tangibel"
-                fill
+                width={24}
+                height={24}
                 className="object-contain"
                 priority
               />
@@ -92,8 +93,8 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
           <Link
             href="/dashboard"
             className={`flex items-center ${isCollapsed ? 'justify-center px-3' : 'gap-3 px-4'} py-3 rounded ${currentPage === 'dashboard'
-                ? 'bg-white/10 border border-white/10 text-white'
-                : 'hover:bg-white/5 text-gray-400 hover:text-white'
+              ? 'bg-white/10 border border-white/10 text-white'
+              : 'hover:bg-white/5 text-gray-400 hover:text-white'
               } transition-colors`}
             title="Dashboard"
           >
@@ -104,8 +105,8 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
           <Link
             href="/image"
             className={`flex items-center ${isCollapsed ? 'justify-center px-3' : 'gap-3 px-4'} py-3 rounded ${currentPage === 'image'
-                ? 'bg-white/10 border border-white/10 text-white'
-                : 'hover:bg-white/5 text-gray-400 hover:text-white'
+              ? 'bg-white/10 border border-white/10 text-white'
+              : 'hover:bg-white/5 text-gray-400 hover:text-white'
               } transition-colors`}
             title="Design Studio"
           >
@@ -116,8 +117,8 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
           <Link
             href="/studio"
             className={`flex items-center ${isCollapsed ? 'justify-center px-3' : 'gap-3 px-4'} py-3 rounded ${currentPage === 'studio'
-                ? 'bg-white/10 border border-white/10 text-white'
-                : 'hover:bg-white/5 text-gray-400 hover:text-white'
+              ? 'bg-white/10 border border-white/10 text-white'
+              : 'hover:bg-white/5 text-gray-400 hover:text-white'
               } transition-colors`}
             title="3D Assemble"
           >
@@ -128,8 +129,8 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
           <Link
             href="/garage"
             className={`flex items-center ${isCollapsed ? 'justify-center px-3' : 'gap-3 px-4'} py-3 rounded ${currentPage === 'garage'
-                ? 'bg-white/10 border border-white/10 text-white'
-                : 'hover:bg-white/5 text-gray-400 hover:text-white'
+              ? 'bg-white/10 border border-white/10 text-white'
+              : 'hover:bg-white/5 text-gray-400 hover:text-white'
               } transition-colors`}
             title="Creations"
           >
@@ -140,8 +141,8 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
           <Link
             href="/orders"
             className={`flex items-center ${isCollapsed ? 'justify-center px-3' : 'gap-3 px-4'} py-3 rounded ${currentPage === 'orders'
-                ? 'bg-white/10 border border-white/10 text-white'
-                : 'hover:bg-white/5 text-gray-400 hover:text-white'
+              ? 'bg-white/10 border border-white/10 text-white'
+              : 'hover:bg-white/5 text-gray-400 hover:text-white'
               } transition-colors`}
             title="Orders"
           >
@@ -152,8 +153,8 @@ export default function CollapsibleSidebar({ currentPage, fullName, creditsRemai
           <Link
             href="/profile"
             className={`flex items-center ${isCollapsed ? 'justify-center px-3' : 'gap-3 px-4'} py-3 rounded ${currentPage === 'profile'
-                ? 'bg-white/10 border border-white/10 text-white'
-                : 'hover:bg-white/5 text-gray-400 hover:text-white'
+              ? 'bg-white/10 border border-white/10 text-white'
+              : 'hover:bg-white/5 text-gray-400 hover:text-white'
               } transition-colors`}
             title="Profile"
           >

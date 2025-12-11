@@ -11,9 +11,10 @@ import OnboardingTour from '../../components/OnboardingTour'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import ShipDesignModal from '../../components/ShipDesignModal'
 import ModelViewer3D from '../../components/ModelViewer3D'
-import { Box, Grid3x3, List, MoreVertical, Trash2, Download, Eye, Truck, Globe, Lock, Share2, Copy, Check, X } from 'lucide-react'
+import { Box, Grid3x3, List, MoreVertical, Trash2, Download, Eye, Truck, Globe, Lock, Share2, Copy, Check, X, Upload } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import { AnimatePresence, motion } from 'framer-motion'
+import UploadDesignModal from '../../components/UploadDesignModal'
 
 export default function GaragePage() {
   const router = useRouter()
@@ -36,6 +37,7 @@ export default function GaragePage() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [modelToShare, setModelToShare] = useState<any>(null)
   const [copied, setCopied] = useState(false)
+  const [showUploadModal, setShowUploadModal] = useState(false)
 
   useEffect(() => {
     loadUserData()
@@ -417,35 +419,65 @@ export default function GaragePage() {
           <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-thin tracking-tight mb-2">
-                My Garage
+                My Creations
               </h1>
               <p className="text-xs font-light text-gray-500">
                 {models.length} {models.length === 1 ? 'model' : 'models'} • {profile?.credits_remaining || 0} credits remaining
               </p>
             </div>
 
-            {/* View Toggle */}
-            <div className="flex items-center gap-2">
+            {/* Upload Button & View Toggle */}
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded transition-colors ${viewMode === 'grid'
-                  ? 'bg-white/10 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                  }`}
+                onClick={() => setShowUploadModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 backdrop-blur-sm border border-red-500/30 text-xs font-light text-white hover:bg-red-500/30 hover:border-red-500/50 transition-all"
               >
-                <Grid3x3 className="w-4 h-4" />
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Upload Design</span>
               </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded transition-colors ${viewMode === 'list'
-                  ? 'bg-white/10 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                  }`}
-              >
-                <List className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded transition-colors ${viewMode === 'grid'
+                    ? 'bg-white/10 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded transition-colors ${viewMode === 'list'
+                    ? 'bg-white/10 text-white'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Upload Design Modal */}
+          <UploadDesignModal
+            isOpen={showUploadModal}
+            onClose={() => setShowUploadModal(false)}
+            onSuccess={(asset) => {
+              // Add the new asset to the models list
+              setModels(prev => [{
+                id: asset.id,
+                name: asset.name,
+                thumbnail: asset.thumbnail_url,
+                created_at: asset.created_at,
+                file_size: '-',
+                format: 'STL',
+                polygons: '-',
+                url: asset.url,
+                type: 'model3d',
+                is_public: false
+              }, ...prev])
+            }}
+          />
 
           {/* Empty State */}
           {models.length === 0 && (
@@ -563,7 +595,7 @@ export default function GaragePage() {
                         <button
                           onClick={() => handleShipClick(model)}
                           data-tour={index === 0 ? "ship-button" : undefined}
-                          className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 text-[10px] font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center justify-center gap-1"
+                          className="flex-1 px-2 sm:px-3 py-2 bg-green-500/20 backdrop-blur-sm border border-green-500/30 text-[10px] font-light text-white hover:bg-green-500/30 hover:border-green-500/50 transition-all flex items-center justify-center gap-1"
                           title="Ship Design to 3D Printing"
                         >
                           <Truck className="w-3 h-3" />
@@ -573,7 +605,7 @@ export default function GaragePage() {
                       <button
                         onClick={() => handleDownload(model)}
                         data-tour={index === 0 ? "download-button" : undefined}
-                        className="flex-1 px-2 sm:px-3 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-[10px] font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center justify-center gap-1"
+                        className="flex-1 px-2 sm:px-3 py-2 bg-red-500/20 backdrop-blur-sm border border-red-500/30 text-[10px] font-light text-white hover:bg-red-500/30 hover:border-red-500/50 transition-all flex items-center justify-center gap-1"
                       >
                         <Download className="w-3 h-3" />
                         <span className="hidden sm:inline">Download</span>
@@ -665,7 +697,7 @@ export default function GaragePage() {
                     {model.type === 'model3d' && (
                       <button
                         onClick={() => handleShipClick(model)}
-                        className="px-4 py-2 bg-gradient-to-br from-green-500/70 via-green-600/60 to-green-500/70 border border-green-500/40 text-xs font-light text-white hover:from-green-500/90 hover:via-green-600/80 hover:to-green-500/90 transition-all flex items-center gap-2"
+                        className="px-4 py-2 bg-green-500/20 backdrop-blur-sm border border-green-500/30 text-xs font-light text-white hover:bg-green-500/30 hover:border-green-500/50 transition-all flex items-center gap-2"
                         title="Ship Design to 3D Printing"
                       >
                         <Truck className="w-3 h-3" />
@@ -674,7 +706,7 @@ export default function GaragePage() {
                     )}
                     <button
                       onClick={() => handleDownload(model)}
-                      className="px-4 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-xs font-light text-white hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2"
+                      className="px-4 py-2 bg-red-500/20 backdrop-blur-sm border border-red-500/30 text-xs font-light text-white hover:bg-red-500/30 hover:border-red-500/50 transition-all flex items-center gap-2"
                     >
                       <Download className="w-3 h-3" />
                       Download

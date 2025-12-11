@@ -87,10 +87,10 @@ export async function POST(request: NextRequest) {
     if (supabaseUrl && supabaseServiceKey && body.model_id) {
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
-      // Get model creator
+      // Get model creator and custom price
       const { data: modelData } = await supabaseAdmin
         .from('user_assets')
-        .select('user_id')
+        .select('user_id, creator_price')
         .eq('id', body.model_id)
         .single()
 
@@ -103,8 +103,13 @@ export async function POST(request: NextRequest) {
           if (user.id === modelData.user_id) {
             isOwnModel = true
           } else {
-            // Buyer is NOT creator -> Apply 30% commission
-            creatorCommission = printingPrice * 0.30
+            // Buyer is NOT creator -> Apply commission
+            // Use custom creator_price if set, otherwise default to 30%
+            if (modelData.creator_price !== null && modelData.creator_price !== undefined) {
+              creatorCommission = Number(modelData.creator_price)
+            } else {
+              creatorCommission = printingPrice * 0.30
+            }
           }
         }
       }
