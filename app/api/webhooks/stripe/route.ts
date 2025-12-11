@@ -534,7 +534,11 @@ export async function POST(req: NextRequest) {
               raw_session: pi as any,
             }
           )
-        } catch (err) {
+        } catch (err: any) {
+          console.error('[WEBHOOK ERROR] Failed to upsert ship order:', {
+            paymentIntentId: pi.id,
+            error: err?.message || err
+          })
         }
 
         // Handle marketplace purchases (from gallery)
@@ -552,16 +556,53 @@ export async function POST(req: NextRequest) {
                 finish_id: metadata.finishId || null,
                 quantity: metadata.quantity ? Number(metadata.quantity) : 1,
                 total_price: pi.amount ? (pi.amount / 100).toFixed(2) : '0.00',
-                creator_earnings: metadata.creatorCommission || '0.00',
-                platform_earnings: metadata.platformEarnings || '0.00',
+                creator_earnings: parseFloat(metadata.creatorCommission) || 0,
+                platform_earnings: parseFloat(metadata.platformEarnings) || 0,
                 payment_intent_id: pi.id,
               } as any)
               .select()
               .single()
 
             if (purchaseError) {
-              console.error('Failed to insert marketplace purchase:', purchaseError)
+              console.error('[CRITICAL] Failed to insert marketplace purchase:', {
+                paymentIntentId: pi.id,
+                assetId: metadata.assetId,
+                creatorId: metadata.creatorId,
+                error: purchaseError
+              })
+
+              // Store in dead-letter queue for manual recovery
+              try {
+                await (supabase as any).from('failed_webhook_events').insert({
+                  event_type: 'marketplace_purchase_failed',
+                  payment_intent_id: pi.id,
+                  event_data: {
+                    assetId: metadata.assetId,
+                    creatorId: metadata.creatorId,
+                    buyerId: metadata.userId,
+                    creatorCommission: metadata.creatorCommission,
+                    platformEarnings: metadata.platformEarnings,
+                    totalPrice: pi.amount ? pi.amount / 100 : 0,
+                    materialId: metadata.materialId,
+                    finishId: metadata.finishId,
+                    quantity: metadata.quantity
+                  },
+                  error_message: purchaseError.message || JSON.stringify(purchaseError),
+                })
+                console.log('[RECOVERY] Saved failed purchase to dead-letter queue for PI:', pi.id)
+              } catch (saveErr: any) {
+                console.error('[CRITICAL] Failed to save to dead-letter queue:', {
+                  paymentIntentId: pi.id,
+                  error: saveErr?.message || saveErr
+                })
+              }
             } else {
+              console.log('[SUCCESS] Marketplace purchase recorded:', {
+                purchaseId: (purchase as any)?.id,
+                paymentIntentId: pi.id,
+                creatorEarnings: metadata.creatorCommission
+              })
+
               // Get creator email to send notification
               const { data: creator } = await supabase
                 .from('profiles')
@@ -577,8 +618,11 @@ export async function POST(req: NextRequest) {
                 })
               }
             }
-          } catch (err) {
-            console.error('Error handling marketplace purchase:', err)
+          } catch (err: any) {
+            console.error('[WEBHOOK ERROR] Error handling marketplace purchase:', {
+              paymentIntentId: pi.id,
+              error: err?.message || err
+            })
           }
         }
 
@@ -656,12 +700,21 @@ export async function POST(req: NextRequest) {
                 }
 
                 log('Updated ship_orders with Slant3D order ID', { orderId: draftJson.order_id });
-              } catch (updateErr) {
+              } catch (updateErr: any) {
+                console.error('[WEBHOOK ERROR] Failed to update ship_orders with Slant3D order:', {
+                  paymentIntentId: pi.id,
+                  slant3dOrderId: draftJson.order_id,
+                  error: updateErr?.message || updateErr
+                })
               }
             }
           } catch (err: any) {
             // We don't fail the webhook response here because the payment succeeded
-            // We should probably alert admin/developer
+            console.error('[WEBHOOK ERROR] Slant3D order creation failed:', {
+              paymentIntentId: pi.id,
+              fileId: metadata.fileId,
+              error: err?.message || err
+            })
           }
         }
         break;

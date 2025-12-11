@@ -8,7 +8,7 @@ const nextConfig = {
   // Optimize images
   images: {
     formats: ['image/webp', 'image/avif'],
-    domains: [],
+    domains: ['mwyzvpadlfroamzjxlex.supabase.co'],
   },
   webpack: (config) => {
     // Force ESM entrypoints so default imports work in troika-three-text

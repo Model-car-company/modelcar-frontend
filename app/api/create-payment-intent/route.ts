@@ -58,11 +58,11 @@ export async function POST(req: NextRequest) {
         totalPrice: String(totalPrice),
         currency,
         fileId: fileId || '',
-        // Marketplace fields (only present for gallery purchases)
-        ...(assetId && { assetId }),
-        ...(creatorId && { creatorId }),
-        ...(creatorCommission && { creatorCommission: String(creatorCommission) }),
-        ...(platformEarnings && { platformEarnings: String(platformEarnings) }),
+        // Marketplace fields for commission tracking
+        assetId: assetId || '',
+        creatorId: creatorId || '',
+        creatorCommission: String(creatorCommission ?? 0),
+        platformEarnings: String(platformEarnings ?? 0),
       },
       automatic_payment_methods: { enabled: true },
     })
