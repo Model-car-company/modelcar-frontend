@@ -31,8 +31,10 @@ export function PostHogProvider({
     }
 
     // Initialize PostHog with FULL features enabled
+    // Using reverse proxy via Next.js rewrites for ad-blocker bypass
     posthog.init(posthogKey, {
-      api_host: posthogHost || 'https://us.i.posthog.com',
+      api_host: '/ingest', // Route through our domain to bypass ad blockers
+      ui_host: 'https://us.posthog.com', // Required for toolbar to work
 
       // User identification
       person_profiles: 'always', // Track all users, not just identified
