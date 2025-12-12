@@ -110,10 +110,6 @@ export async function POST(request: NextRequest) {
         const storagePath = `uploads/${user.id}/${timestamp}_${sanitizedName}.stl`
 
         // Upload to Supabase Storage
-        console.log('[UPLOAD] Attempting storage upload to bucket: models')
-        console.log('[UPLOAD] Path:', storagePath)
-        console.log('[UPLOAD] File size:', arrayBuffer.byteLength)
-
         const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
             .from('models')
             .upload(storagePath, arrayBuffer, {
@@ -122,14 +118,11 @@ export async function POST(request: NextRequest) {
             })
 
         if (uploadError) {
-            console.error('[UPLOAD] Storage upload error:', uploadError.message)
             return NextResponse.json(
                 { error: 'Failed to upload file. Please try again.' },
                 { status: 500 }
             )
         }
-
-        console.log('[UPLOAD] Storage upload success:', uploadData)
 
         // Get public URL
         const { data: urlData } = supabaseAdmin.storage
@@ -172,16 +165,6 @@ export async function POST(request: NextRequest) {
             : null
 
         // Insert into user_assets
-        console.log('[UPLOAD] Inserting into database with fields:', {
-            user_id: user.id,
-            type: 'model3d',
-            url: modelUrl,
-            thumbnail_url: thumbnailUrl,
-            name: name.trim(),
-            source: 'uploaded',
-            creator_price: validPrice,
-        })
-
         const { data: asset, error: insertError } = await supabaseAdmin
             .from('user_assets')
             .insert({
@@ -207,7 +190,6 @@ export async function POST(request: NextRequest) {
             .single()
 
         if (insertError) {
-            console.error('[UPLOAD] Database insert error:', insertError.message)
             // Try to clean up uploaded file
             await supabaseAdmin.storage.from('models').remove([storagePath])
             return NextResponse.json(
@@ -215,8 +197,6 @@ export async function POST(request: NextRequest) {
                 { status: 500 }
             )
         }
-
-        console.log('[UPLOAD] Database insert success:', asset)
 
         return NextResponse.json({
             success: true,
@@ -232,9 +212,8 @@ export async function POST(request: NextRequest) {
         })
 
     } catch (error: any) {
-        console.error('Upload design error:', error)
         return NextResponse.json(
-            { error: error.message || 'Failed to upload design' },
+            { error: 'Failed to upload design' },
             { status: 500 }
         )
     }

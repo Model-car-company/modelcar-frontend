@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { X, Upload, FileUp, Loader2, DollarSign, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
+import { analytics, AnalyticsEvents } from '../lib/analytics'
 
 interface UploadDesignModalProps {
     isOpen: boolean
@@ -138,6 +139,13 @@ export default function UploadDesignModal({ isOpen, onClose, onSuccess }: Upload
                 icon: '🎉',
             })
 
+            // Track successful upload
+            analytics.track(AnalyticsEvents.DESIGN_UPLOADED, {
+                file_size_mb: Math.round(file.size / (1024 * 1024) * 10) / 10,
+                category: category,
+                has_price: !!creatorPrice
+            })
+
             onSuccess?.(data.asset)
             handleClose()
         } catch (error: any) {
@@ -147,6 +155,12 @@ export default function UploadDesignModal({ isOpen, onClose, onSuccess }: Upload
                     color: '#fff',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
                 },
+            })
+
+            // Track failed upload
+            analytics.track(AnalyticsEvents.UPLOAD_FAILED, {
+                error: error.message,
+                file_size_mb: file ? Math.round(file.size / (1024 * 1024) * 10) / 10 : 0
             })
         } finally {
             setUploading(false)

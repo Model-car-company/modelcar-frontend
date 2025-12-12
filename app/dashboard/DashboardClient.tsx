@@ -9,6 +9,8 @@ import OnboardingTour from '../../components/OnboardingTour'
 import { RoughNotation } from '../../components/ClientRoughNotation'
 import GallerySection from '../../components/GallerySection'
 import dynamic from 'next/dynamic'
+import { PostHogIdentify } from '../../components/providers/PostHogIdentify'
+import { analytics, AnalyticsEvents } from '../../lib/analytics'
 
 const Model3DShowcase = dynamic(() => import('../../components/Model3DShowcase'), {
   ssr: false,
@@ -37,15 +39,27 @@ const CategoryModel3D = dynamic(() => import('../../components/CategoryModel3D')
 interface DashboardClientProps {
   fullName: string
   creditsRemaining: number
+  userId: string
+  email: string | null
 }
 
-export default function DashboardClient({ fullName, creditsRemaining }: DashboardClientProps) {
+export default function DashboardClient({ fullName, creditsRemaining, userId, email }: DashboardClientProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const searchParams = useSearchParams()
   const isBuying = searchParams.get('action') === 'buy'
 
+  // Track dashboard view
+  useEffect(() => {
+    analytics.track(AnalyticsEvents.DASHBOARD_VIEWED, {
+      credits_remaining: creditsRemaining,
+      has_credits: creditsRemaining > 0
+    })
+  }, [])
+
   return (
     <div className="min-h-screen bg-black text-white flex">
+      {/* PostHog User Identification */}
+      <PostHogIdentify userId={userId} email={email} name={fullName} />
       {/* Onboarding Tour - Suppress if buying */}
       <OnboardingTour page="dashboard" run={!isBuying} />
 

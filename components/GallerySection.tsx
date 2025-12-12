@@ -7,6 +7,7 @@ import toast, { Toaster } from 'react-hot-toast'
 import ModelViewer3D from './ModelViewer3D'
 import ShipDesignModal from './ShipDesignModal'
 import { AnimatePresence, motion } from 'framer-motion'
+import { analytics, AnalyticsEvents } from '../lib/analytics'
 
 interface GalleryModel {
     id: string
@@ -70,8 +71,8 @@ export default function GallerySection() {
                             setModelToShip(modelData)
                             setShowShipModal(true)
                         }
-                    } catch (err) {
-                        console.error('Failed to fetch deep linked model:', err)
+                    } catch {
+                        // Silent fail - model not found
                     }
                 }
 
@@ -108,6 +109,12 @@ export default function GallerySection() {
 
             setModels(filteredModels)
             setError(null)
+
+            // Track gallery view
+            analytics.track(AnalyticsEvents.GALLERY_VIEWED, {
+                models_count: filteredModels.length,
+                category: selectedCategory
+            })
         } catch (err) {
             setError('Failed to load community gallery')
         } finally {
@@ -116,12 +123,25 @@ export default function GallerySection() {
     }
 
     const handleModelClick = (model: GalleryModel) => {
+        // Track click
+        analytics.track(AnalyticsEvents.GALLERY_DESIGN_CLICKED, {
+            model_id: model.id,
+            model_type: model.type,
+            creator: model.creator
+        })
+
         if (model.type === 'image') {
             setImageToPreview(model)
             setShowImagePreview(true)
         } else {
             setModelToPreview(model)
             setShow3DPreview(true)
+
+            // Track 3D preview opened
+            analytics.track(AnalyticsEvents.GALLERY_3D_PREVIEW_OPENED, {
+                model_id: model.id,
+                creator: model.creator
+            })
         }
     }
 
@@ -212,8 +232,8 @@ export default function GallerySection() {
                                             ))
                                             setImageToPreview({ ...imageToPreview, hearts_count: data.hearts_count })
                                         }
-                                    } catch (err) {
-                                        console.error('Failed to like:', err)
+                                    } catch {
+                                        // Silent fail on like error
                                     }
                                 }}
                                 className="absolute bottom-6 right-6 p-3 bg-black/40 backdrop-blur-md border border-white/20 rounded hover:bg-black/60 transition-all shadow-lg"
@@ -301,8 +321,8 @@ export default function GallerySection() {
                                             ))
                                             setModelToPreview({ ...modelToPreview, hearts_count: data.hearts_count })
                                         }
-                                    } catch (err) {
-                                        console.error('Failed to like:', err)
+                                    } catch {
+                                        // Silent fail on like error
                                     }
                                 }}
                                 className="absolute bottom-6 right-6 p-3 bg-black/40 backdrop-blur-md border border-white/20 rounded hover:bg-black/60 transition-all shadow-lg z-10"

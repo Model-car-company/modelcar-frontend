@@ -10,6 +10,7 @@ import { Save, CreditCard, Bell, Lock, Trash2, DollarSign, TrendingUp, Activity 
 import toast, { Toaster } from 'react-hot-toast'
 import CollapsibleSidebar from '../../components/CollapsibleSidebar'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { resetPostHogIdentity } from '../../components/providers/PostHogIdentify'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -33,6 +34,8 @@ export default function ProfilePage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
 
   const handleSignOut = async () => {
+    // Reset PostHog identity before signing out
+    resetPostHogIdentity()
     await fetch('/auth/sign-out', { method: 'POST' })
     window.location.href = '/'
   }
@@ -133,9 +136,8 @@ export default function ProfilePage() {
         const data = await response.json()
         setAnalytics(data.analytics)
       }
-    } catch (error) {
+    } catch {
       // Silently fail - analytics is non-critical
-      console.error('Failed to load analytics:', error)
     } finally {
       setAnalyticsLoading(false)
     }

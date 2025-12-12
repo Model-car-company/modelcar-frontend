@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '../../../lib/supabase/client'
 import { ArrowLeft, Mail, Lock, User } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
+import { analytics, AnalyticsEvents } from '../../../lib/analytics'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -52,6 +53,11 @@ export default function SignUpPage() {
       return
     }
 
+    // Track sign-up started
+    analytics.track(AnalyticsEvents.SIGN_UP_STARTED, {
+      method: 'email'
+    })
+
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.signUp({
@@ -70,8 +76,19 @@ export default function SignUpPage() {
       // Success - show email confirmation screen
       setSubmittedEmail(email)
       setEmailSent(true)
+
+      // Track sign-up completed
+      analytics.track(AnalyticsEvents.SIGN_UP_COMPLETED, {
+        method: 'email'
+      })
     } catch (error: any) {
       setError(error.message || 'Failed to create account')
+
+      // Track sign-up failed
+      analytics.track(AnalyticsEvents.SIGN_UP_FAILED, {
+        method: 'email',
+        error: error.message
+      })
     } finally {
       setLoading(false)
     }

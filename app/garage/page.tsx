@@ -15,6 +15,7 @@ import { Box, Grid3x3, List, MoreVertical, Trash2, Download, Eye, Truck, Globe, 
 import toast, { Toaster } from 'react-hot-toast'
 import { AnimatePresence, motion } from 'framer-motion'
 import UploadDesignModal from '../../components/UploadDesignModal'
+import { analytics, AnalyticsEvents } from '../../lib/analytics'
 
 export default function GaragePage() {
   const router = useRouter()
@@ -87,6 +88,14 @@ export default function GaragePage() {
         }))
 
         setModels(transformedModels)
+
+        // Track garage view with asset count
+        analytics.track(AnalyticsEvents.GARAGE_VIEWED, {
+          total_assets: transformedModels.length,
+          model_count: transformedModels.filter(m => m.type === 'model3d').length,
+          image_count: transformedModels.filter(m => m.type === 'image').length,
+          public_count: transformedModels.filter(m => m.is_public).length
+        })
       }
       setLoading(false)
 
@@ -134,6 +143,13 @@ export default function GaragePage() {
     })
 
     setModels(models.filter(m => m.id !== modelToDelete.id))
+
+    // Track delete event
+    analytics.track(AnalyticsEvents.DESIGN_DELETED, {
+      model_type: modelToDelete.type,
+      was_public: modelToDelete.is_public
+    })
+
     setModelToDelete(null)
   }
 
@@ -173,6 +189,12 @@ export default function GaragePage() {
           fontWeight: '300',
         },
       })
+
+      // Track download
+      analytics.track(model.type === 'model3d' ? AnalyticsEvents.MODEL_3D_DOWNLOADED : AnalyticsEvents.IMAGE_DOWNLOADED, {
+        format: extension,
+        model_name: model.name
+      })
     } catch (error) {
       toast.error('Failed to download file', { id: 'download' })
     }
@@ -181,6 +203,12 @@ export default function GaragePage() {
   const handleShipClick = (model: any) => {
     setModelToShip(model)
     setShowShipModal(true)
+
+    // Track ship intent
+    analytics.trackCTA('ship_now', {
+      model_type: model.type,
+      model_name: model.name
+    })
   }
 
   const handleView = (model: any) => {
@@ -229,6 +257,11 @@ export default function GaragePage() {
           fontSize: '12px',
           fontWeight: '300',
         },
+      })
+
+      // Track visibility change
+      analytics.track(newStatus ? AnalyticsEvents.DESIGN_MADE_PUBLIC : AnalyticsEvents.DESIGN_MADE_PRIVATE, {
+        model_type: 'model3d'
       })
     } catch (error) {
       // Revert optimistic update on error

@@ -67,7 +67,6 @@ export function PostHogProvider({
         if (process.env.NODE_ENV === 'development') {
           posthog.debug()
         }
-        console.log('[PostHog] Initialized successfully with session replay enabled')
       }
     })
   }, [])

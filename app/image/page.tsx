@@ -14,6 +14,7 @@ import ModelViewer3D from '../../components/ModelViewer3D'
 import UpgradeModal from '../../components/UpgradeModal'
 import OnboardingTour from '../../components/OnboardingTour'
 import { SubscriptionTier } from '../../lib/subscription-config'
+import { analytics, AnalyticsEvents } from '../../lib/analytics'
 
 // Memoized component to prevent unnecessary re-renders
 const ModelAssetCard = memo(({ asset, onPreview3D }: { asset: { id: string; url: string; prompt: string; format?: string; isGenerating?: boolean; thumbnailUrl?: string }, onPreview3D: () => void }) => {
@@ -182,15 +183,15 @@ export default function ImagePage() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      
+
       // Use FormData if blueprint is provided, otherwise JSON
       let response: Response
-      
+
       if (blueprintFile) {
         // FormData for file upload
         const formData = new FormData()
         formData.append('image', imageUrl)
-        
+
         // Convert blueprint file to base64 for the API
         const blueprintBase64 = await new Promise<string>((resolve) => {
           const reader = new FileReader()
@@ -198,7 +199,7 @@ export default function ImagePage() {
           reader.readAsDataURL(blueprintFile)
         })
         formData.append('blueprint', blueprintBase64)
-        
+
         response = await fetch('/api/generate-3d', {
           method: 'POST',
           headers: {
@@ -356,6 +357,11 @@ export default function ImagePage() {
     };
 
     loadPageData();
+
+    // Track page view
+    analytics.track(AnalyticsEvents.IMAGE_PAGE_VIEWED, {
+      has_credits: true // Will be updated after load
+    });
   }, []);
 
   const getExampleAssets = () => [
@@ -397,6 +403,13 @@ export default function ImagePage() {
         setReferencePreviews(newPreviews)
       }
       reader.readAsDataURL(file)
+
+      // Track reference image upload
+      analytics.track(AnalyticsEvents.REFERENCE_IMAGE_UPLOADED, {
+        slot_index: index,
+        file_type: file.type,
+        file_size_kb: Math.round(file.size / 1024)
+      })
     }
   }
 
@@ -425,6 +438,14 @@ export default function ImagePage() {
     const loadingId = `loading-${Date.now()}`
     const loadingAsset = { id: loadingId, type: 'image' as const, url: '', prompt, timestamp: new Date().toISOString(), isGenerating: true }
     setDesignAssets(prev => [loadingAsset, ...prev])
+
+    // Track generation started
+    analytics.track(AnalyticsEvents.IMAGE_GENERATION_STARTED, {
+      prompt_length: prompt.length,
+      has_reference_images: referencePreviews.filter(Boolean).length > 0,
+      reference_count: referencePreviews.filter(Boolean).length,
+      credits_before: creditsRemaining
+    })
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -479,9 +500,22 @@ export default function ImagePage() {
       const newCredits = Math.max(0, creditsRemaining - IMAGE_COST)
       setCreditsRemaining(newCredits)
       await supabase.from('profiles').update({ credits_remaining: newCredits }).eq('id', user.id)
+
+      // Track generation completed
+      analytics.track(AnalyticsEvents.IMAGE_GENERATION_COMPLETED, {
+        prompt_length: prompt.length,
+        credits_used: IMAGE_COST,
+        credits_remaining: newCredits
+      })
     } catch (error) {
       setDesignAssets(prev => prev.filter(asset => asset.id !== loadingId))
       toast.error('Failed to generate image')
+
+      // Track generation failed
+      analytics.track(AnalyticsEvents.IMAGE_GENERATION_FAILED, {
+        prompt_length: prompt.length,
+        error: 'generation_failed'
+      })
     } finally {
       setGenerating(false)
     }
@@ -573,7 +607,7 @@ export default function ImagePage() {
   return (
     <div className="min-h-screen bg-black text-white">
       <Toaster position="top-right" />
-      
+
       {/* Onboarding Tour */}
       <OnboardingTour />
 

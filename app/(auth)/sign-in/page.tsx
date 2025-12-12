@@ -50,7 +50,7 @@ export default function SignInPage() {
       }
 
       // Track successful sign-in
-      analytics.track(AnalyticsEvents.SIGN_IN, {
+      analytics.track(AnalyticsEvents.SIGN_IN_COMPLETED, {
         method: 'email',
       })
 
@@ -58,7 +58,7 @@ export default function SignInPage() {
       router.refresh()
     } catch (error: any) {
       setError(error.message || 'Failed to sign in')
-      
+
       // Track failed sign-in
       analytics.track('sign_in_failed', {
         error: error.message,
@@ -77,9 +77,9 @@ export default function SignInPage() {
         },
       })
       if (error) throw error
-      
+
       // Track Google sign-in attempt
-      analytics.track(AnalyticsEvents.SIGN_IN, {
+      analytics.track(AnalyticsEvents.SIGN_IN_COMPLETED, {
         method: 'google',
       })
     } catch (error: any) {
@@ -96,9 +96,9 @@ export default function SignInPage() {
         },
       })
       if (error) throw error
-      
+
       // Track Discord sign-in attempt
-      analytics.track(AnalyticsEvents.SIGN_IN, {
+      analytics.track(AnalyticsEvents.SIGN_IN_COMPLETED, {
         method: 'discord',
       })
     } catch (error: any) {
@@ -109,7 +109,7 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
       {/* Toast Notifications */}
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 3000,
@@ -132,7 +132,7 @@ export default function SignInPage() {
       {/* Content */}
       <div className="relative z-10 w-full max-w-md">
         {/* Back to home */}
-        <Link 
+        <Link
           href="/"
           className="inline-flex items-center gap-2 text-xs font-light text-gray-400 hover:text-white transition-colors mb-8"
         >
@@ -231,7 +231,7 @@ export default function SignInPage() {
 
             {/* Forgot password link */}
             <div className="text-right">
-              <Link 
+              <Link
                 href="/forgot-password"
                 className="text-xs font-light text-gray-400 hover:text-white transition-colors"
               >
@@ -249,7 +249,7 @@ export default function SignInPage() {
             </button>
           </form>
 
-          
+
 
           {/* Sign up link */}
           <div className="text-center">

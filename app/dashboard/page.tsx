@@ -4,9 +4,9 @@ import DashboardClient from './DashboardClient'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     redirect('/sign-in')
   }
@@ -22,9 +22,12 @@ export default async function DashboardPage() {
   const fullName = profile?.full_name || user?.email?.split('@')[0] || 'User'
 
   return (
-    <DashboardClient 
+    <DashboardClient
       fullName={fullName}
       creditsRemaining={creditsRemaining}
+      userId={user.id}
+      email={user.email || null}
     />
   )
 }
+
