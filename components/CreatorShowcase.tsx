@@ -117,7 +117,7 @@ export default function CreatorShowcase() {
             CREATOR MARKETPLACE
           </p>
           <h2 className="text-3xl sm:text-4xl md:text-6xl font-thin tracking-tight mb-6">
-            Sell Your Creations
+            Own Or Sell Your Creations
           </h2>
           <p className="text-sm sm:text-base font-extralight text-gray-400 max-w-2xl mx-auto mb-8">
             Share your designs with the world and earn 30% on every sale. Join our community of creators turning ideas into income.
