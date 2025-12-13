@@ -583,28 +583,30 @@ export default function ShipDesignModal({
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Payment Step */}
-        {step === "pay" && clientSecret && (
-          <div className="rounded-lg border border-white/10 bg-black/40 p-3 sm:p-4">
-            <Elements
-              stripe={stripePromise}
-              options={{
-                clientSecret,
-                appearance: { theme: "night", labels: "floating" },
-              }}
-            >
-              <PaymentForm
-                onClose={onClose}
-                loading={loading}
-                setLoading={setLoading}
-                addressComplete={addressComplete}
-                setAddressComplete={setAddressComplete}
-              />
-            </Elements>
-          </div>
-        )}
+          {/* Payment Step - INSIDE the scrollable area */}
+          {step === "pay" && clientSecret && (
+            <div className="px-4 pb-6 sm:px-6 sm:pb-8">
+              <div className="border border-white/10 bg-black/40 p-4 sm:p-6">
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret,
+                    appearance: { theme: "night", labels: "floating" },
+                  }}
+                >
+                  <PaymentForm
+                    onClose={onClose}
+                    loading={loading}
+                    setLoading={setLoading}
+                    addressComplete={addressComplete}
+                    setAddressComplete={setAddressComplete}
+                  />
+                </Elements>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Footer Actions */}
         <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-white/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -651,7 +653,7 @@ export default function ShipDesignModal({
             {step === "invoice" && quoteData && !loading && (
               <button
                 onClick={handleContinueToPayment}
-                className="px-6 py-2 bg-gradient-to-br from-red-500/70 via-red-600/60 to-red-500/70 border border-red-500/40 text-white rounded text-xs font-light hover:from-red-500/90 hover:via-red-600/80 hover:to-red-500/90 transition-all flex items-center gap-2 uppercase tracking-wide"
+                className="px-6 py-2.5 bg-red-500/20 backdrop-blur-md border border-red-500/40 text-white text-xs font-light hover:bg-red-500/30 hover:border-red-500/50 transition-all flex items-center gap-2 uppercase tracking-wide shadow-lg shadow-red-900/20"
               >
                 <DollarSign className="w-4 h-4" strokeWidth={1.5} />
                 Continue to Payment
