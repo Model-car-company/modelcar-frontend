@@ -12,12 +12,13 @@ import HeroSection from '../components/HeroSection'
 import Landing3DViewer from '../components/Landing3DViewer'
 import PublicNav from '../components/PublicNav'
 import CreatorShowcase from '../components/CreatorShowcase'
+import ShippingGlobe from '../components/ShippingGlobe'
 
 // Step images for the scroll section
 const stepImages = [
   '/landing/step1-describe-vision.png',
   '/landing/step2-ai-creates-model.png',
-  '/landing/step3-ship-to-you.png',
+  'globe', // Step 3 uses the ShippingGlobe component instead
 ]
 
 export default function Home() {
@@ -112,12 +113,16 @@ export default function Home() {
                   transition={{ duration: 0.5 }}
                   className="absolute inset-0 flex items-center justify-center"
                 >
-                  <Image
-                    src={src}
-                    alt={`Step ${index + 1}`}
-                    fill
-                    className="object-contain"
-                  />
+                  {src === 'globe' ? (
+                    <ShippingGlobe />
+                  ) : (
+                    <Image
+                      src={src}
+                      alt={`Step ${index + 1}`}
+                      fill
+                      className="object-contain"
+                    />
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -257,15 +262,10 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Mobile Image - sharp edges */}
+                {/* Mobile Image - Globe for step 3 */}
                 <div className="lg:hidden mt-8 pl-6">
                   <div className="relative h-64 overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-white/10">
-                    <Image
-                      src="/landing/step3-ship-to-you.png"
-                      alt="Ship straight to you"
-                      fill
-                      className="object-contain p-4"
-                    />
+                    <ShippingGlobe />
                   </div>
                 </div>
               </div>
